@@ -1,3 +1,6 @@
+using ctp_docente_portal.Server.Data;
+using Microsoft.EntityFrameworkCore;
+
 namespace ctp_docente_portal.Server
 {
     public class Program
@@ -5,6 +8,14 @@ namespace ctp_docente_portal.Server
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
+            // Add DbContext with PostgreSQL
+
+            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+            
+            builder.Services.AddDbContext<AppDbContext>(options =>
+                options.UseNpgsql(connectionString)
+                .LogTo(Console.WriteLine, LogLevel.Information));
 
             // Add services to the container.
 
@@ -16,6 +27,8 @@ namespace ctp_docente_portal.Server
             app.UseStaticFiles();
 
             // Configure the HTTP request pipeline.
+
+            app.UseRouting();
 
             app.UseAuthorization();
 

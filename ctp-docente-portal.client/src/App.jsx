@@ -2,48 +2,58 @@ import { useEffect, useState } from 'react';
 import './App.css';
 
 function App() {
-    const [forecasts, setForecasts] = useState();
+
+    const [staff, setStaff] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
-        populateWeatherData();
+        async function fetchStaff() {
+            try {
+                const response = await fetch('/api/staff');
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const data = await response.json();
+                setStaff(data);
+                setError(null);
+            } catch (err) {
+                setError(err.message);
+                console.error('Error fetching staff:', err);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        fetchStaff();
     }, []);
 
-    const contents = forecasts === undefined
-        ? <p><em>Loading... Please refresh once the ASP.NET backend has started. See <a href="https://aka.ms/jspsintegrationreact">https://aka.ms/jspsintegrationreact</a> for more details.</em></p>
-        : <table className="table table-striped" aria-labelledby="tabelLabel">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Temp. (C)</th>
-                    <th>Temp. (F)</th>
-                    <th>Summary</th>
-                </tr>
-            </thead>
-            <tbody>
-                {forecasts.map(forecast =>
-                    <tr key={forecast.date}>
-                        <td>{forecast.date}</td>
-                        <td>{forecast.temperatureC}</td>
-                        <td>{forecast.temperatureF}</td>
-                        <td>{forecast.summary}</td>
-                    </tr>
-                )}
-            </tbody>
-        </table>;
+    if (loading) {
+        return <div>Loading staff data...</div>;
+    }
+
+    if (error) {
+        return <div style={{ color: 'red' }}>Error: {error}</div>;
+    }
 
     return (
-        <div>
-            <h1 id="tabelLabel">Weather forecast</h1>
-            <p>This component demonstrates fetching data from the server.</p>
-            {contents}
+        <div style={{ padding: '20px' }}>
+            <h2>Staff List (Test Connection)</h2>
+            {staff.length === 0 ? (
+                <p>No staff members found</p>
+            ) : (
+                <ul>
+                    {staff.map(member => (
+                        <li key={member.id}>
+                            ID: {member.id}, Name: {member.name}
+                        </li>
+                    ))}
+                </ul>
+            )}
         </div>
     );
-    
-    async function populateWeatherData() {
-        const response = await fetch('weatherforecast');
-        const data = await response.json();
-        setForecasts(data);
-    }
 }
 
 export default App;
