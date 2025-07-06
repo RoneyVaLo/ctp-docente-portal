@@ -1,5 +1,8 @@
-﻿namespace ctp_docente_portal.Server.Models
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace ctp_docente_portal.Server.Models
 {
+    [NotMapped]
     public class SectionStudentsModel
     {
         public int Id { get; set; }
