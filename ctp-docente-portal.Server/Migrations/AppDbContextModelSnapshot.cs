@@ -22,6 +22,47 @@ namespace ctp_docente_portal.Server.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("ctp_docente_portal.Server.Models.AcademicPeriodsModel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("UpdatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("Year")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AcademicPeriods");
+                });
+
             modelBuilder.Entity("ctp_docente_portal.Server.Models.EvaluationCriteriaModel", b =>
                 {
                     b.Property<int>("Id")
@@ -55,6 +96,43 @@ namespace ctp_docente_portal.Server.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("EvaluationCriteria");
+                });
+
+            modelBuilder.Entity("ctp_docente_portal.Server.Models.SectionAssignmentsModel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AcademicPeriodId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SectionId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("StaffId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SubjectId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("UpdatedBy")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SectionAssignments");
                 });
 
             modelBuilder.Entity("ctp_docente_portal.Server.Models.StudentCriteriaScoresModel", b =>
@@ -108,7 +186,7 @@ namespace ctp_docente_portal.Server.Migrations
                     b.Property<int>("CreatedBy")
                         .HasColumnType("integer");
 
-                    b.Property<int>("EvaluationCriteriaId")
+                    b.Property<int>("EvaluationItemId")
                         .HasColumnType("integer");
 
                     b.Property<decimal>("Score")
@@ -143,6 +221,9 @@ namespace ctp_docente_portal.Server.Migrations
                         .HasColumnType("integer");
 
                     b.Property<bool>("HasCriteria")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDraft")
                         .HasColumnType("boolean");
 
                     b.Property<string>("Name")
