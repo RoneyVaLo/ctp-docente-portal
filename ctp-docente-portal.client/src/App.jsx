@@ -1,59 +1,40 @@
-import { useEffect, useState } from 'react';
-import './App.css';
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Layout from "./components/Layout";
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import Calificaciones from "./pages/Evaluations";
+import Asistencia from "./pages/Attendance";
+import Reportes from "./pages/Reports";
+import Notificaciones from "./pages/Notifications";
+import Estudiantes from "./pages/Students";
+import Configuracion from "./pages/Configuration";
 
 function App() {
-
-    const [staff, setStaff] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-
-    useEffect(() => {
-        async function fetchStaff() {
-            try {
-                const response = await fetch('/api/staff');
-
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-
-                const data = await response.json();
-                setStaff(data);
-                setError(null);
-            } catch (err) {
-                setError(err.message);
-                console.error('Error fetching staff:', err);
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        fetchStaff();
-    }, []);
-
-    if (loading) {
-        return <div>Loading staff data...</div>;
-    }
-
-    if (error) {
-        return <div style={{ color: 'red' }}>Error: {error}</div>;
-    }
-
-    return (
-        <div style={{ padding: '20px' }}>
-            <h2>Staff List (Test Connection)</h2>
-            {staff.length === 0 ? (
-                <p>No staff members found</p>
-            ) : (
-                <ul>
-                    {staff.map(member => (
-                        <li key={member.id}>
-                            ID: {member.id}, Name: {member.name}
-                        </li>
-                    ))}
-                </ul>
-            )}
-        </div>
-    );
+  return (
+    <Router>
+      <div className="App">
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route
+              path="dashboard/calificaciones"
+              element={<Calificaciones />}
+            />
+            <Route path="dashboard/asistencia" element={<Asistencia />} />
+            <Route path="dashboard/reportes" element={<Reportes />} />
+            <Route
+              path="dashboard/notificaciones"
+              element={<Notificaciones />}
+            />
+            <Route path="dashboard/estudiantes" element={<Estudiantes />} />
+            <Route path="dashboard/configuracion" element={<Configuracion />} />
+          </Route>
+        </Routes>
+      </div>
+    </Router>
+  );
 }
 
 export default App;
