@@ -7,6 +7,8 @@ namespace ctp_docente_portal.Server
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
+            builder.Services.AddScoped<IWhatsAppApiService, WhatsAppApiService>();
+
 
             builder.Services.AddControllers();
 
@@ -23,6 +25,7 @@ namespace ctp_docente_portal.Server
             app.MapControllers();
 
             app.MapFallbackToFile("/index.html");
+            builder.Services.AddScoped<IAttendanceService, AttendanceService>();
 
             app.Run();
         }
