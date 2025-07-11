@@ -5,7 +5,7 @@ import { Outlet } from "react-router-dom";
 
 const Layout = () => {
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-background dark:bg-background-dark text-foreground dark:text-foreground-dark flex bg-gradient-to-br from-surface to-background dark:from-surface-dark dark:to-background-dark">
       <Sidebar />
       <div className="flex-1 flex flex-col">
         <Header />

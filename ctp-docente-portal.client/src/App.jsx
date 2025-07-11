@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -10,31 +10,50 @@ import Estudiantes from "./pages/Students";
 import Configuracion from "./pages/Configuration";
 
 function App() {
-  return (
-    <Router>
-      <div className="App">
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/" element={<Layout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route
-              path="dashboard/calificaciones"
-              element={<Calificaciones />}
-            />
-            <Route path="dashboard/asistencia" element={<Asistencia />} />
-            <Route path="dashboard/reportes" element={<Reportes />} />
-            <Route
-              path="dashboard/notificaciones"
-              element={<Notificaciones />}
-            />
-            <Route path="dashboard/estudiantes" element={<Estudiantes />} />
-            <Route path="dashboard/configuracion" element={<Configuracion />} />
-          </Route>
-        </Routes>
-      </div>
-    </Router>
-  );
+  const router = createBrowserRouter([
+    {
+      path: "/login",
+      element: <Login />,
+      errorElement: <div>Not Found 404</div>,
+    },
+    {
+      path: "/",
+      element: <Layout />,
+      errorElement: <div>Not Found 404</div>,
+      children: [
+        {
+          path: "/",
+          element: <Dashboard />,
+        },
+        {
+          path: "calificaciones",
+          element: <Calificaciones />,
+        },
+        {
+          path: "asistencia",
+          element: <Asistencia />,
+        },
+        {
+          path: "reportes",
+          element: <Reportes />,
+        },
+        {
+          path: "notificaciones",
+          element: <Notificaciones />,
+        },
+        {
+          path: "estudiantes",
+          element: <Estudiantes />,
+        },
+        {
+          path: "configuracion",
+          element: <Configuracion />,
+        },
+      ],
+    },
+  ]);
+
+  return <RouterProvider router={router} />;
 }
 
 export default App;

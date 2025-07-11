@@ -19,7 +19,7 @@ const Button = forwardRef(
       default: "bg-primary text-primary-foreground hover:bg-primary/90",
       ghost: "hover:bg-gray-100 hover:text-gray-900",
       outline:
-        "border border-input hover:bg-accent hover:text-accent-foreground",
+        "border border-input bg-gray-200 hover:bg-gray-300 dark:text-black",
       secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
       destructive:
         "bg-destructive text-destructive-foreground hover:bg-destructive/90",

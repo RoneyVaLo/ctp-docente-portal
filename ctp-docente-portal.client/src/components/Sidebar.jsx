@@ -27,20 +27,20 @@ export default function Sidebar() {
   return (
     <div
       className={cn(
-        "bg-white border-r h-screen flex flex-col transition-all duration-300",
+        "shadow-2xl h-screen flex flex-col transition-all duration-300 sticky top-0 z-10",
         collapsed ? "w-16" : "w-64"
       )}
     >
-      <div className="p-4 border-b flex items-center justify-between">
+      <div className="p-4 shadow-2xl flex items-center justify-between hover:cursor-default transition-transform">
         <div
           className={cn(
             "flex items-center gap-2",
             collapsed && "justify-center"
           )}
         >
-          <BookOpen className="h-6 w-6 text-blue-600 shrink-0" />
+          <BookOpen className="h-6 w-6 text-gray-900 shrink-0 dark:text-white" />
           <span
-            className={cn("font-bold text-blue-900", collapsed && "hidden")}
+            className={cn("font-bold text-gray-900 dark:text-white", collapsed && "hidden")}
           >
             Admin Docente
           </span>
@@ -62,45 +62,45 @@ export default function Sidebar() {
       <div className="flex-1 py-4 overflow-y-auto">
         <nav className="space-y-1 px-2">
           <NavItem
-            href="/dashboard"
+            href="/"
             icon={<Home className="h-5 w-5" />}
             label="Dashboard"
-            active={location.pathname === "/dashboard"}
+            active={location.pathname === "/"}
             collapsed={collapsed}
           />
           <NavItem
-            href="/dashboard/calificaciones"
+            href="/calificaciones"
             icon={<CheckSquare className="h-5 w-5" />}
             label="Calificaciones"
-            active={location.pathname.includes("/dashboard/calificaciones")}
+            active={location.pathname.includes("/calificaciones")}
             collapsed={collapsed}
           />
           <NavItem
-            href="/dashboard/asistencia"
+            href="/asistencia"
             icon={<Calendar className="h-5 w-5" />}
             label="Asistencia"
-            active={location.pathname.includes("/dashboard/asistencia")}
+            active={location.pathname.includes("/asistencia")}
             collapsed={collapsed}
           />
           <NavItem
-            href="/dashboard/reportes"
+            href="/reportes"
             icon={<BarChart3 className="h-5 w-5" />}
             label="Reportes"
-            active={location.pathname.includes("/dashboard/reportes")}
+            active={location.pathname.includes("/reportes")}
             collapsed={collapsed}
           />
           <NavItem
-            href="/dashboard/notificaciones"
+            href="/notificaciones"
             icon={<Bell className="h-5 w-5" />}
             label="Notificaciones"
-            active={location.pathname.includes("/dashboard/notificaciones")}
+            active={location.pathname.includes("/notificaciones")}
             collapsed={collapsed}
           />
           <NavItem
-            href="/dashboard/estudiantes"
+            href="/estudiantes"
             icon={<Users className="h-5 w-5" />}
             label="Estudiantes"
-            active={location.pathname.includes("/dashboard/estudiantes")}
+            active={location.pathname.includes("/estudiantes")}
             collapsed={collapsed}
           />
         </nav>
@@ -108,10 +108,10 @@ export default function Sidebar() {
 
       <div className="p-4 border-t">
         <NavItem
-          href="/dashboard/configuracion"
+          href="/configuracion"
           icon={<Settings className="h-5 w-5" />}
           label="Configuración"
-          active={location.pathname.includes("/dashboard/configuracion")}
+          active={location.pathname.includes("/configuracion")}
           collapsed={collapsed}
         />
       </div>
