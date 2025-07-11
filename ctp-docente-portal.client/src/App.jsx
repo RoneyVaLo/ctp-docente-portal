@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
 import './App.css';
+import NotificacionesWhatsApp from "./pages/NotificacionesWhatsApp";
+
+<Route path="/notificaciones" element={<NotificacionesWhatsApp />} />
 
 function App() {
     const [forecasts, setForecasts] = useState();

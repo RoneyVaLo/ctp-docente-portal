@@ -8,6 +8,10 @@ namespace ctp_docente_portal.Server
 
             // Add services to the container.
             builder.Services.AddScoped<IWhatsAppApiService, WhatsAppApiService>();
+            builder.Services.AddScoped<IReportService, ReportService>();
+            app.UseMiddleware<ctp_docente_portal.Server.Middlewares.RoleAuthorizationMiddleware>();
+
+
 
 
             builder.Services.AddControllers();
