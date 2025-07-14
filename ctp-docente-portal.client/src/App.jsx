@@ -1,52 +1,59 @@
-import { useEffect, useState } from 'react';
-import './App.css';
-import NotificacionesWhatsApp from "./pages/NotificacionesWhatsApp";
-
-<Route path="/notificaciones" element={<NotificacionesWhatsApp />} />
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import Layout from "./components/Layout";
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import Calificaciones from "./pages/Evaluations";
+import Asistencia from "./pages/Attendance";
+import Reportes from "./pages/Reports";
+import Notificaciones from "./pages/Notifications";
+import Estudiantes from "./pages/Students";
+import Configuracion from "./pages/Configuration";
 
 function App() {
-    const [forecasts, setForecasts] = useState();
+  const router = createBrowserRouter([
+    {
+      path: "/login",
+      element: <Login />,
+      errorElement: <div>Not Found 404</div>,
+    },
+    {
+      path: "/",
+      element: <Layout />,
+      errorElement: <div>Not Found 404</div>,
+      children: [
+        {
+          path: "/",
+          element: <Dashboard />,
+        },
+        {
+          path: "calificaciones",
+          element: <Calificaciones />,
+        },
+        {
+          path: "asistencia",
+          element: <Asistencia />,
+        },
+        {
+          path: "reportes",
+          element: <Reportes />,
+        },
+        {
+          path: "notificaciones",
+          element: <Notificaciones />,
+        },
+        {
+          path: "estudiantes",
+          element: <Estudiantes />,
+        },
+        {
+          path: "configuracion",
+          element: <Configuracion />,
+        },
+      ],
+    },
+  ]);
 
-    useEffect(() => {
-        populateWeatherData();
-    }, []);
-
-    const contents = forecasts === undefined
-        ? <p><em>Loading... Please refresh once the ASP.NET backend has started. See <a href="https://aka.ms/jspsintegrationreact">https://aka.ms/jspsintegrationreact</a> for more details.</em></p>
-        : <table className="table table-striped" aria-labelledby="tabelLabel">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Temp. (C)</th>
-                    <th>Temp. (F)</th>
-                    <th>Summary</th>
-                </tr>
-            </thead>
-            <tbody>
-                {forecasts.map(forecast =>
-                    <tr key={forecast.date}>
-                        <td>{forecast.date}</td>
-                        <td>{forecast.temperatureC}</td>
-                        <td>{forecast.temperatureF}</td>
-                        <td>{forecast.summary}</td>
-                    </tr>
-                )}
-            </tbody>
-        </table>;
-
-    return (
-        <div>
-            <h1 id="tabelLabel">Weather forecast</h1>
-            <p>This component demonstrates fetching data from the server.</p>
-            {contents}
-        </div>
-    );
-    
-    async function populateWeatherData() {
-        const response = await fetch('weatherforecast');
-        const data = await response.json();
-        setForecasts(data);
-    }
+  return <RouterProvider router={router} />;
 }
 
 export default App;
