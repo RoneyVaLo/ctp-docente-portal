@@ -29,5 +29,9 @@ namespace ctp_docente_portal.Server.Controllers
             })
             .ToArray();
         }
+        [HttpGet("grades/pdf")]
+        [ctp_docente_portal.Server.Middlewares.RequiredRole("Administrativo")]
+        public async Task<IActionResult> ExportGradesPdf(...)
+
     }
 }
