@@ -132,7 +132,7 @@ const DropdownMenuSeparator = forwardRef(
   ({ className = "", ...props }, ref) => (
     <div
       ref={ref}
-      className={`-mx-1 my-1 h-px bg-muted ${className}`}
+      className={`-mx-1 my-1 h-px ${className}`}
       {...props}
     />
   )
