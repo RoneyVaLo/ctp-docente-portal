@@ -16,18 +16,28 @@ import Button from "./ui/Button";
 import NavItem from "./NavItem";
 import { cn } from "../utils/cn";
 
-export default function Sidebar() {
+export default function Sidebar({ isMobileOpen, onCloseMobile }) {
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
+
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
 
   const toggleSidebar = () => {
-    setCollapsed(!collapsed);
+    if (isMobile && isMobileOpen) {
+      onCloseMobile();
+    } else {
+      setCollapsed(!collapsed);
+    }
   };
 
   return (
     <div
       className={cn(
-        "shadow-2xl h-screen flex flex-col transition-all duration-300 sticky top-0 z-10",
+        `${
+          !isMobileOpen
+            ? "hidden"
+            : "flex fixed inset-0 z-50 bg-background dark:bg-background-dark"
+        } shadow-2xl h-screen sm:flex flex-col transition-all duration-300 sm:sticky top-0 z-10`,
         collapsed ? "w-16" : "w-64"
       )}
     >
@@ -40,7 +50,10 @@ export default function Sidebar() {
         >
           <BookOpen className="h-6 w-6 text-gray-900 shrink-0 dark:text-white" />
           <span
-            className={cn("font-bold text-gray-900 dark:text-white", collapsed && "hidden")}
+            className={cn(
+              "font-bold text-gray-900 dark:text-white",
+              collapsed && "hidden"
+            )}
           >
             Admin Docente
           </span>

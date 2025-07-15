@@ -4,7 +4,7 @@ import Button from "./ui/Button";
 import UserMenu from "./UserMenu";
 import DarkModeToggle from "./DarkModeToggle";
 
-const Header = () => {
+const Header = ({ onMenuClick }) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -15,7 +15,7 @@ const Header = () => {
   return (
     <header className="h-16 shadow-md bg-gray-50 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 dark:text-white flex items-center px-4 sticky top-0 z-10">
       <div className="flex-1 flex items-center">
-        <Button variant="ghost" size="icon" className="md:hidden">
+        <Button variant="ghost" size="icon" className="md:hidden" onClick={onMenuClick}>
           <Menu className="h-5 w-5" />
         </Button>
       </div>
