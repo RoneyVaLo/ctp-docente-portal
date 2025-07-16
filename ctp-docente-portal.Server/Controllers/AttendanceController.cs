@@ -1,6 +1,8 @@
 using ctp_docente_portal.Server.DTOs.Attendance;
 using ctp_docente_portal.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using ctp_docente_portal.Server.DTOs.Attendance;
+
 
 namespace ctp_docente_portal.Server.Controllers
 {
