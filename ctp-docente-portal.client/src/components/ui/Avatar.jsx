@@ -28,7 +28,7 @@ AvatarImage.displayName = "AvatarImage";
 const AvatarFallback = forwardRef(({ className = "", ...props }, ref) => (
   <div
     ref={ref}
-    className={`flex h-full w-full items-center justify-center rounded-full bg-muted text-sm font-medium ${className}`}
+    className={`flex h-full w-full items-center justify-center rounded-full text-sm font-medium ${className}`}
     {...props}
   />
 ));

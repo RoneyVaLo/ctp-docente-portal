@@ -18,7 +18,7 @@ export default function UserMenu({ onLogout }) {
         <DropdownMenu.Label className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">Prof. Martínez</p>
-            <p className="text-xs leading-none text-muted-foreground">
+            <p className="text-xs leading-none">
               profesor@colegio.edu
             </p>
           </div>
