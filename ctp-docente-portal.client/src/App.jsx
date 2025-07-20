@@ -3,11 +3,11 @@ import Layout from "./components/Layout";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Calificaciones from "./pages/Evaluations";
-import Asistencia from "./pages/Attendance";
 import Reportes from "./pages/Reports";
 import Notificaciones from "./pages/Notifications";
 import Estudiantes from "./pages/Students";
 import Configuracion from "./pages/Configuration";
+import AttendancePage from "./pages/Attendance/AttendancePage";
 
 function App() {
   const router = createBrowserRouter([
@@ -31,7 +31,7 @@ function App() {
         },
         {
           path: "asistencia",
-          element: <Asistencia />,
+         element: <AttendancePage />
         },
         {
           path: "reportes",
