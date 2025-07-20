@@ -3,7 +3,6 @@ import Layout from "./components/Layout";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Calificaciones from "./pages/Evaluations";
-import Asistencia from "./pages/Attendance";
 import Reportes from "./pages/Reports";
 import Notificaciones from "./pages/Notifications";
 import Estudiantes from "./pages/Students";
@@ -20,6 +19,7 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import RoleRoute from "./routes/RoleRoute";
 import SessionExpired from "./pages/SessionExpired";
 import AccessDenied from "./pages/AccessDenied";
+import AttendancePage from "./pages/Attendance/AttendancePage";
 
 function App() {
   const { loading } = useAuth();
