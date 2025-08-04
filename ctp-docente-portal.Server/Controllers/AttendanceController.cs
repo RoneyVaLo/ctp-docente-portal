@@ -1,11 +1,6 @@
-using ctp_docente_portal.Server.DTOs.Attendance;
+﻿using ctp_docente_portal.Server.DTOs.Attendance;
 using ctp_docente_portal.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-<<<<<<< Updated upstream
-=======
-
-
->>>>>>> Stashed changes
 
 namespace ctp_docente_portal.Server.Controllers
 {
@@ -20,13 +15,13 @@ namespace ctp_docente_portal.Server.Controllers
             _attendanceService = attendanceService;
         }
 
-        // NUEVO ENDPOINT PARA ASISTENCIA GRUPAL
         [HttpPost("group")]
         public async Task<IActionResult> CreateGroupAttendance([FromBody] CreateGroupAttendanceDto dto)
         {
             await _attendanceService.CreateGroupAttendanceAsync(dto);
             return Ok(new { message = "Asistencia grupal registrada correctamente." });
         }
+
         [HttpPut]
         public async Task<IActionResult> Update([FromBody] UpdateAttendanceDto dto)
         {
@@ -47,9 +42,5 @@ namespace ctp_docente_portal.Server.Controllers
             var result = await _attendanceService.GetSummaryByGroupAsync(sectionId);
             return Ok(result);
         }
-        
-
-
-
     }
 }

@@ -1,4 +1,5 @@
-using ctp_docente_portal.Server.Data;
+﻿using ctp_docente_portal.Server.Data;
+using ctp_docente_portal.Server.Models;
 using ctp_docente_portal.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -22,7 +23,7 @@ namespace ctp_docente_portal.Server.Controllers
         public async Task<IActionResult> SendPendingMessages()
         {
             var pending = await _context.WhatsAppMessages
-                .Where(m => !m.Sent)
+                .Where(m => !m.Sent) // ✅ Ahora reconoce 'Sent'
                 .ToListAsync();
 
             int sentCount = 0;
@@ -38,8 +39,7 @@ namespace ctp_docente_portal.Server.Controllers
             }
 
             await _context.SaveChangesAsync();
-
-            return Ok(new { sent = sentCount });
+            return Ok(new { message = $"{sentCount} mensajes enviados correctamente." });
         }
     }
 }
