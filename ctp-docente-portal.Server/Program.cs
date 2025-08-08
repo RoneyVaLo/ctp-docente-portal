@@ -23,7 +23,9 @@ namespace ctp_docente_portal.Server
             ServiceConfiguration.ConfigureServices(builder);
             JwtConfiguration.ConfigureJwtAuthentication(builder);
 
-            var app = builder.Build();
+            // TODO: Así se deben añadir todas las Interfaces (INTERFACE) y sus Implementaciones (SERVICES)
+            builder.Services.AddScoped<IEvaluationCriteriaService, EvaluationCriteriaService>();
+            builder.Services.AddScoped<ISubjectEvaluationService, SubjectEvaluationService>();
 
             MiddlewareConfiguration.ConfigureMiddleware(app);
 
