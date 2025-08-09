@@ -1,4 +1,5 @@
 ﻿using ctp_docente_portal.Server.DTOs.Attendance;
+using ctp_docente_portal.Server.Models;
 using ctp_docente_portal.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,39 +9,39 @@ namespace ctp_docente_portal.Server.Controllers
     [Route("api/[controller]")]
     public class AttendanceController : ControllerBase
     {
-        private readonly IAttendanceService _attendanceService;
+        private readonly IAttendanceService _svc;
+        public AttendanceController(IAttendanceService svc) => _svc = svc;
 
-        public AttendanceController(IAttendanceService attendanceService)
-        {
-            _attendanceService = attendanceService;
-        }
-
+        // 1) Registrar asistencia de un grupo (fecha/ sección / lista de estudiantes)
         [HttpPost("group")]
-        public async Task<IActionResult> CreateGroupAttendance([FromBody] CreateGroupAttendanceDto dto)
+        public async Task<IActionResult> CreateGroup([FromBody] CreateGroupAttendanceDto dto)
         {
-            await _attendanceService.CreateGroupAttendanceAsync(dto);
-            return Ok(new { message = "Asistencia grupal registrada correctamente." });
+            await _svc.CreateGroupAttendanceAsync(dto);
+            return Ok();
         }
 
+        // 2) Editar un registro existente
         [HttpPut]
         public async Task<IActionResult> Update([FromBody] UpdateAttendanceDto dto)
         {
-            await _attendanceService.UpdateAsync(dto);
-            return Ok(new { message = "Asistencia actualizada correctamente." });
+            await _svc.UpdateAsync(dto);
+            return Ok();
         }
 
-        [HttpGet("history")]
-        public async Task<IActionResult> GetHistory([FromQuery] AttendanceQueryDto filter)
+        // 3) Consultar con filtros (fecha, sección, estado)
+        [HttpGet]
+        public async Task<ActionResult<List<Attendance>>> Get([FromQuery] AttendanceQueryDto filter)
         {
-            var result = await _attendanceService.GetAsync(filter);
-            return Ok(result);
+            var data = await _svc.GetAsync(filter);
+            return Ok(data);
         }
 
+        // 4) Vista consolidada / resumen por grupo
         [HttpGet("summary")]
-        public async Task<IActionResult> GetSummary([FromQuery] int sectionId)
+        public async Task<ActionResult<List<AttendanceSummaryDto>>> GetSummary([FromQuery] int sectionId)
         {
-            var result = await _attendanceService.GetSummaryByGroupAsync(sectionId);
-            return Ok(result);
+            var data = await _svc.GetSummaryByGroupAsync(sectionId);
+            return Ok(data);
         }
     }
 }
