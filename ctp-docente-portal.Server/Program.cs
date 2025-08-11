@@ -7,6 +7,7 @@ using ctp_docente_portal.Server.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 
+
 namespace ctp_docente_portal.Server
 {
     public class Program
@@ -36,7 +37,13 @@ namespace ctp_docente_portal.Server
             // 3) Crea el IMapper y regístralo
             var mapper = mapperConfig.CreateMapper();
             builder.Services.AddSingleton<IMapper>(mapper);
+            builder.Services.AddScoped<INotificationService, NotificationService>();
+            builder.Services.AddScoped<IWhatsAppApiService, WhatsAppApiService>();
+            builder.Services.Configure<WhatsAppApiSettings>(
+            builder.Configuration.GetSection("WhatsApp")); 
 
+        // 2) Registrar HttpClient tipado del servicio
+             builder.Services.AddHttpClient<IWhatsAppApiService, WhatsAppApiService>();
 
             builder.Services.AddControllers();
 

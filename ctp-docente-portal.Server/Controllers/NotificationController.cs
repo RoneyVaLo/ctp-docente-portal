@@ -1,45 +1,41 @@
-﻿using ctp_docente_portal.Server.Data;
-using ctp_docente_portal.Server.Models;
+﻿using Microsoft.AspNetCore.Mvc;
+using ctp_docente_portal.Server.DTOs.Notifications;
 using ctp_docente_portal.Server.Services.Interfaces;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace ctp_docente_portal.Server.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class NotificationController : ControllerBase
+    public class NotificationsController : ControllerBase
     {
-        private readonly AppDbContext _context;
-        private readonly IWhatsAppApiService _api;
+        private readonly INotificationService _notifications;
+        private readonly IWhatsAppApiService _wa;
 
-        public NotificationController(AppDbContext context, IWhatsAppApiService api)
+        public NotificationsController(INotificationService notifications, IWhatsAppApiService wa)
         {
-            _context = context;
-            _api = api;
+            _notifications = notifications;
+            _wa = wa;
         }
 
-        [HttpPost("send-pending")]
-        public async Task<IActionResult> SendPendingMessages()
+        [HttpPost("absences")]
+        public async Task<ActionResult<SendAbsencesResponse>> SendAbsences([FromBody] SendAbsencesRequest request, CancellationToken ct)
+            => Ok(await _notifications.SendAbsencesAsync(request, ct));
+
+        [HttpGet]
+        public async Task<ActionResult> List([FromQuery] DateOnly? date, [FromQuery] int? sectionId, [FromQuery] string? status, CancellationToken ct)
+            => Ok(await _notifications.ListAsync(date, sectionId, status, ct));
+
+        [HttpPost("{id:int}/resend")]
+        public async Task<IActionResult> Resend([FromRoute] int id, CancellationToken ct)
+            => (await _notifications.ResendMessageAsync(id, ct)) ? NoContent() : NotFound();
+
+        // Test real a WhatsApp Cloud API
+        [HttpPost("test")]
+        public async Task<IActionResult> Test([FromBody] TestSendRequest req, CancellationToken ct)
         {
-            var pending = await _context.WhatsAppMessages
-                .Where(m => !m.Sent) // ✅ Ahora reconoce 'Sent'
-                .ToListAsync();
-
-            int sentCount = 0;
-
-            foreach (var msg in pending)
-            {
-                var success = await _api.SendMessageAsync(msg);
-                if (success)
-                {
-                    msg.Sent = true;
-                    sentCount++;
-                }
-            }
-
-            await _context.SaveChangesAsync();
-            return Ok(new { message = $"{sentCount} mensajes enviados correctamente." });
+            var result = await _wa.SendTextAsync(req.To, req.Message, ct);
+            return result.Success
+                ? Ok(new { ok = true, result.ProviderMessageId })
+                : StatusCode(502, new { ok = false, error = result.Error });
         }
-    }
-}
+    }}

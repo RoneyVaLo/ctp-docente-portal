@@ -4,6 +4,7 @@ import AttendanceList from "../components/Attendance/AttendanceList";
 import { useState, useEffect, useCallback } from "react";
 import { attendanceApi } from "@/services/attendanceService";
 
+
 export default function AttendancePage() {
     const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
     const [sectionId, setSectionId] = useState(0);
