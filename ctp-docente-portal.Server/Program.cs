@@ -40,10 +40,12 @@ namespace ctp_docente_portal.Server
             builder.Services.AddScoped<INotificationService, NotificationService>();
             builder.Services.AddScoped<IWhatsAppApiService, WhatsAppApiService>();
             builder.Services.Configure<WhatsAppApiSettings>(
-            builder.Configuration.GetSection("WhatsApp")); 
+            builder.Configuration.GetSection("WhatsApp"));
+            builder.Services.AddDbContext<AppDbContext>(options =>
+            options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-        // 2) Registrar HttpClient tipado del servicio
-             builder.Services.AddHttpClient<IWhatsAppApiService, WhatsAppApiService>();
+            // 2) Registrar HttpClient tipado del servicio
+            builder.Services.AddHttpClient<IWhatsAppApiService, WhatsAppApiService>();
 
             builder.Services.AddControllers();
 

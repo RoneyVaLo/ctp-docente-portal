@@ -1,14 +1,15 @@
-// ...imports
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { notificationsApi } from "@/services/notificationsService";
+import { ls } from "@/utils/localStore";
 
 export default function NotificationsPage() {
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const saved = ls.get("ui.attendance.filters", {});
 
-  const [date, setDate] = useState(today);
-  const [sectionId, setSectionId] = useState(0);
-  const [subject, setSubject] = useState(""); // NUEVO: materia (opcional)
-  const [status, setStatus] = useState("");   // "", SENT, FAILED, QUEUED
+  const [date, setDate] = useState(saved.date ?? today);
+  const [sectionId, setSectionId] = useState(saved.sectionId ?? 0);
+  const [subject, setSubject] = useState(saved.subject ?? "");
+  const [status, setStatus] = useState("");
 
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -24,10 +25,7 @@ export default function NotificationsPage() {
     setLoading(true);
     setErr("");
     try {
-      // subject se envía por si tu servicio lo usa; si no, simplemente se ignora.
-      const data = await notificationsApi.list
-        ? await notificationsApi.list({ date, sectionId, status, subject })
-        : await notificationsApi.getMessages({ date, sectionId, status, subject });
+      const data = await notificationsApi.list({ date, sectionId, status, subject });
       setRows(Array.isArray(data) ? data : []);
     } catch (e) {
       setErr(e?.message ?? "Error al cargar.");
@@ -83,48 +81,27 @@ export default function NotificationsPage() {
     <div className="p-6">
       <h1 className="text-2xl font-semibold mb-4">Notificaciones</h1>
 
-      {/* Filtros */}
       <div className="flex flex-wrap items-end gap-3 mb-3">
         <div className="flex flex-col">
           <label className="text-xs text-slate-600 mb-1">Fecha</label>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="border rounded px-2 py-1"
-          />
+          <input type="date" value={date} onChange={e=>setDate(e.target.value)} className="border rounded px-2 py-1"/>
         </div>
 
         <div className="flex flex-col">
           <label className="text-xs text-slate-600 mb-1">Sección</label>
-          <input
-            type="number"
-            min={0}
-            value={sectionId}
-            onChange={(e) => setSectionId(+e.target.value)}
-            placeholder="Ej: 6"
-            className="border rounded px-2 py-1 w-28"
-          />
+          <input type="number" min={0} value={sectionId} onChange={e=>setSectionId(+e.target.value)}
+                 placeholder="Ej: 6" className="border rounded px-2 py-1 w-28"/>
         </div>
 
         <div className="flex flex-col">
           <label className="text-xs text-slate-600 mb-1">Materia</label>
-          <input
-            type="text"
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            placeholder="Ej: Matemáticas"
-            className="border rounded px-2 py-1 w-48"
-          />
+          <input type="text" value={subject} onChange={e=>setSubject(e.target.value)}
+                 placeholder="Ej: Matemáticas" className="border rounded px-2 py-1 w-48"/>
         </div>
 
         <div className="flex flex-col">
           <label className="text-xs text-slate-600 mb-1">Estado</label>
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            className="border rounded px-2 py-1"
-          >
+          <select value={status} onChange={e=>setStatus(e.target.value)} className="border rounded px-2 py-1">
             <option value="">Todos</option>
             <option value="SENT">Enviados</option>
             <option value="FAILED">Fallidos</option>
@@ -132,20 +109,10 @@ export default function NotificationsPage() {
           </select>
         </div>
 
-        <button
-          onClick={sendAll}
-          disabled={!canQuery || loading}
-          className="bg-green-600 text-white px-3 py-1 rounded disabled:opacity-50"
-        >
-          Enviar ausentes
-        </button>
-        <button
-          onClick={load}
-          disabled={!canQuery || loading}
-          className="bg-slate-600 text-white px-3 py-1 rounded disabled:opacity-50"
-        >
-          Refrescar
-        </button>
+        <button onClick={sendAll} disabled={!canQuery || loading}
+                className="bg-green-600 text-white px-3 py-1 rounded disabled:opacity-50">Enviar ausentes</button>
+        <button onClick={load} disabled={!canQuery || loading}
+                className="bg-slate-600 text-white px-3 py-1 rounded disabled:opacity-50">Refrescar</button>
       </div>
 
       {!canQuery && (
@@ -154,7 +121,6 @@ export default function NotificationsPage() {
         </div>
       )}
 
-      {/* Panel de prueba de envío real */}
       <div className="mb-4 p-3 border rounded bg-white">
         <div className="text-sm font-semibold mb-2">Probar envío real (WhatsApp Cloud API)</div>
         <div className="flex flex-wrap gap-2 items-center">
@@ -168,40 +134,26 @@ export default function NotificationsPage() {
       {loading && <div className="text-sm">Cargando…</div>}
 
       <div className="space-y-3">
-        {rows.map((n) => (
+        {rows.map(n => (
           <div key={n.id} className="border rounded p-3 bg-white">
             <div className="flex justify-between">
-              <div className="font-semibold">
-                {n.studentName} <span className="text-slate-500">({n.phone})</span>
-              </div>
-              <span
-                className={`text-xs px-2 py-0.5 rounded ${
-                  n.status === "SENT"
-                    ? "bg-green-100 text-green-700"
-                    : n.status === "FAILED"
-                    ? "bg-red-100 text-red-700"
-                    : "bg-amber-100 text-amber-700"
-                }`}
-              >
+              <div className="font-semibold">{n.studentName} <span className="text-slate-500">({n.phone})</span></div>
+              <span className={`text-xs px-2 py-0.5 rounded ${
+                n.status === "SENT" ? "bg-green-100 text-green-700"
+                : n.status === "FAILED" ? "bg-red-100 text-red-700"
+                : "bg-amber-100 text-amber-700"}`}>
                 {n.status}
               </span>
             </div>
-            {/* Muestra materia si existe en el registro */}
             {n.subject && <div className="text-xs text-slate-500 mt-0.5">Materia: {n.subject}</div>}
-
             <div className="text-sm mt-1">{n.message}</div>
             <div className="text-[12px] text-slate-500 mt-1">
               Creado: {n.createdAt ? new Date(n.createdAt).toLocaleString() : "-"}
               {n.sentAt ? ` | Enviado: ${new Date(n.sentAt).toLocaleString()}` : ""}
             </div>
             {n.status === "FAILED" && (
-              <button
-                onClick={() => resend(n.id)}
-                disabled={loading}
-                className="mt-2 text-sm bg-blue-600 text-white px-2 py-1 rounded disabled:opacity-50"
-              >
-                Reintentar
-              </button>
+              <button onClick={() => resend(n.id)} disabled={loading}
+                      className="mt-2 text-sm bg-blue-600 text-white px-2 py-1 rounded disabled:opacity-50">Reintentar</button>
             )}
           </div>
         ))}

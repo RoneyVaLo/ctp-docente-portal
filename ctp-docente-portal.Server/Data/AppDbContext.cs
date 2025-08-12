@@ -1,6 +1,7 @@
 using ctp_docente_portal.Server.Models;
 using Microsoft.EntityFrameworkCore;
 
+
 namespace ctp_docente_portal.Server.Data
 {
     public class AppDbContext : DbContext
@@ -14,6 +15,7 @@ namespace ctp_docente_portal.Server.Data
         public DbSet<AcademicPeriodsModel> AcademicPeriods { get; set; }
         public DbSet<Attendance> Attendances { get; set; }
         public DbSet<EvaluationCriteriaModel> EvaluationCriteria { get; set; }
+
         public DbSet<SectionAssignmentsModel> SectionAssignments { get; set; }
         public DbSet<StaffModel> Staff { get; set; }
         public DbSet<StudentCriteriaScoresModel> StudentCriteriaScores { get; set; }
@@ -21,7 +23,13 @@ namespace ctp_docente_portal.Server.Data
         public DbSet<SubjectEvaluationItemsModel> SubjectEvaluationItems { get; set; }
         public DbSet<SubjectsModel> Subjects { get; set; }
         public DbSet<WhatsAppMessage> WhatsAppMessages { get; set; }
-        public DbSet<Notification> Notifications => Set<Notification>();
 
-    }
+        public DbSet<Notification> Notifications { get; set; } = null!;
+
+       public DbSet<StudentsModel>        Students         { get; set; } = null!;
+        public DbSet<StudentRepresentativesModel> StudentRepresentatives { get; set; } = null!;
+        public DbSet<SectionStudentsModel> SectionStudents { get; set; } = null!;
+        
+      }
 }
+ 
