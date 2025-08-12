@@ -1,6 +1,7 @@
 using ctp_docente_portal.Server.Models;
 using Microsoft.EntityFrameworkCore;
 
+
 namespace ctp_docente_portal.Server.Data
 {
     public class AppDbContext : DbContext
@@ -28,7 +29,9 @@ namespace ctp_docente_portal.Server.Data
         public DbSet<EvaluationItemsModel> EvaluationItems { get; set; }
         public DbSet<SubjectsModel> Subjects{ get; set; }
         public DbSet<UsersModel> Users{ get; set; }
-        //public DbSet<WhatsAppMessage> WhatsAppMessages { get; set; }
+        public DbSet<WhatsAppMessage> WhatsAppMessages { get; set; }
+        public DbSet<Notification> Notifications { get; set; } = null!;
+        public DbSet<StudentRepresentativesModel> StudentRepresentatives { get; set; } = null!;
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -82,3 +85,4 @@ namespace ctp_docente_portal.Server.Data
         }
     }
 }
+ 

@@ -1,3 +1,4 @@
+// src/App.jsx
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
@@ -20,6 +21,9 @@ import RoleRoute from "./routes/RoleRoute";
 import SessionExpired from "./pages/SessionExpired";
 import AccessDenied from "./pages/AccessDenied";
 import AttendancePage from "./pages/Attendance/AttendancePage";
+
+// ❌ elimina este si aún lo tenías
+// import Attendance from "@/pages/Attendance";
 
 function App() {
   const { loading } = useAuth();
