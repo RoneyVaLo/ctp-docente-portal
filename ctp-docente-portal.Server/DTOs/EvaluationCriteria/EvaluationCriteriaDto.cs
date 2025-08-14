@@ -1,4 +1,6 @@
-﻿namespace ctp_docente_portal.Server.DTOs.EvaluationCriteria
+﻿using Microsoft.AspNetCore.Http.HttpResults;
+
+namespace ctp_docente_portal.Server.DTOs.EvaluationCriteria
 {
     public class EvaluationCriteriaDto
     {
@@ -8,5 +10,7 @@
         public decimal Weight { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+        public int CreatedBy { get; set; }
+        public int UpdatedBy { get; set; }
     }
 }

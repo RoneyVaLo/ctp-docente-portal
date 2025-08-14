@@ -1,6 +1,6 @@
-﻿namespace ctp_docente_portal.Server.DTOs.StudentEvaluationScores
+﻿namespace ctp_docente_portal.Server.DTOs.Students
 {
-    public class StudentEvaluationScoreDto
+    public class StudentScoreDto
     {
         public int StudentId { get; set; }
         public int EvaluationItemId { get; set; }
