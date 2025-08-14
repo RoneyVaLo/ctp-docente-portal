@@ -17,14 +17,18 @@ export default {
           DEFAULT: "#0f172a", // claro: slate-900
           dark: "#f8fafc", // oscuro: slate-50
         },
-        // primary: {
-  			// 	DEFAULT: 'hsl(0, 0%, 9%)',
-  			// 	foreground: 'hsl(0 0% 98%)'
-  			// },
-  			// secondary: {
-  			// 	DEFAULT: 'hsl(0, 0%, 96.1%)',
-  			// 	foreground: 'hsl(0, 0%, 9%)'
-  			// },
+        primary: {
+  				DEFAULT: 'hsl(0, 0%, 9%)',
+  				foreground: 'hsl(0 0% 98%)'
+  			},
+  			secondary: {
+  				DEFAULT: 'hsl(0, 0%, 96.1%)',
+  				foreground: 'hsl(0, 0%, 9%)'
+  			},
+        destructive: {
+  				DEFAULT: 'hsl(0, 84.2%, 60.2%)',
+  				foreground: 'hsl(0, 0%, 98%)'
+  			},
   			// muted: {
   			// 	DEFAULT: 'hsl(0, 0%, 96.1%)',
   			// 	foreground: 'hsl(0, 0%, 45.1%)'

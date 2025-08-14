@@ -45,6 +45,7 @@ export default defineConfig({
         }
     },
     server: {
+        open: false, // <--- evita que Vite abra el navegador autom�ticamente
         proxy: {
             '^/weatherforecast': {
                 target: 'https://localhost:5103/',
