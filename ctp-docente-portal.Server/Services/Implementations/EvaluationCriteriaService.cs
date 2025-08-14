@@ -5,7 +5,7 @@ using ctp_docente_portal.Server.Models;
 using ctp_docente_portal.Server.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace ctp_docente_portal.Server.Services.Implentations
+namespace ctp_docente_portal.Server.Services.Implementations
 {
     public class EvaluationCriteriaService : IEvaluationCriteriaService
     {
@@ -20,7 +20,7 @@ namespace ctp_docente_portal.Server.Services.Implentations
 
         private async Task<bool> EvaluationItemExistsAsync(int evaluationItemId)
         {
-            return await _context.SubjectEvaluationItems.AnyAsync(e => e.Id == evaluationItemId);
+            return await _context.EvaluationItems.AnyAsync(e => e.Id == evaluationItemId);
         }
 
         private async Task<decimal> GetTotalWeightForItemAsync(int evaluationItemId, int? excludingId = null)
@@ -36,48 +36,120 @@ namespace ctp_docente_portal.Server.Services.Implentations
             return await query.SumAsync(e => e.Weight);
         }
 
-        public async Task<EvaluationCriteriaDto> CreateAsync(EvaluationCriteriaCreateDto dto)
+        public async Task<IEnumerable<EvaluationCriteriaDto>> CreateManyAsync(IEnumerable<EvaluationCriteriaDto> criteriaList)
         {
-            if (!await EvaluationItemExistsAsync(dto.EvaluationItemId))
-                throw new ArgumentException("El EvaluationItemId no existe.");
+            int userId = 1;
 
-            var totalWeight = await GetTotalWeightForItemAsync(dto.EvaluationItemId);
-            if (totalWeight + dto.Weight > 100)
+            if (criteriaList == null || !criteriaList.Any())
+                throw new ArgumentException("La lista de criterios no puede estar vacía.");
+
+            var now = DateTime.UtcNow;
+
+            var evaluationItemId = criteriaList.First().EvaluationItemId;
+
+            if (!await EvaluationItemExistsAsync(evaluationItemId))
+                throw new ArgumentException("El Item de Evaluación no existe.");
+
+            var currentWeight = await GetTotalWeightForItemAsync(evaluationItemId);
+            var newWeight = criteriaList.Sum(c => c.Weight);
+
+            if (currentWeight + newWeight > 100)
                 throw new InvalidOperationException("La suma de las rúbricas supera el 100%.");
 
-            var model = _mapper.Map<EvaluationCriteriaModel>(dto);
-            model.CreatedAt = DateTime.UtcNow;
-            model.UpdatedAt = DateTime.UtcNow;
+            // ✅ Mapear DTO → Entidad
+            var entities = _mapper.Map<List<EvaluationCriteriaModel>>(criteriaList);
 
-            _context.EvaluationCriteria.Add(model);
+            // Rellenar campos comunes
+            foreach (var e in entities)
+            {
+                e.CreatedAt = now;
+                e.UpdatedAt = now;
+                e.CreatedBy = userId;
+                e.UpdatedBy = userId;
+            }
+
+            // 4️⃣ Insertar en lote
+            await _context.EvaluationCriteria.AddRangeAsync(entities);
             await _context.SaveChangesAsync();
 
-            return _mapper.Map<EvaluationCriteriaDto>(model);
+            return _mapper.Map<List<EvaluationCriteriaDto>>(entities);
         }
 
-        public async Task<EvaluationCriteriaDto> UpdateAsync(int id, EvaluationCriteriaUpdateDto dto)
+        public async Task<IEnumerable<EvaluationCriteriaDto>> UpdateManyAsync(IEnumerable<EvaluationCriteriaDto> criteriaList)
         {
-            var model = await _context.EvaluationCriteria.FindAsync(id);
-            if (model == null)
-                throw new KeyNotFoundException("Criterio no encontrado.");
+            int userId = 1;
 
-            if (!await EvaluationItemExistsAsync(dto.EvaluationItemId))
-                throw new ArgumentException("El EvaluationItemId no existe.");
+            if (criteriaList == null || !criteriaList.Any())
+                throw new ArgumentException("La lista de criterios no puede estar vacía.");
 
-            var totalWeight = await GetTotalWeightForItemAsync(dto.EvaluationItemId, id);
-            if (totalWeight + dto.Weight > 100)
+            var now = DateTime.UtcNow;
+            var ids = criteriaList.Select(c => c.Id).ToList();
+
+            // Obtener entidades existentes
+            var existingEntities = await _context.EvaluationCriteria
+                .Where(ec => ids.Contains(ec.Id))
+                .ToListAsync();
+
+            if (existingEntities.Count != ids.Count)
+                throw new ArgumentException("Uno o más criterios no existen en la base de datos.");
+
+            var evaluationItemId = criteriaList.First().EvaluationItemId;
+
+            // Validar peso total
+            var currentWeight = await _context.EvaluationCriteria
+                .Where(ec => ec.EvaluationItemId == evaluationItemId)
+                .SumAsync(ec => ec.Weight);
+
+            decimal adjustedWeight = currentWeight;
+
+            foreach (var entity in existingEntities)
+            {
+                var dto = criteriaList.First(c => c.Id == entity.Id);
+
+                // Si cambia el peso, ajustar el total
+                if (entity.Weight != dto.Weight)
+                {
+                    adjustedWeight -= entity.Weight; // quitar peso viejo
+                    adjustedWeight += dto.Weight;    // sumar peso nuevo
+                }
+            }
+
+            if (adjustedWeight > 100)
                 throw new InvalidOperationException("La suma de las rúbricas supera el 100%.");
 
-            model.Name = dto.Name;
-            model.Weight = dto.Weight;
-            model.UpdatedAt = DateTime.UtcNow;
-            // TODO: Ver cómo obtengo el id del usuario o si esto funciona
-            model.UpdatedBy = dto.UpdatedBy;
+            // Actualizar solo si hay cambios
+            foreach (var entity in existingEntities)
+            {
+                var dto = criteriaList.First(c => c.Id == entity.Id);
 
+                bool hasChanges = false;
+
+                if (entity.Name != dto.Name)
+                {
+                    entity.Name = dto.Name;
+                    hasChanges = true;
+                }
+
+                if (entity.Weight != dto.Weight)
+                {
+                    entity.Weight = dto.Weight;
+                    hasChanges = true;
+                }
+
+                if (hasChanges)
+                {
+                    entity.UpdatedAt = now;
+                    entity.UpdatedBy = userId;
+                }
+            }
+
+            // Guardar solo si hubo cambios
             await _context.SaveChangesAsync();
 
-            return _mapper.Map<EvaluationCriteriaDto>(model);
+            // Mapear a DTO de respuesta
+            return _mapper.Map<List<EvaluationCriteriaDto>>(existingEntities);
         }
+
 
         public async Task DeleteAsync(int id)
         {

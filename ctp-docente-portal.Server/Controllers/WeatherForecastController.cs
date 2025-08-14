@@ -33,13 +33,7 @@ namespace ctp_docente_portal.Server.Controllers
             })
             .ToArray();
         }
-       [HttpGet("grades/pdf")]
-        [ctp_docente_portal.Server.Middlewares.RequiredRole("Administrativo")]
-        public async Task<IActionResult> ExportGradesPdf()
-        {
-            var data = await Task.FromResult(new List<GradeReportDto>()); // simulado
-            var pdf = PdfExportHelper.ExportGradesPdf(data);
-            return File(pdf, "application/pdf", "reporte_calificaciones.pdf");
-        }
+        
+
     }
 }

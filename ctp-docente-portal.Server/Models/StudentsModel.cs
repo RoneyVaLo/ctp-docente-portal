@@ -2,7 +2,7 @@
 
 namespace ctp_docente_portal.Server.Models
 {
-    [NotMapped]
+    //[NotMapped]
     public class StudentsModel
     {
         public int Id { get; set; }

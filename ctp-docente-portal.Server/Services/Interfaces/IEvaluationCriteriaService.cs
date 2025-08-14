@@ -4,8 +4,8 @@ namespace ctp_docente_portal.Server.Services.Interfaces
 {
     public interface IEvaluationCriteriaService
     {
-        Task<EvaluationCriteriaDto> CreateAsync(EvaluationCriteriaCreateDto dto);
-        Task<EvaluationCriteriaDto> UpdateAsync(int id, EvaluationCriteriaUpdateDto dto);
+        Task<IEnumerable<EvaluationCriteriaDto>> CreateManyAsync(IEnumerable<EvaluationCriteriaDto> criteriaList);
+        Task<IEnumerable<EvaluationCriteriaDto>> UpdateManyAsync(IEnumerable<EvaluationCriteriaDto> criteriaList);
         Task DeleteAsync(int id);
         Task<List<EvaluationCriteriaDto>> GetByEvaluationItemIdAsync(int evaluationItemId);
         Task<EvaluationCriteriaDto> GetByIdAsync(int id);
