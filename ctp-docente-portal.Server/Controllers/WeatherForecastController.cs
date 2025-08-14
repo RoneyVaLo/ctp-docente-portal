@@ -1,4 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+using ctp_docente_portal.Server.DTOs.Reports;
+using ctp_docente_portal.Server.Helpers;
+
+
 
 namespace ctp_docente_portal.Server.Controllers
 {

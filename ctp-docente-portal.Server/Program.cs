@@ -15,17 +15,17 @@ namespace ctp_docente_portal.Server
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add DbContext with PostgreSQL
-
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-            
+
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseNpgsql(connectionString)
-                .LogTo(Console.WriteLine, LogLevel.Information));
+                       .LogTo(Console.WriteLine, LogLevel.Information));
 
-            // 1) Crea la expresión
-            var configExpr = new MapperConfigurationExpression();
-            configExpr.AddProfile<MappingProfile>();
+            // Configurar AutoMapper correctamente
+            var mapperConfig = new MapperConfiguration(cfg =>
+            {
+                cfg.AddProfile<MappingProfile>();
+            });
 
             // 2) Pasa un ILoggerFactory (aquí usamos NullLoggerFactory para no depender del logging real)
                 var mapperConfig = new MapperConfiguration(
@@ -51,6 +51,8 @@ namespace ctp_docente_portal.Server
             builder.Services.AddScoped<IEvaluationScoreService, EvaluationScoreService>();
             builder.Services.AddScoped<IStudentCriteriaScoreService, StudentCriteriaScoreService>();
 
+            builder.Services.AddControllers();
+
             var app = builder.Build();
 
             app.UseDefaultFiles();
@@ -62,12 +64,11 @@ namespace ctp_docente_portal.Server
             // Configure the HTTP request pipeline.
 
             app.UseRouting();
-
             app.UseAuthorization();
 
+            app.UseMiddleware<ctp_docente_portal.Server.Middlewares.RoleAuthorizationMiddleware>();
 
             app.MapControllers();
-
             app.MapFallbackToFile("/index.html");
 
             app.Run();
