@@ -21,14 +21,12 @@ namespace ctp_docente_portal.Server
                 options.UseNpgsql(connectionString)
                        .LogTo(Console.WriteLine, LogLevel.Information));
 
-            // Configurar AutoMapper correctamente
-            var mapperConfig = new MapperConfiguration(cfg =>
-            {
-                cfg.AddProfile<MappingProfile>();
-            });
+            // 1) Crea la expresión
+            var configExpr = new MapperConfigurationExpression();
+            configExpr.AddProfile<MappingProfile>();
 
             // 2) Pasa un ILoggerFactory (aquí usamos NullLoggerFactory para no depender del logging real)
-                var mapperConfig = new MapperConfiguration(
+            var mapperConfig = new MapperConfiguration(
                     configExpr,
                     NullLoggerFactory.Instance
                 );
@@ -65,8 +63,6 @@ namespace ctp_docente_portal.Server
 
             app.UseRouting();
             app.UseAuthorization();
-
-            app.UseMiddleware<ctp_docente_portal.Server.Middlewares.RoleAuthorizationMiddleware>();
 
             app.MapControllers();
             app.MapFallbackToFile("/index.html");

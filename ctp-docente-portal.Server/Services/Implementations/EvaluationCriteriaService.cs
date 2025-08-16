@@ -167,6 +167,26 @@ namespace ctp_docente_portal.Server.Services.Implementations
             await _context.SaveChangesAsync();
         }
 
+        public async Task DeleteAllByItemIdAsync(int evaluationItemId)
+        {
+            var criteriaList = await _context.EvaluationCriteria
+                .Where(c => c.EvaluationItemId == evaluationItemId)
+                .ToListAsync();
+
+            if (!criteriaList.Any())
+                return;
+
+            // Verificar si alguno tiene notas
+            var hasScores = await _context.StudentCriteriaScores
+                .AnyAsync(s => criteriaList.Select(c => c.Id).Contains(s.CriteriaId));
+
+            if (hasScores)
+                throw new InvalidOperationException("No se pueden eliminar criterios porque uno o más tienen notas asignadas.");
+
+            _context.EvaluationCriteria.RemoveRange(criteriaList);
+            await _context.SaveChangesAsync();
+        }
+
         public async Task<List<EvaluationCriteriaDto>> GetByEvaluationItemIdAsync(int evaluationItemId)
         {
             var result = await _context.EvaluationCriteria
