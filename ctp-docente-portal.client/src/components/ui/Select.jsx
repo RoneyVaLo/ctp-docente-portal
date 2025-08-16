@@ -20,7 +20,6 @@ const Select = ({ children, value, onValueChange, defaultValue }) => {
   const currentValue = value !== undefined ? value : internalValue;
   const handleValueChange =
     value !== undefined ? onValueChange : setInternalValue;
-  //   console.log(children);
 
   React.useEffect(() => {
     const handleClickOutside = (event) => {
@@ -56,11 +55,16 @@ const SelectGroup = ({ children, ...props }) => (
 );
 
 // SelectValue - Muestra el valor seleccionado
-const SelectValue = ({ placeholder, ...props }) => {
+const SelectValue = ({ placeholder, options = [], ...props }) => {
   const { value } = React.useContext(SelectContext);
+  const selectedOption = options.find((opt) => opt.id === parseInt(value));
+  const valueDisplay = selectedOption
+    ? selectedOption.name
+    : value || placeholder;
   return (
     <span {...props} className="text-black text-center w-full">
-      {`${value}` || placeholder}
+      {/* {`${value}` || placeholder} */}
+      {valueDisplay}
     </span>
   );
 };
