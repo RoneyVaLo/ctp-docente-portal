@@ -1,4 +1,3 @@
-import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";
 import { Edit, FileText, Plus, Settings, Trash2 } from "lucide-react";
 import { Badge } from "../ui/Badge";
@@ -9,34 +8,24 @@ import { useEvaluation } from "../../context/EvaluationContext";
 import { formatDate } from "../../utils/gradeUtils";
 import axios from "axios";
 import Loader1 from "../loaders/Loader1";
+import toast from "react-hot-toast";
 
 const EvaluationItems = () => {
   const { evaluationItems, loading, setLoading, updateEvaluationItems } =
     useEvaluation();
 
-  const [newItem, setNewItem] = useState({
-    name: "",
-    description: "",
-    category: "",
-    percentage: 0,
-    hasCriteria: false,
-  });
-
-  const editItem = (item) => {
-    setNewItem(item);
-    // console.log(newItem);
-  };
-
   const deleteItem = async (id) => {
     try {
       setLoading(true);
       await axios.delete(`/api/evaluationitems/${id}`);
+      toast.success("Item eliminado correctamente.");
 
       const updateItems = [...evaluationItems].filter((ei) => ei.id !== id);
 
       updateEvaluationItems(updateItems);
     } catch (error) {
-      console.error(error.response.data);
+      console.error(error?.response?.data?.Message);
+      toast.error("Ocurrió un error al eliminar el item.");
     } finally {
       setLoading(false);
     }
@@ -149,11 +138,7 @@ const EvaluationItems = () => {
                     </NavLink>
                   )}
                   <NavLink to={`/item/${item.id}/editar`}>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => editItem(item)}
-                    >
+                    <Button variant="outline" size="sm">
                       <Settings className="w-4 h-4" />
                     </Button>
                   </NavLink>

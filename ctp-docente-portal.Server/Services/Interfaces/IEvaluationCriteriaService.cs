@@ -7,6 +7,7 @@ namespace ctp_docente_portal.Server.Services.Interfaces
         Task<IEnumerable<EvaluationCriteriaDto>> CreateManyAsync(IEnumerable<EvaluationCriteriaDto> criteriaList);
         Task<IEnumerable<EvaluationCriteriaDto>> UpdateManyAsync(IEnumerable<EvaluationCriteriaDto> criteriaList);
         Task DeleteAsync(int id);
+        Task DeleteAllByItemIdAsync(int evaluationItemId);
         Task<List<EvaluationCriteriaDto>> GetByEvaluationItemIdAsync(int evaluationItemId);
         Task<EvaluationCriteriaDto> GetByIdAsync(int id);
     }

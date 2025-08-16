@@ -66,9 +66,12 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 if (total + dto.Percentage > 100)
                     throw new InvalidOperationException("La suma total no puede superar el 100%.");
 
-                // TODO: Comparar si el modelo tiene HasCriteria como TRUE y si el DTO lo trae en FALSE
-                //       Si es el caso, entonces eliminar los Criterios asociados para que no se repitan si se volvieran a activar en un futuro
-                //       Pero validando que no tenga notas registradas, si no lanzar un error que no se pueden desactivar los criterios
+                // Valida cuando se desactiva HasCriteria
+                if (model.HasCriteria && !dto.HasCriteria)
+                {
+                    await _criteriaService.DeleteAllByItemIdAsync(model.Id);
+                }
+
                 _mapper.Map(dto, model);
                 model.IsDraft = false;
                 model.UpdatedAt = DateTime.UtcNow;

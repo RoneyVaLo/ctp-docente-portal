@@ -26,8 +26,6 @@ const ItemCriteria = ({
     ? criteria.reduce((sum, criterion) => sum + parseInt(criterion.weight), 0)
     : 0;
 
-  // console.log(criteria);
-
   return (
     <Card>
       <CardHeader>
@@ -70,7 +68,10 @@ const ItemCriteria = ({
 
             <div className="space-y-4">
               {criteria.map((criterion, index) => (
-                <div key={index} className="flex gap-4 items-end">
+                <div
+                  key={index}
+                  className="flex flex-col md:flex-row gap-4 md:items-end border-b-2 rounded md:border-0"
+                >
                   <div className="flex-1 space-y-2">
                     <Label htmlFor={`criterion-${index}`}>Criterio</Label>
                     <Input
@@ -82,7 +83,7 @@ const ItemCriteria = ({
                       placeholder="Ej: Conocimiento del tema"
                     />
                   </div>
-                  <div className="w-32 space-y-2">
+                  <div className="md:w-32 space-y-2">
                     <Label htmlFor={`weight-${index}`}>Porcentaje</Label>
                     <div className="flex">
                       <Input
@@ -101,15 +102,16 @@ const ItemCriteria = ({
                       </span>
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => deleteCriterion(index)}
-                    // disabled={criteria.length <= 1}
-                    className="cursor-pointer"
-                  >
-                    <Trash className="h-4 w-4" />
-                  </Button>
+                  <div className="flex justify-center md:justify-start">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => deleteCriterion(index)}
+                      className="cursor-pointer bg-gray-950 md:bg-transparent"
+                    >
+                      <Trash className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
 

@@ -54,7 +54,7 @@ export const useEvaluationLogic = () => {
         const response = await axios.get("/api/academicperiods");
         setAcademicPeriods(response.data);
       } catch (error) {
-        console.error("Error al obtener los datos:", error);
+        console.error(error?.response?.data?.Message);
       } finally {
         setLoading(false);
       }
@@ -75,7 +75,7 @@ export const useEvaluationLogic = () => {
           setSubjects(response.data);
         }
       } catch (error) {
-        console.log(error);
+        console.error(error?.response?.data?.Message);
       } finally {
         setLoading(false);
       }
@@ -98,13 +98,23 @@ export const useEvaluationLogic = () => {
           setSections(response.data);
         }
       } catch (error) {
-        console.log(error);
+        console.error(error?.response?.data?.Message);
       } finally {
         setLoading(false);
       }
     };
     fetchSections();
   }, [selectedPeriod, selectedSubject]);
+
+  const calculateFinalGrade = (grades, evaluationItems) => {
+    let total = 0;
+    evaluationItems.forEach((item) => {
+      const grade = grades[item.id] || 0;
+      total += (grade * item.percentage) / 100;
+    });
+
+    return Number(total.toFixed(1));
+  };
 
   // Obtener evaluaciones y estudiantes
   useEffect(() => {
@@ -120,9 +130,15 @@ export const useEvaluationLogic = () => {
           const { items, students } = response.data;
           setEvaluationItems(items);
           setStudents(students);
+          setStudents((prev) =>
+            prev.map((student) => ({
+              ...student,
+              finalGrade: calculateFinalGrade(student.scoresByItemId, items),
+            }))
+          );
         }
       } catch (error) {
-        console.log(error);
+        console.error(error?.response?.data?.Message);
       } finally {
         setLoading(false);
       }

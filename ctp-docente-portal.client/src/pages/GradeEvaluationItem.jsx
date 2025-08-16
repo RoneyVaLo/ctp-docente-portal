@@ -22,6 +22,7 @@ import {
 import axios from "axios";
 import Loader1 from "../components/loaders/Loader1";
 import { useEvaluation } from "../context/EvaluationContext";
+import toast from "react-hot-toast";
 
 const GradeEvaluationItem = () => {
   const { loading, setLoading, selectedGroup } = useEvaluation();
@@ -41,10 +42,9 @@ const GradeEvaluationItem = () => {
         const URL = `/api/evaluationitems/item/${itemId}`;
 
         const response = await axios.get(URL);
-        // console.log(response.data);
         setEvaluation(response.data);
       } catch (error) {
-        console.log(error);
+        console.error(error?.response?.data?.Message);
       } finally {
         setLoading(false);
       }
@@ -128,12 +128,13 @@ const GradeEvaluationItem = () => {
         `/api/studentcriteriascores/section/${selectedGroup}`,
         payload
       );
-      console.log(response);
+      toast.success(response.data.message);
 
       setEditMode(false);
       setSuccessfulSave(false);
     } catch (error) {
-      console.error(error);
+      console.error(error?.response?.data?.Message);
+      toast.error("Error al guardar las notas.");
     } finally {
       setLoading(false);
     }
@@ -391,7 +392,6 @@ const GradeEvaluationItem = () => {
         )}
       </div>
 
-      {/* TODO: Corregir problema de nota con decimales */}
       <GradeTable
         students={
           evaluation.studentScores

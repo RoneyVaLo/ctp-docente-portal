@@ -1,5 +1,3 @@
-import { Columns } from "lucide-react";
-
 export const getGradeColor = (grade) => {
   if (grade >= 90) return "text-green-600 dark:text-green-400";
   if (grade >= 80) return "text-blue-600 dark:text-blue-400";
@@ -33,7 +31,7 @@ export const calculateFinalGrade = (studentId, grades, criteria) => {
   for (let i = 0; i < criteria.length; i++) {
     finalGrade += (grades[studentId][i] * criteria[i].weight) / 100;
   }
-  return Math.round(finalGrade);
+  return Number(finalGrade.toFixed(1));
 };
 
 export const calculateGeneralAverage = (grades, studentScores, criteria) => {
@@ -46,7 +44,7 @@ export const calculateGeneralAverage = (grades, studentScores, criteria) => {
     counter++;
   });
 
-  return counter > 0 ? (sum / counter).toFixed(1) : 0;
+  return counter > 0 ? Number((sum / counter).toFixed(1)) : 0;
 };
 
 export const calculateAverageCriterion = (indexCriterion, grades) => {
@@ -60,7 +58,7 @@ export const calculateAverageCriterion = (indexCriterion, grades) => {
     }
   });
 
-  return counter > 0 ? (sum / counter).toFixed(1) : 0;
+  return counter > 0 ? Number((sum / counter).toFixed(1)) : 0;
 };
 
 export const getResponsiveGridCols = (columns) => {

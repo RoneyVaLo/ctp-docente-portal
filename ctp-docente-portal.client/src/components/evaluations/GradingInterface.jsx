@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";
 import {
   AlertCircle,
@@ -17,6 +17,7 @@ import GradeTable from "./GradeTable";
 import { useEvaluation } from "../../context/EvaluationContext";
 import axios from "axios";
 import Loader1 from "../loaders/Loader1";
+import toast from "react-hot-toast";
 
 const GradingInterface = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -41,23 +42,12 @@ const GradingInterface = () => {
       total += (grade * item.percentage) / 100;
     });
 
-    return total.toFixed(1);
+    return Number(total.toFixed(1));
   };
 
   const handleEditToggle = () => {
     setIsEditing((prev) => !prev);
   };
-
-  useEffect(() => {
-    setStudents((prev) =>
-      prev.map((student) => ({
-        ...student,
-        finalGrade: calculateFinalGrade(student.scoresByItemId),
-      }))
-    );
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const handleGradeChange = (studentId, item, index, value) => {
     const rubricId = item.id;
@@ -97,15 +87,16 @@ const GradingInterface = () => {
         }))
       );
 
-      // console.log(payload);
       const response = await axios.post(
         `/api/evaluationscores/section/${selectedGroup}`,
         payload
       );
       console.log(response.data);
+      toast.success("Cambios guardados correctamente.");
       setSaveStatus("idle");
     } catch (error) {
-      console.error(error);
+      console.error(error?.response?.data?.Message);
+      toast.error("Ocurrió un error al guardar los cambios.");
     } finally {
       setLoading(false);
     }

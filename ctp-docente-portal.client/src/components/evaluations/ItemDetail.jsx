@@ -124,7 +124,7 @@ const ItemDetail = ({
           )}
         </article>
       </CardContent>
-      <CardFooter className="flex items-start gap-4 justify-between">
+      <CardFooter className="flex flex-col md:flex-row items-center md:items-start gap-4 justify-between">
         <NavLink to="/calificaciones">
           <Button variant="outline">Cancelar</Button>
         </NavLink>
@@ -134,7 +134,9 @@ const ItemDetail = ({
           Añadir rúbricas
         </Button>
 
-        <Button onClick={handleSubmit}>Guardar y continuar</Button>
+        <Button onClick={handleSubmit} className="-mt-1">
+          Guardar y continuar
+        </Button>
       </CardFooter>
     </Card>
   );
