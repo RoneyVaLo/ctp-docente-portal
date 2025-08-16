@@ -14,7 +14,6 @@ import { useEvaluation } from "../context/EvaluationContext";
 import { getResponsiveGridCols } from "../utils/gradeUtils";
 import { Plus } from "lucide-react";
 import { NavLink } from "react-router-dom";
-import Button from "../components/ui/Button";
 
 const Evaluations = () => {
   const [activeTab, setActiveTab] = useState("grading");
@@ -116,9 +115,7 @@ const Evaluations = () => {
                   </p>
                   <div className="mt-3">
                     <NavLink to="/item/nuevo">
-                      <button
-                        className="flex items-center mt-3 px-4 py-2 bg-gray-300 dark:bg-gray-800 text-black dark:text-gray-200 font-bold rounded-xl hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
-                      >
+                      <button className="flex items-center mt-3 px-4 py-2 bg-gray-300 dark:bg-gray-800 text-black dark:text-gray-200 font-bold rounded-xl hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors">
                         <Plus className="w-4 h-4 mr-2 font-bold" />
                         Añadir Item
                       </button>

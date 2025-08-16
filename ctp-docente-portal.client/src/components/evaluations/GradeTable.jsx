@@ -17,8 +17,6 @@ const GradeTable = ({
   getFinalGrade,
   readOnlyCondition = () => false,
 }) => {
-  // console.log(students);
-
   const columns = criteria.length + 1;
 
   const mdGridCols = getResponsiveGridCols(columns);

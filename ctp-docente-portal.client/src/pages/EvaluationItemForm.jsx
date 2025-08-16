@@ -12,6 +12,7 @@ import TabsContent from "../components/evaluations/TabsContent";
 import ItemDetail from "../components/evaluations/ItemDetail";
 import ItemCriteria from "../components/evaluations/ItemCriteria";
 import Loader1 from "../components/loaders/Loader1";
+import toast from "react-hot-toast";
 
 const EvaluationItemForm = () => {
   const { itemId } = useParams(); // `undefined` si es nuevo
@@ -56,7 +57,7 @@ const EvaluationItemForm = () => {
           setItemCategory(itemResponse.data.evaluationCategoryName);
         }
       } catch (error) {
-        console.log(error);
+        console.error(error?.response?.data?.Message);
       } finally {
         setLoading(false);
       }
@@ -71,22 +72,32 @@ const EvaluationItemForm = () => {
 
   // Función para crear un nuevo ítem en modo borrador
   const createDraftItem = async () => {
-    const itemData = {
-      SectionAssignmentId: parseInt(selectedGroup),
-      CreatedBy: 1,
-    };
-    const response = await axios.post("/api/evaluationitems/draft", itemData);
-    console.log("Item creado en modo borrador");
-    setCurrentItemId(response.data.evaluationItemId);
+    try {
+      setLoading(true);
+      const itemData = {
+        SectionAssignmentId: parseInt(selectedGroup),
+        CreatedBy: 1,
+      };
+      const response = await axios.post("/api/evaluationitems/draft", itemData);
+      console.log("Item creado en modo borrador");
+      setCurrentItemId(response.data.evaluationItemId);
+    } catch (error) {
+      console.error(error?.response?.data?.Message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Función para eliminar el ítem
+  // Función para eliminar el ítem borrador
   const deleteItem = async () => {
-    const response = await axios.delete(
-      `/api/evaluationitems/${currentItemId}`
-    );
-    const { status, statusText } = response;
-    console.log(status, statusText);
+    try {
+      setLoading(true);
+      await axios.delete(`/api/evaluationitems/${currentItemId}`);
+    } catch (error) {
+      console.error(error?.response?.data?.Message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Función para manejar el cambio del checkbox
@@ -236,15 +247,19 @@ const EvaluationItemForm = () => {
 
       if (itemData.HasCriteria) {
         const { isValid, errors } = validateCriteria();
-        errors.forEach((err) => console.log(err));
-        if (!isValid) return;
+        errors.forEach((err) => console.error(err));
+        if (!isValid) {
+          toast.error(
+            "La validación de los criterios ha fallado. Revisa los campos."
+          );
+          return;
+        }
 
         itemData.Criteria = criteria;
       }
 
       if (currentItemId) {
         try {
-          console.log(itemData);
           setLoading(true);
           const response = await axios.put(
             `/api/evaluationitems/${currentItemId}`,
@@ -252,9 +267,26 @@ const EvaluationItemForm = () => {
           );
           console.log(response);
           setItem(false);
+          toast.success("Ítem actualizado correctamente.");
           navigate("/calificaciones");
         } catch (error) {
-          console.error(error);
+          console.error(error?.response?.data?.Message);
+          const { Message } = error.response.data;
+          if (
+            Message.toLocaleLowerCase().includes(
+              "no se pueden eliminar criterios"
+            )
+          ) {
+            setItem((prev) => ({
+              ...prev,
+              hasCriteria: !prev.hasCriteria,
+            }));
+            toast.error(
+              "Error actualizando el ítem: \nNo es posible desactivar criterios que ya tienen notas asignadas."
+            );
+          } else {
+            toast.error("Ocurrió un error al actualizar el ítem.");
+          }
         } finally {
           setLoading(false);
         }
@@ -265,19 +297,23 @@ const EvaluationItemForm = () => {
           const { data } = response;
           data.evaluationCategoryName = item.evaluationCategoryName;
           const updatedEvaluationItems = [...evaluationItems, data];
+          toast.success("Ítem creado exitosamente.");
           updateEvaluationItems(updatedEvaluationItems);
           setItem(false);
           navigate("/calificaciones");
         } catch (error) {
-          console.error(error);
+          console.error(error?.response?.data?.Message);
+          toast.error("Ocurrió un error al crear el ítem.");
         } finally {
           setLoading(false);
         }
       }
+    } else {
+      toast.error("El formulario contiene errores. Por favor, revísalo.");
     }
   };
 
-  //? Gestión de criterios
+  // Gestión de criterios
 
   const addCriterion = () => {
     setCriteria([
@@ -288,14 +324,15 @@ const EvaluationItemForm = () => {
 
   const deleteCriterion = async (index) => {
     if (criteria[index].id !== 0) {
-      console.log(criteria[index]);
       try {
         setLoading(true);
         const id = criteria[index].id;
         await axios.delete(`/api/evaluationcriteria/${id}`);
+        toast.success("Criterio eliminado exitosamente.");
         setCriteria(criteria.filter((_, i) => i !== index));
       } catch (error) {
-        console.log(error);
+        console.error(error?.response?.data?.Message);
+        toast.error("Error eliminando un criterio.");
       } finally {
         setLoading(false);
       }
@@ -375,7 +412,6 @@ const EvaluationItemForm = () => {
           updateCriterion={updateCriterion}
           deleteCriterion={deleteCriterion}
           handleSubmit={handleSubmit}
-          errors={errors}
         />
       </TabsContent>
     </div>

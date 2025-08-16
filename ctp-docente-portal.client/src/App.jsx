@@ -11,6 +11,7 @@ import Configuracion from "./pages/Configuration";
 import EvaluationItemForm from "./pages/EvaluationItemForm";
 import GradeEvaluationItem from "./pages/GradeEvaluationItem";
 import { EvaluationProvider } from "./context/EvaluationContext";
+import { Toaster } from "react-hot-toast";
 
 function App() {
   const router = createBrowserRouter([
@@ -84,7 +85,18 @@ function App() {
     },
   ]);
 
-  return <RouterProvider router={router} />;
+  return (
+    <>
+      <RouterProvider router={router} />
+      <Toaster
+        toastOptions={{
+          style: {
+            textAlign: "center",
+          },
+        }}
+      />
+    </>
+  );
 }
 
 export default App;
