@@ -20,7 +20,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
         // ----------------- Helpers -----------------
         private static string ComposeStudentName(StudentsModel s)
         {
-            var parts = new[] { s.Name, s.MiddleName, s.LastName, s.ndLastName }
+            var parts = new[] { s.Name, s.MiddleName, s.LastName, s.NdLastName }
                         .Where(p => !string.IsNullOrWhiteSpace(p));
             return string.Join(" ", parts);
         }
@@ -78,7 +78,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
             var students = await _db.Students
                 .AsNoTracking()
-                .Where(s => studentIds.Contains(s.Id) && s.isActive)
+                .Where(s => studentIds.Contains(s.Id) && s.IsActive)
                 .ToDictionaryAsync(s => s.Id, s => s, ct);
 
             foreach (var a in absents)

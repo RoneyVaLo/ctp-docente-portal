@@ -16,6 +16,7 @@ namespace ctp_docente_portal.Server
         {
             var builder = WebApplication.CreateBuilder(args);
 
+
             // Add DbContext with PostgreSQL
 
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -34,6 +35,12 @@ namespace ctp_docente_portal.Server
                     NullLoggerFactory.Instance
                 );
 
+
+
+
+
+
+
             // 3) Crea el IMapper y regístralo
             var mapper = mapperConfig.CreateMapper();
             builder.Services.AddSingleton<IMapper>(mapper);
@@ -51,13 +58,27 @@ namespace ctp_docente_portal.Server
 
             // TODO: Así se deben añadir todas las Interfaces (INTERFACE) y sus Implementaciones (SERVICES)
             // builder.Services.AddScoped<IEvaluationCategoriesService, EvaluationCategoriesService>();
-             //builder.Services.AddScoped<IEvaluationCriteriaService, EvaluationCriteriaService>();
-             //builder.Services.AddScoped<IEvaluationItemService, EvaluationItemService>();
-             //builder.Services.AddScoped<IAcademicPeriodService, AcademicPeriodService>();
-             //builder.Services.AddScoped<ISectionService, SectionService>();
-             //builder.Services.AddScoped<ISubjectService, SubjectService>();
-             //builder.Services.AddScoped<IStudentService, StudentService>();
-             //builder.Services.AddScoped<IEvaluationScoreService, EvaluationScoreService>();
+            //builder.Services.AddScoped<IEvaluationCriteriaService, EvaluationCriteriaService>();
+            //builder.Services.AddScoped<IEvaluationItemService, EvaluationItemService>();
+            //builder.Services.AddScoped<IAcademicPeriodService, AcademicPeriodService>();
+            //builder.Services.AddScoped<ISectionService, SectionService>();
+            //builder.Services.AddScoped<ISubjectService, SubjectService>();
+            //builder.Services.AddScoped<IStudentService, StudentService>();
+            //builder.Services.AddScoped<IEvaluationScoreService, EvaluationScoreService>();
+
+
+            const string ViteCorsPolicy = "ViteCors";
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy(ViteCorsPolicy, policy =>
+                {
+                    policy.WithOrigins("https://localhost:5173")
+                          .AllowAnyHeader()
+                          .AllowAnyMethod()
+                          .AllowCredentials();
+                });
+            });
+
 
             var app = builder.Build();
 
