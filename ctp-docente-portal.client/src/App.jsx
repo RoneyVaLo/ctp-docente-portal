@@ -8,6 +8,10 @@ import Reportes from "./pages/Reports";
 import Notificaciones from "./pages/Notifications";
 import Estudiantes from "./pages/Students";
 import Configuracion from "./pages/Configuration";
+import EvaluationItemForm from "./pages/EvaluationItemForm";
+import GradeEvaluationItem from "./pages/GradeEvaluationItem";
+import { EvaluationProvider } from "./context/EvaluationContext";
+import { Toaster } from "react-hot-toast";
 
 function App() {
   const router = createBrowserRouter([
@@ -27,7 +31,35 @@ function App() {
         },
         {
           path: "calificaciones",
-          element: <Calificaciones />,
+          element: (
+            <EvaluationProvider>
+              <Calificaciones />
+            </EvaluationProvider>
+          ),
+        },
+        {
+          path: "item/nuevo",
+          element: (
+            <EvaluationProvider>
+              <EvaluationItemForm />
+            </EvaluationProvider>
+          ),
+        },
+        {
+          path: "item/:itemId/editar",
+          element: (
+            <EvaluationProvider>
+              <EvaluationItemForm />
+            </EvaluationProvider>
+          ),
+        },
+        {
+          path: "item/:itemId/calificar/:studentId?",
+          element: (
+            <EvaluationProvider>
+              <GradeEvaluationItem />
+            </EvaluationProvider>
+          ),
         },
         {
           path: "asistencia",
@@ -53,7 +85,18 @@ function App() {
     },
   ]);
 
-  return <RouterProvider router={router} />;
+  return (
+    <>
+      <RouterProvider router={router} />
+      <Toaster
+        toastOptions={{
+          style: {
+            textAlign: "center",
+          },
+        }}
+      />
+    </>
+  );
 }
 
 export default App;

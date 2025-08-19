@@ -1,4 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+using ctp_docente_portal.Server.DTOs.Reports;
+using ctp_docente_portal.Server.Helpers;
+
+
 
 namespace ctp_docente_portal.Server.Controllers
 {
@@ -29,9 +33,7 @@ namespace ctp_docente_portal.Server.Controllers
             })
             .ToArray();
         }
-        [HttpGet("grades/pdf")]
-        [ctp_docente_portal.Server.Middlewares.RequiredRole("Administrativo")]
-        public async Task<IActionResult> ExportGradesPdf(...)
+        
 
     }
 }

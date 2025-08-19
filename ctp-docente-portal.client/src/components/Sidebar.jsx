@@ -37,7 +37,7 @@ export default function Sidebar({ isMobileOpen, onCloseMobile }) {
           !isMobileOpen
             ? "hidden"
             : "flex fixed inset-0 z-50 bg-background dark:bg-background-dark"
-        } shadow-2xl h-screen sm:flex flex-col transition-all duration-300 sm:sticky top-0 z-10`,
+        } shadow-2xl h-screen sm:flex flex-col transition-all duration-300 sm:sticky top-0 z-[51]`,
         collapsed ? "w-16" : "w-64"
       )}
     >
@@ -48,7 +48,12 @@ export default function Sidebar({ isMobileOpen, onCloseMobile }) {
             collapsed && "justify-center"
           )}
         >
-          <BookOpen className="h-6 w-6 text-gray-900 shrink-0 dark:text-white" />
+          {/* <BookOpen className="h-6 w-6 text-gray-900 shrink-0 dark:text-white" /> */}
+          <img
+            src="/ctp.avif"
+            alt="Logo del CTP de Los Chiles"
+            className="max-h-6 max-w-6"
+          />
           <span
             className={cn(
               "font-bold text-gray-900 dark:text-white",
@@ -73,7 +78,7 @@ export default function Sidebar({ isMobileOpen, onCloseMobile }) {
       </div>
 
       <div className="flex-1 py-4 overflow-y-auto">
-        <nav className="space-y-1 px-2">
+        <aside className="space-y-1 px-2">
           <NavItem
             href="/"
             icon={<Home className="h-5 w-5" />}
@@ -85,7 +90,10 @@ export default function Sidebar({ isMobileOpen, onCloseMobile }) {
             href="/calificaciones"
             icon={<CheckSquare className="h-5 w-5" />}
             label="Calificaciones"
-            active={location.pathname.includes("/calificaciones")}
+            active={
+              location.pathname.includes("/calificaciones") ||
+              location.pathname.includes("/item")
+            }
             collapsed={collapsed}
           />
           <NavItem
@@ -116,10 +124,10 @@ export default function Sidebar({ isMobileOpen, onCloseMobile }) {
             active={location.pathname.includes("/estudiantes")}
             collapsed={collapsed}
           />
-        </nav>
+        </aside>
       </div>
 
-      <div className="p-4 border-t">
+      <div className="py-4 px-2 border-t">
         <NavItem
           href="/configuracion"
           icon={<Settings className="h-5 w-5" />}

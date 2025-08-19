@@ -1,0 +1,171 @@
+import { useState, useEffect } from "react";
+import axios from "axios";
+
+export const useEvaluationLogic = () => {
+  const [loading, setLoading] = useState(false);
+
+  const [academicPeriods, setAcademicPeriods] = useState([]);
+  const [selectedPeriod, setSelectedPeriod] = useState(
+    sessionStorage.getItem("selectedPeriod") || ""
+  );
+
+  const [subjects, setSubjects] = useState([]);
+  const [selectedSubject, setSelectedSubject] = useState(
+    sessionStorage.getItem("selectedSubject") || ""
+  );
+
+  const [sections, setSections] = useState([]);
+  const [selectedGroup, setSelectedGroup] = useState(
+    sessionStorage.getItem("selectedGroup") || ""
+  );
+
+  const [students, setStudents] = useState([]);
+  const [evaluationItems, setEvaluationItems] = useState([]);
+
+  // Actualizar sessionStorage cuando los filtros cambien
+  useEffect(() => {
+    const currentPeriod = sessionStorage.getItem("selectedPeriod");
+
+    if (selectedPeriod !== currentPeriod) {
+      setSelectedSubject("");
+    }
+
+    sessionStorage.setItem("selectedPeriod", selectedPeriod);
+  }, [selectedPeriod]);
+
+  useEffect(() => {
+    const currentSubject = sessionStorage.getItem("selectedSubject");
+
+    if (selectedSubject !== currentSubject) {
+      setSelectedGroup("");
+    }
+    sessionStorage.setItem("selectedSubject", selectedSubject);
+  }, [selectedSubject]);
+
+  useEffect(() => {
+    sessionStorage.setItem("selectedGroup", selectedGroup);
+  }, [selectedGroup]);
+
+  // Obtener periodos académicos
+  useEffect(() => {
+    const fetchAcademicPeriods = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get("/api/academicperiods");
+        setAcademicPeriods(response.data);
+      } catch (error) {
+        console.error(error?.response?.data?.Message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAcademicPeriods();
+  }, []);
+
+  // Obtener materias
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      try {
+        setLoading(true);
+        if (selectedPeriod) {
+          // setSelectedSubject(sessionStorage.getItem("selectedSubject") || "");
+          const response = await axios.get(
+            `/api/subject/period/${selectedPeriod}/subjects`
+          );
+          setSubjects(response.data);
+        }
+      } catch (error) {
+        console.error(error?.response?.data?.Message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSubjects();
+  }, [selectedPeriod]);
+
+  // Obtener secciones
+  useEffect(() => {
+    const fetchSections = async () => {
+      try {
+        setLoading(true);
+        if (selectedPeriod && selectedSubject) {
+          // setSelectedGroup("");
+          setStudents([]);
+          setEvaluationItems([]);
+          const response = await axios.get(
+            `/api/section/period/${selectedPeriod}/subjects/${selectedSubject}/sections`
+          );
+          setSections(response.data);
+        }
+      } catch (error) {
+        console.error(error?.response?.data?.Message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSections();
+  }, [selectedPeriod, selectedSubject]);
+
+  const calculateFinalGrade = (grades, evaluationItems) => {
+    let total = 0;
+    evaluationItems.forEach((item) => {
+      const grade = grades[item.id] || 0;
+      total += (grade * item.percentage) / 100;
+    });
+
+    return Number(total.toFixed(1));
+  };
+
+  // Obtener evaluaciones y estudiantes
+  useEffect(() => {
+    const fetchEvaluationData = async () => {
+      try {
+        setLoading(true);
+        if (selectedPeriod && selectedSubject && selectedGroup) {
+          setStudents([]);
+          setEvaluationItems([]);
+          const response = await axios.get(
+            `/api/evaluationscores/subject/${selectedSubject}/section/${selectedGroup}`
+          );
+          const { items, students } = response.data;
+          setEvaluationItems(items);
+          setStudents(students);
+          setStudents((prev) =>
+            prev.map((student) => ({
+              ...student,
+              finalGrade: calculateFinalGrade(student.scoresByItemId, items),
+            }))
+          );
+        }
+      } catch (error) {
+        console.error(error?.response?.data?.Message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchEvaluationData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedGroup]);
+
+  const updateEvaluationItems = (updatedItems) => {
+    setEvaluationItems(updatedItems);
+  };
+
+  return {
+    loading,
+    setLoading,
+    academicPeriods,
+    selectedPeriod,
+    setSelectedPeriod,
+    subjects,
+    selectedSubject,
+    setSelectedSubject,
+    sections,
+    selectedGroup,
+    setSelectedGroup,
+    students,
+    setStudents,
+    evaluationItems,
+    updateEvaluationItems,
+  };
+};

@@ -2,9 +2,9 @@
 {
     public class StudentEvaluationScoreDto
     {
-        public int Id { get; set; }
         public int StudentId { get; set; }
-        public int EvaluationCriteriaId { get; set; }
+        public int EvaluationItemId { get; set; }
         public decimal Score { get; set; }
+        public int UpdatedBy { get; set; }
     }
 }
