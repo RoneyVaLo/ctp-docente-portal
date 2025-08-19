@@ -21,7 +21,7 @@ namespace ctp_docente_portal.Server.Controllers
         public async Task<IActionResult> Create([FromBody] EvaluationItemCreateDto dto)
         {
             var result = await _service.CreateAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+            return Ok(result);
         }
 
         // 📌 POST /api/evaluationitems/draft

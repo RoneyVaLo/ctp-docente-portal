@@ -23,7 +23,5 @@ namespace ctp_docente_portal.Server.Controllers
             var subjects = await _subjectService.GetSubjectsByPeriodAsync(academicPeriodId);
             return Ok(subjects);
         }
-
-        // TODO: Hacer el método para obtener 1 sola sección
     }
 }
