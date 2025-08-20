@@ -12,18 +12,19 @@ import EvaluationItemForm from "./pages/EvaluationItemForm";
 import GradeEvaluationItem from "./pages/GradeEvaluationItem";
 import { EvaluationProvider } from "./context/EvaluationContext";
 import { Toaster } from "react-hot-toast";
+import NotFound from "./pages/NotFound";
 
 function App() {
   const router = createBrowserRouter([
     {
       path: "/login",
       element: <Login />,
-      errorElement: <div>Not Found 404</div>,
+      errorElement: <NotFound />,
     },
     {
       path: "/",
       element: <Layout />,
-      errorElement: <div>Not Found 404</div>,
+      errorElement: <NotFound />,
       children: [
         {
           path: "/",
