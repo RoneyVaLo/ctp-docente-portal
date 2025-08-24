@@ -1,6 +1,8 @@
 import { useState } from "react";
-import Button from "../components/ui/Button";
 import { useNavigate } from "react-router-dom";
+import { Eye, EyeOff, Lock, User } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
+import Button from "../components/ui/Button";
 import {
   Card,
   CardContent,
@@ -9,7 +11,6 @@ import {
   CardHeader,
   CardTitle,
 } from "../components/ui/Card";
-import { BookOpen, Eye, EyeClosed, Lock, User } from "lucide-react";
 import { Alert, AlertDescription } from "../components/ui/Alert";
 import { Label } from "../components/ui/Label";
 import Input from "../components/ui/Input";
@@ -17,31 +18,83 @@ import DarkModeToggle from "../components/DarkModeToggle";
 
 const Login = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
 
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [loginRequest, setLoginRequest] = useState({ email: "", password: "" });
+  const [fieldErrors, setFieldErrors] = useState([]);
   const [showPassword, setShowPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  const handleEnterKeyEvent = (e) => {
+    if (e.key === "Enter") {
+      handleSubmit(e);
+    }
+  };
+
+  const validateEmail = (value) => {
+    if (!value) return "El correo es obligatorio";
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value)) {
+      return "El correo no es válido";
+    }
+
+    return null;
+  };
+
+  const validatePassword = (value) => {
+    if (!value) return "La contraseña es obligatoria";
+
+    // TODO: Ajustar al estandar usado en el sistema de Matricula
+    // Reglas: mínimo 8 caracteres, al menos una mayúscula, una minúscula, un número y un símbolo
+    // const passwordRegex =
+    //   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.#_-])[A-Za-z\d@$!%*?&.#_-]{8,}$/;
+
+    // if (!passwordRegex.test(value)) {
+    //   return "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un símbolo";
+    // }
+
+    return null;
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setLoginRequest((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    let message = "";
+
+    if (name === "email") {
+      message = validateEmail(value) || "";
+    } else if (name === "password") {
+      message = validatePassword(value) || "";
+    }
+
+    setFieldErrors((prevErrors) => ({
+      ...prevErrors,
+      [name]: message,
+    }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
-    // Simulación de login - en producción, esto se conectaría con la DB institucional
     try {
-      // Aquí iría la lógica real de autenticación contra la DB institucional
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      if (username === "docente" && password === "password") {
-        navigate("/");
-      } else {
-        setError("Credenciales incorrectas. Intente nuevamente.");
+      const emailError = validateEmail(loginRequest.email);
+      const passwordError = validatePassword(loginRequest.password);
+      if (emailError || passwordError) {
+        setError(emailError || passwordError);
+        return;
       }
-    } catch (err) {
-      console.log(err);
-      setError("Error al conectar con el servidor. Intente más tarde.");
+      await login(loginRequest);
+      navigate("/");
+    } catch (error) {
+      setError(error?.Message);
     } finally {
       setIsLoading(false);
     }
@@ -55,13 +108,13 @@ const Login = () => {
       </header>
       <Card className="w-full max-w-md z-0">
         <CardHeader className="space-y-1 text-center">
-          <div className="flex justify-center mb-2">
+          <article className="flex justify-center mb-2">
             <img
               src="/ctp.avif"
               alt="Logo del CTP de Los Chiles"
               className="max-h-10 max-w-10"
             />
-          </div>
+          </article>
           <CardTitle className="text-2xl font-bold">
             Administración Docente
           </CardTitle>
@@ -76,21 +129,28 @@ const Login = () => {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
-            <div className="space-y-2">
-              <Label htmlFor="username">Usuario</Label>
+            <section className="space-y-2">
+              <Label htmlFor="email">Correo Electrónico</Label>
               <div className="relative">
                 <User className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
                 <Input
-                  id="username"
-                  placeholder="Nombre de usuario"
+                  type="email"
+                  id="email"
+                  name="email"
+                  placeholder="Correo electronico"
                   className="pl-10"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
+                  value={loginRequest.email}
+                  onChange={handleChange}
+                  onKeyDown={handleEnterKeyEvent}
                 />
+                {fieldErrors.email && (
+                  <p className="text-red-600 dark:text-red-400 text-sm transition-colors">
+                    {fieldErrors.email}
+                  </p>
+                )}
               </div>
-            </div>
-            <div className="space-y-2">
+            </section>
+            <section className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Contraseña</Label>
               </div>
@@ -98,12 +158,13 @@ const Login = () => {
                 <Lock className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
                 <Input
                   id="password"
+                  name="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="Contraseña"
                   className="pl-10"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
+                  value={loginRequest.password}
+                  onChange={handleChange}
+                  onKeyDown={handleEnterKeyEvent}
                 />
                 <button
                   onClick={(e) => {
@@ -113,13 +174,18 @@ const Login = () => {
                   className="w-5 h-fit absolute right-3 top-2"
                 >
                   {showPassword ? (
-                    <Eye className="text-gray-600" />
+                    <EyeOff className="text-gray-600" />
                   ) : (
-                    <EyeClosed className="text-gray-600" />
+                    <Eye className="text-gray-600" />
                   )}
                 </button>
+                {fieldErrors.password && (
+                  <p className="text-red-600 dark:text-red-400 text-sm transition-colors">
+                    {fieldErrors.password}
+                  </p>
+                )}
               </div>
-            </div>
+            </section>
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Verificando..." : "Iniciar sesión"}
             </Button>
