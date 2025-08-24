@@ -12,78 +12,117 @@ import EvaluationItemForm from "./pages/EvaluationItemForm";
 import GradeEvaluationItem from "./pages/GradeEvaluationItem";
 import { EvaluationProvider } from "./context/EvaluationContext";
 import { Toaster } from "react-hot-toast";
+import NotFound from "./pages/NotFound";
+import { useAuth } from "./context/AuthContext";
+import Loader1 from "./components/loaders/Loader1";
+import PublicRoute from "./routes/PublicRoute";
+import ProtectedRoute from "./routes/ProtectedRoute";
+import RoleRoute from "./routes/RoleRoute";
+import SessionExpired from "./pages/SessionExpired";
+import AccessDenied from "./pages/AccessDenied";
 
 function App() {
+  const { loading } = useAuth();
+
   const router = createBrowserRouter([
     {
       path: "/login",
-      element: <Login />,
-      errorElement: <div>Not Found 404</div>,
-    },
-    {
-      path: "/",
-      element: <Layout />,
-      errorElement: <div>Not Found 404</div>,
+      element: <PublicRoute />,
+      errorElement: <NotFound />,
       children: [
         {
-          path: "/",
-          element: <Dashboard />,
-        },
-        {
-          path: "calificaciones",
-          element: (
-            <EvaluationProvider>
-              <Calificaciones />
-            </EvaluationProvider>
-          ),
-        },
-        {
-          path: "item/nuevo",
-          element: (
-            <EvaluationProvider>
-              <EvaluationItemForm />
-            </EvaluationProvider>
-          ),
-        },
-        {
-          path: "item/:itemId/editar",
-          element: (
-            <EvaluationProvider>
-              <EvaluationItemForm />
-            </EvaluationProvider>
-          ),
-        },
-        {
-          path: "item/:itemId/calificar/:studentId?",
-          element: (
-            <EvaluationProvider>
-              <GradeEvaluationItem />
-            </EvaluationProvider>
-          ),
-        },
-        {
-          path: "asistencia",
-          element: <Asistencia />,
-        },
-        {
-          path: "reportes",
-          element: <Reportes />,
-        },
-        {
-          path: "notificaciones",
-          element: <Notificaciones />,
-        },
-        {
-          path: "estudiantes",
-          element: <Estudiantes />,
-        },
-        {
-          path: "configuracion",
-          element: <Configuracion />,
+          path: "/login",
+          element: <Login />,
         },
       ],
     },
+    {
+      path: "/",
+      element: <ProtectedRoute />,
+      errorElement: <NotFound />,
+      children: [
+        {
+          path: "/",
+          element: <Layout />,
+          errorElement: <NotFound />,
+          children: [
+            {
+              path: "/",
+              element: <Dashboard />,
+            },
+            {
+              element: <RoleRoute listRoles={["Docente"]} />,
+              children: [
+                {
+                  path: "calificaciones",
+                  element: (
+                    <EvaluationProvider>
+                      <Calificaciones />
+                    </EvaluationProvider>
+                  ),
+                },
+                {
+                  path: "item/nuevo",
+                  element: (
+                    <EvaluationProvider>
+                      <EvaluationItemForm />
+                    </EvaluationProvider>
+                  ),
+                },
+                {
+                  path: "item/:itemId/editar",
+                  element: (
+                    <EvaluationProvider>
+                      <EvaluationItemForm />
+                    </EvaluationProvider>
+                  ),
+                },
+                {
+                  path: "item/:itemId/calificar/:studentId?",
+                  element: (
+                    <EvaluationProvider>
+                      <GradeEvaluationItem />
+                    </EvaluationProvider>
+                  ),
+                },
+                {
+                  path: "asistencia",
+                  element: <Asistencia />,
+                },
+              ],
+            },
+            {
+              path: "reportes",
+              element: <Reportes />,
+            },
+            {
+              element: <RoleRoute listRoles={["Administrativo"]} />,
+              children: [
+                {
+                  path: "configuracion",
+                  element: <Configuracion />,
+                },
+              ],
+            },
+            {
+              path: "notificaciones",
+              element: <Notificaciones />,
+            },
+            {
+              path: "estudiantes",
+              element: <Estudiantes />,
+            },
+          ],
+        },
+      ],
+    },
+    {
+      path: "/acceso-denegado",
+      element: <AccessDenied />,
+    },
   ]);
+
+  if (loading) return <Loader1 />;
 
   return (
     <>
