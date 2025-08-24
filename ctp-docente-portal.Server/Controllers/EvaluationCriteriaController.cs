@@ -1,5 +1,6 @@
 ﻿using ctp_docente_portal.Server.DTOs.EvaluationCriteria;
 using ctp_docente_portal.Server.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
@@ -8,6 +9,7 @@ namespace ctp_docente_portal.Server.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Policy = "DocenteOnly")]
     public class EvaluationCriteriaController : ControllerBase
     {
         private readonly IEvaluationCriteriaService _service;

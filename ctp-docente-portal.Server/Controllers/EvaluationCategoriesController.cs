@@ -1,4 +1,5 @@
 ﻿using ctp_docente_portal.Server.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -6,6 +7,7 @@ namespace ctp_docente_portal.Server.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class EvaluationCategoriesController : ControllerBase
     {
         private readonly IEvaluationCategoriesService _service;

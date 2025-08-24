@@ -1,5 +1,6 @@
 ﻿using ctp_docente_portal.Server.Data;
 using ctp_docente_portal.Server.DTOs.Staff;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,6 +10,7 @@ namespace ctp_docente_portal.Server.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class StaffController : ControllerBase
     {
         private readonly AppDbContext _context;
