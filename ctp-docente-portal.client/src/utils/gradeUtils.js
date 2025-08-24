@@ -18,7 +18,7 @@ export const formatDate = (dateString) => {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-    timeZone: "UTC", // si quieres mantener hora en UTC
+    timeZone: "UTC",
   };
   const formattedDate = date.toLocaleString("es-ES", options);
   return formattedDate;

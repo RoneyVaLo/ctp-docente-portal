@@ -15,8 +15,11 @@ import {
 import Button from "./ui/Button";
 import NavItem from "./NavItem";
 import { cn } from "../utils/cn";
+import { useAuth } from "../context/AuthContext";
 
 export default function Sidebar({ isMobileOpen, onCloseMobile }) {
+  const { roles } = useAuth();
+
   const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
 
   const location = useLocation();
@@ -48,7 +51,6 @@ export default function Sidebar({ isMobileOpen, onCloseMobile }) {
             collapsed && "justify-center"
           )}
         >
-          {/* <BookOpen className="h-6 w-6 text-gray-900 shrink-0 dark:text-white" /> */}
           <img
             src="/ctp.avif"
             alt="Logo del CTP de Los Chiles"
@@ -86,23 +88,27 @@ export default function Sidebar({ isMobileOpen, onCloseMobile }) {
             active={location.pathname === "/"}
             collapsed={collapsed}
           />
-          <NavItem
-            href="/calificaciones"
-            icon={<CheckSquare className="h-5 w-5" />}
-            label="Calificaciones"
-            active={
-              location.pathname.includes("/calificaciones") ||
-              location.pathname.includes("/item")
-            }
-            collapsed={collapsed}
-          />
-          <NavItem
-            href="/asistencia"
-            icon={<Calendar className="h-5 w-5" />}
-            label="Asistencia"
-            active={location.pathname.includes("/asistencia")}
-            collapsed={collapsed}
-          />
+          {roles.includes("Docente") && (
+            <>
+              <NavItem
+                href="/calificaciones"
+                icon={<CheckSquare className="h-5 w-5" />}
+                label="Calificaciones"
+                active={
+                  location.pathname.includes("/calificaciones") ||
+                  location.pathname.includes("/item")
+                }
+                collapsed={collapsed}
+              />
+              <NavItem
+                href="/asistencia"
+                icon={<Calendar className="h-5 w-5" />}
+                label="Asistencia"
+                active={location.pathname.includes("/asistencia")}
+                collapsed={collapsed}
+              />
+            </>
+          )}
           <NavItem
             href="/reportes"
             icon={<BarChart3 className="h-5 w-5" />}
@@ -127,15 +133,17 @@ export default function Sidebar({ isMobileOpen, onCloseMobile }) {
         </aside>
       </div>
 
-      <div className="py-4 px-2 border-t">
-        <NavItem
-          href="/configuracion"
-          icon={<Settings className="h-5 w-5" />}
-          label="Configuración"
-          active={location.pathname.includes("/configuracion")}
-          collapsed={collapsed}
-        />
-      </div>
+      {roles.includes("Administrativo") && (
+        <div className="py-4 px-2 border-t">
+          <NavItem
+            href="/configuracion"
+            icon={<Settings className="h-5 w-5" />}
+            label="Configuración"
+            active={location.pathname.includes("/configuracion")}
+            collapsed={collapsed}
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -7,15 +7,17 @@ using ctp_docente_portal.Server.Models;
 using ctp_docente_portal.Server.DTOs.AcademicPeriod;
 using ctp_docente_portal.Server.DTOs.Sections;
 using ctp_docente_portal.Server.DTOs.Subjects;
-using static System.Collections.Specialized.BitVector32;
 using ctp_docente_portal.Server.DTOs.Students;
 using ctp_docente_portal.Server.DTOs.EvaluationCategories;
+using ctp_docente_portal.Server.DTOs.Users;
 
 namespace ctp_docente_portal.Server.Mappings
 {
     public class MappingProfile : Profile
     {
         public MappingProfile() {
+            CreateMap<UsersModel, UserDto>().ReverseMap();
+
             // EvaluationCategories
             CreateMap<EvaluationCategoriesModel, EvaluationCategoryDto>().ReverseMap();
 

@@ -2,6 +2,7 @@
 using ctp_docente_portal.Server.DTOs.StudentEvaluationScores;
 using ctp_docente_portal.Server.DTOs.Students;
 using ctp_docente_portal.Server.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,6 +10,7 @@ namespace ctp_docente_portal.Server.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class EvaluationScoresController : ControllerBase
     {
         private readonly IEvaluationScoreService _evaluationScoreService;
