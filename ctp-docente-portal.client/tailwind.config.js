@@ -33,10 +33,10 @@ export default {
         // 	DEFAULT: 'hsl(0, 0%, 96.1%)',
         // 	foreground: 'hsl(0, 0%, 45.1%)'
         // },
-        // accent: {
-        // 	DEFAULT: 'hsl(0, 0%, 96.1%)',
-        // 	foreground: 'hsl(0, 0%, 9%)'
-        // },
+        accent: {
+          DEFAULT: "hsl(0, 0%, 96.1%)",
+          foreground: "hsl(0, 0%, 9%)",
+        },
       },
     },
   },

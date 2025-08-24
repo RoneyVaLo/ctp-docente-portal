@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import toast from "react-hot-toast";
 
 export const useEvaluationLogic = () => {
   const [loading, setLoading] = useState(false);
@@ -51,10 +52,13 @@ export const useEvaluationLogic = () => {
     const fetchAcademicPeriods = async () => {
       try {
         setLoading(true);
-        const response = await axios.get("/api/academicperiods");
+        const token = localStorage.getItem("token");
+        const response = await axios.get("/api/academicperiods", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         setAcademicPeriods(response.data);
       } catch (error) {
-        console.error(error?.response?.data?.Message);
+        toast.error(error?.response?.data?.Message);
       } finally {
         setLoading(false);
       }
@@ -68,14 +72,17 @@ export const useEvaluationLogic = () => {
       try {
         setLoading(true);
         if (selectedPeriod) {
-          // setSelectedSubject(sessionStorage.getItem("selectedSubject") || "");
+          const token = localStorage.getItem("token");
           const response = await axios.get(
-            `/api/subject/period/${selectedPeriod}/subjects`
+            `/api/subject/period/${selectedPeriod}/subjects`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
           );
           setSubjects(response.data);
         }
       } catch (error) {
-        console.error(error?.response?.data?.Message);
+        toast.error(error?.response?.data?.Message);
       } finally {
         setLoading(false);
       }
@@ -92,13 +99,17 @@ export const useEvaluationLogic = () => {
           // setSelectedGroup("");
           setStudents([]);
           setEvaluationItems([]);
+          const token = localStorage.getItem("token");
           const response = await axios.get(
-            `/api/section/period/${selectedPeriod}/subjects/${selectedSubject}/sections`
+            `/api/section/period/${selectedPeriod}/subjects/${selectedSubject}/sections`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
           );
           setSections(response.data);
         }
       } catch (error) {
-        console.error(error?.response?.data?.Message);
+        toast.error(error?.response?.data?.Message);
       } finally {
         setLoading(false);
       }
@@ -124,8 +135,12 @@ export const useEvaluationLogic = () => {
         if (selectedPeriod && selectedSubject && selectedGroup) {
           setStudents([]);
           setEvaluationItems([]);
+          const token = localStorage.getItem("token");
           const response = await axios.get(
-            `/api/evaluationscores/subject/${selectedSubject}/section/${selectedGroup}`
+            `/api/evaluationscores/subject/${selectedSubject}/section/${selectedGroup}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
           );
           const { items, students } = response.data;
           setEvaluationItems(items);
@@ -138,7 +153,7 @@ export const useEvaluationLogic = () => {
           );
         }
       } catch (error) {
-        console.error(error?.response?.data?.Message);
+        toast.error(error?.response?.data?.Message);
       } finally {
         setLoading(false);
       }
