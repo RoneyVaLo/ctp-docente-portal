@@ -6,17 +6,31 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ctp_docente_portal.Server.Services.Implementations
 {
+    /// <summary>
+    /// Service in charge of user management.
+    /// </summary>
     public class UserService : IUserService
     {
         private readonly AppDbContext _context;
         private readonly IMapper _mapper;
 
+        /// <summary>
+        /// User Service Builder.
+        /// </summary>
+        /// <param name="context">Database context.</param>
+        /// <param name="mapper"><see cref="IMapper"/> instance for mapping between entities and DTOs.</param>
         public UserService(AppDbContext context, IMapper mapper)
         {
             _context = context;
             _mapper = mapper;
         }
 
+        /// <summary>
+        /// Gets a user by its ID.
+        /// </summary>
+        /// <param name="id">The unique identifier of the user.</param>
+        /// <returns>A <see cref="UserDto"/> object representing the user.</returns>
+        /// <exception cref="UnauthorizedAccessException">If the user is not found or has no relationship with a staff.</exception>
         public async Task<UserDto> GetByIdAsync(int id)
         {
             var user = await _context.Users.FindAsync(id);

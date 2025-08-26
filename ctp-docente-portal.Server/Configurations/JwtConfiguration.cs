@@ -5,8 +5,15 @@ using System.Text;
 
 namespace ctp_docente_portal.Server.Configurations
 {
+    /// <summary>
+    /// Configuration for JWT-based authentication.
+    /// </summary>
     public static class JwtConfiguration
     {
+        /// <summary>
+        /// Configures JWT authentication in the application pipeline.
+        /// </summary>
+        /// <param name="builder">The application builder object.</param>
         public static void ConfigureJwtAuthentication(WebApplicationBuilder builder)
         {
             var configuration = builder.Configuration;
