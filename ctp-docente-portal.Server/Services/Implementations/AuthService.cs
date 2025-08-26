@@ -12,12 +12,21 @@ using ctp_docente_portal.Server.DTOs.Users;
 
 namespace ctp_docente_portal.Server.Services.Implementations
 {
+    /// <summary>
+    /// Service responsible for authentication and generation of JWT tokens.
+    /// </summary>
     public class AuthService : IAuthService
     {
         private readonly AppDbContext _context;
         private readonly IConfiguration _config;
         private readonly IMapper _mapper;
 
+        /// <summary>
+        /// Authentication service constructor.
+        /// </summary>
+        /// <param name="context">Database context.</param>
+        /// <param name="config">Application configuration.</param>
+        /// <param name="mapper">Instance of <see cref="IMapper"/> for mapping between entities and DTOs.</param>
         public AuthService(AppDbContext context, IConfiguration config, IMapper mapper)
         {
             _context = context;
@@ -25,6 +34,12 @@ namespace ctp_docente_portal.Server.Services.Implementations
             _mapper = mapper;
         }
 
+        /// <summary>
+        /// Performs a user login and returns a JWT token and User data.
+        /// </summary>
+        /// <param name="request">A <see cref="LoginRequestDto"/> object with the login credentials.</param>
+        /// <returns>A <see cref="LoginResponseDto"/> object with the user's token and data.</returns>
+        /// <exception cref="UnauthorizedAccessException">If the credentials are invalid or the user is inactive.</exception>
         public async Task<LoginResponseDto> LoginAsync(LoginRequestDto request)
         {
             var user = await _context.Users
@@ -71,6 +86,13 @@ namespace ctp_docente_portal.Server.Services.Implementations
             };
         }
 
+        /// <summary>
+        /// Generates a JWT token based on the user and their roles.
+        /// </summary>
+        /// <param name="user">The authenticating user.</param>
+        /// <param name="roles">The roles assigned to the user.</param>
+        /// <returns>The generated JWT token.</returns>
+        /// <exception cref="KeyNotFoundException">If Jwt:Key is not set</exception>
         private string GenerateJwtToken(UsersModel user, IEnumerable<string> roles)
         {
             var claims = new List<Claim>

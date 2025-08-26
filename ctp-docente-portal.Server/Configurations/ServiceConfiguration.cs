@@ -8,8 +8,15 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace ctp_docente_portal.Server.Configurations
 {
+    /// <summary>
+    /// Static class responsible for configuring application services.
+    /// </summary>
     public static class ServiceConfiguration
     {
+        /// <summary>
+        /// Registers services and dependencies used by the application.
+        /// </summary>
+        /// <param name="builder">An instance of <see cref="WebApplicationBuilder"/> used to register services.</param>
         public static void ConfigureServices(WebApplicationBuilder builder)
         {
             var configuration = builder.Configuration;
@@ -37,6 +44,10 @@ namespace ctp_docente_portal.Server.Configurations
             });
         }
 
+        /// <summary>
+        /// Creates and configures an instance of <see cref="IMapper"/>.
+        /// </summary>
+        /// <returns>A configured <see cref="IMapper"/> instance.</returns>
         private static IMapper CreateMapper()
         {
             var configExpr = new MapperConfigurationExpression();
@@ -46,6 +57,10 @@ namespace ctp_docente_portal.Server.Configurations
             return mapperConfig.CreateMapper();
         }
 
+        /// <summary>
+        /// Registers the application's custom services in the dependency injection container.
+        /// </summary>
+        /// <param name="services">The service collection to which the custom services will be added.</param>
         private static void RegisterAppServices(IServiceCollection services)
         {
             services.AddScoped<IAuthService, AuthService>();

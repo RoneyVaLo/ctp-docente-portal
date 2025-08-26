@@ -5,6 +5,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ctp_docente_portal.Server.Controllers
 {
+    /// <summary>
+    /// Controller that handles user-related operations.
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
@@ -12,12 +15,20 @@ namespace ctp_docente_portal.Server.Controllers
     {
         private readonly IUserService _userService;
 
+        /// <summary>
+        /// User controller constructor.
+        /// </summary>
+        /// <param name="userService">User service.</param>
         public UsersController(IUserService userService)
         {
             _userService = userService;
         }
 
-        // 📌 GET /api/users/{id}
+        /// <summary>
+        /// Gets a user by their ID.
+        /// </summary>
+        /// <param name="id">The user's identifier.</param>
+        /// <returns>A <see cref="UserDto"/> object with the user's details.</returns>
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
