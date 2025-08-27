@@ -1,8 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using ctp_docente_portal.Server.DTOs.Reports;
-using ctp_docente_portal.Server.Helpers;
-
-
 
 namespace ctp_docente_portal.Server.Controllers
 {
@@ -33,7 +29,15 @@ namespace ctp_docente_portal.Server.Controllers
             })
             .ToArray();
         }
-        
 
+        // ? M�todo completo para evitar errores de compilaci�n
+        [HttpGet("grades/pdf")]
+        public async Task<IActionResult> ExportGradesPdf()
+        {
+            // Por ahora solo devolvemos un mensaje simulado
+            await Task.Delay(100); // Simula proceso as�ncrono
+
+            return Ok(new { message = "Generaci�n de PDF en construcci�n." });
+        }
     }
 }

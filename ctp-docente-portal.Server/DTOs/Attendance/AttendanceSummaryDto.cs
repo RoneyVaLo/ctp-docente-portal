@@ -1,4 +1,4 @@
-namespace ctp_docente_portal.Server.DTOs.Attendance
+﻿namespace ctp_docente_portal.Server.DTOs.Attendance
 {
     public class AttendanceSummaryDto
     {

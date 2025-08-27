@@ -1,4 +1,6 @@
 import React from "react";
+import AttendancePage from "./AttendancePage";
+export { default } from "./Attendance/AttendancePage";
 
 const Attendance = () => {
   return (
@@ -9,4 +11,9 @@ const Attendance = () => {
   );
 };
 
-export default Attendance;
+export default function Attendance() {
+  return <AttendancePage />;
+}
+
+
+

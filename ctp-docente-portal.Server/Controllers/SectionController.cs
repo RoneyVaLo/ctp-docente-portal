@@ -1,4 +1,5 @@
-﻿using ctp_docente_portal.Server.DTOs.Sections;
+﻿using ctp_docente_portal.Server.DTOs.Attendance;
+using ctp_docente_portal.Server.DTOs.Sections;
 using ctp_docente_portal.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -24,6 +25,27 @@ namespace ctp_docente_portal.Server.Controllers
         {
             var sections = await _sectionService.GetSectionsByPeriodAndSubjectAsync(academicPeriodId, subjectId);
             return Ok(sections);
+        }
+
+        // GET /api/section/active
+        [HttpGet("active")]
+        public async Task<ActionResult<List<SectionOptionDto>>> GetActive(CancellationToken ct)
+        {
+            var data = await _sectionService.GetOptionsAsync(isActive: true, ct: ct);
+            return Ok(data);
+        }
+
+        // (opcional) genérico con filtros
+        [HttpGet]
+        public async Task<ActionResult<List<SectionOptionDto>>> Get(
+            [FromQuery] int? year,
+            [FromQuery] int? enrollmentId,
+            [FromQuery] bool? isActive,
+            [FromQuery] int? gradeId,
+            CancellationToken ct)
+        {
+            var data = await _sectionService.GetOptionsAsync(year, enrollmentId, isActive, gradeId, ct);
+            return Ok(data);
         }
     }
 }

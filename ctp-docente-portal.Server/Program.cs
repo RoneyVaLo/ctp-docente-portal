@@ -1,16 +1,6 @@
-﻿using AutoMapper;
-using ctp_docente_portal.Server.Configurations;
-using ctp_docente_portal.Server.Data;
-using ctp_docente_portal.Server.Mappings;
-using ctp_docente_portal.Server.Middleware;
+﻿using ctp_docente_portal.Server.Configurations;
 using ctp_docente_portal.Server.Services.Implementations;
-using ctp_docente_portal.Server.Services.Interfaces;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using System.Text.Json;
+
 
 namespace ctp_docente_portal.Server
 {
@@ -19,6 +9,9 @@ namespace ctp_docente_portal.Server
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
+            builder.Services.Configure<WhatsAppApiSettings>(
+            builder.Configuration.GetSection("WhatsApp"));
 
             ServiceConfiguration.ConfigureServices(builder);
             JwtConfiguration.ConfigureJwtAuthentication(builder);

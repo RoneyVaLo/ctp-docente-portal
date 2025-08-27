@@ -53,6 +53,7 @@ export default defineConfig({
             },
             '/api': {
                 target: 'http://localhost:5103/',
+                changeOrigin: true,
                 secure: false
             }
         },
