@@ -2,7 +2,7 @@ const BASE_URL = import.meta.env.VITE_API_URL ?? "https://localhost:5001";
 
 export const notificationsApi = {
   async sendAbsences({ date, sectionId, subject }) {
-    const res = await fetch(`${BASE_URL}/api/notifications/absences`, {
+    const res = await fetch(`${BASE_URL}/notifications/absences`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -13,7 +13,7 @@ export const notificationsApi = {
   },
 
   async list({ date, sectionId, status, subject }) {
-    const url = new URL(`${BASE_URL}/api/notifications`);
+    const url = new URL(`${BASE_URL}/notifications`);
     if (date) url.searchParams.set("date", date);
     if (sectionId) url.searchParams.set("sectionId", sectionId);
     if (status) url.searchParams.set("status", status);
@@ -24,7 +24,7 @@ export const notificationsApi = {
   },
 
   async resend(id) {
-    const res = await fetch(`${BASE_URL}/api/notifications/${id}/resend`, {
+    const res = await fetch(`${BASE_URL}/notifications/${id}/resend`, {
       method: "POST",
       credentials: "include"
     });
@@ -33,7 +33,7 @@ export const notificationsApi = {
   },
 
   async testSend({ to, message }) {
-    const res = await fetch(`${BASE_URL}/api/notifications/test`, {
+    const res = await fetch(`${BASE_URL}/notifications/test`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",

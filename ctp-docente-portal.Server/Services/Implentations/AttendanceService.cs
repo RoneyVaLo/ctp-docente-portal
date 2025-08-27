@@ -19,23 +19,45 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
         public async Task CreateGroupAttendanceAsync(CreateGroupAttendanceDto dto)
         {
-            var attendances = dto.Students.Select(student => new Attendance
+            var utcNow = DateTime.UtcNow;
+            var userId = 1;
+            DateTime takenAtUtc = dto.TakenAt.Kind switch
             {
-                StudentId = student.StudentId,
-                SectionId = dto.SectionId,
-                Date = dto.Date,
-                StatusTypeId = student.StatusTypeId,
-                Observations = student.Observations,
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = 1 // Usuario autenticado
-            }).ToList();
+                DateTimeKind.Utc => dto.TakenAt,
+                DateTimeKind.Local => dto.TakenAt.ToUniversalTime(),
+                DateTimeKind.Unspecified => DateTime.SpecifyKind(dto.TakenAt, DateTimeKind.Local).ToUniversalTime()
+            };
 
-            _context.Attendances.AddRange(attendances);
-            await _context.SaveChangesAsync();
-
-            foreach (var a in attendances.Where(a => a.StatusTypeId == 2))
+            foreach (var st in dto.Students)
             {
-                await _notificationService.QueueAbsenceMessageAsync(a);
+                await _context.Database.ExecuteSqlInterpolatedAsync($@"
+                INSERT INTO ""Attendances""
+                    (""StudentId"", ""SectionId"", ""SubjectId"", ""Date"", ""TakenAt"", ""StatusTypeId"", ""MinutesLate"", ""Observations"", ""CreatedAt"", ""CreatedBy"")
+                VALUES
+                    ({st.StudentId}, {dto.SectionId}, {dto.SubjectId}, {dto.Date}, {takenAtUtc}, {st.StatusTypeId}, {st.MinutesLate}, {st.Observations}, {utcNow}, {userId})
+                ON CONFLICT (""StudentId"", ""SectionId"", ""SubjectId"", ""Date"")
+                DO UPDATE SET
+                    ""StatusTypeId"" = EXCLUDED.""StatusTypeId"",
+                    ""MinutesLate""  = EXCLUDED.""MinutesLate"",
+                    ""Observations"" = EXCLUDED.""Observations"",
+                    ""TakenAt""      = EXCLUDED.""TakenAt"",
+                    ""UpdatedAt""    = {utcNow},
+                    ""UpdatedBy""    = {userId};");
+
+                if (st.StatusTypeId == 2)
+                {
+                    await _notificationService.QueueAbsenceMessageAsync(new Attendance
+                    {
+                        StudentId = st.StudentId,
+                        SectionId = dto.SectionId,
+                        SubjectId = dto.SubjectId,
+                        Date = dto.Date,
+                        TakenAt = dto.TakenAt,
+                        StatusTypeId = st.StatusTypeId,
+                        MinutesLate = st.MinutesLate,
+                        Observations = st.Observations
+                    });
+                }
             }
         }
 
@@ -47,6 +69,9 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
             attendance.StatusTypeId = dto.StatusTypeId;
             attendance.Observations = dto.Observations;
+            //attendance.MinutesLate = dto.MinutesLate; 
+            //attendance.TakenAt = dto.TakenAt ?? attendance.TakenAt;
+
             attendance.UpdatedAt = DateTime.UtcNow;
             attendance.UpdatedBy = 1;
 
@@ -63,6 +88,9 @@ namespace ctp_docente_portal.Server.Services.Implementations
             if (filter.SectionId.HasValue)
                 query = query.Where(a => a.SectionId == filter.SectionId);
 
+            if (filter.SubjectId.HasValue)
+                query = query.Where(a => a.SubjectId == filter.SubjectId);
+
             if (filter.StatusTypeId.HasValue)
                 query = query.Where(a => a.StatusTypeId == filter.StatusTypeId);
 
@@ -72,7 +100,10 @@ namespace ctp_docente_portal.Server.Services.Implementations
             if (filter.ToDate.HasValue)
                 query = query.Where(a => a.Date <= filter.ToDate.Value);
 
-            return await query.OrderByDescending(a => a.Date).ToListAsync();
+            return await query
+                .OrderByDescending(a => a.Date)
+                .ThenByDescending(a => a.TakenAt)
+                .ToListAsync();
         }
 
         public async Task<List<AttendanceSummaryDto>> GetSummaryByGroupAsync(int sectionId)

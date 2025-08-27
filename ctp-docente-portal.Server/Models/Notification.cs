@@ -11,7 +11,7 @@ namespace ctp_docente_portal.Server.Models
         public DateOnly Date { get; set; }
         public int SectionId { get; set; }
         public string Message { get; set; } = "";
-        public string Status { get; set; } = ""; // SENT | FAILED | QUEUED
+        public string Status { get; set; } = "";
         public string? ProviderMessageId { get; set; }
         public string? Error { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

@@ -3,10 +3,13 @@
 // Este DTO representa un formulario de asistencia para un grupo completo (una sección)
 namespace ctp_docente_portal.Server.DTOs.Attendance
 {
+    // Formulario de asistencia para una sección/materia en una fecha
     public class CreateGroupAttendanceDto
     {
         public int SectionId { get; set; }
-        public DateTime Date { get; set; }
+        public int SubjectId { get; set; }       
+        public DateOnly Date { get; set; }        
+        public DateTime TakenAt { get; set; }     
         public List<StudentAttendanceDto> Students { get; set; } = new();
         public string Observations { get; set; } = string.Empty;
     }
@@ -15,8 +18,7 @@ namespace ctp_docente_portal.Server.DTOs.Attendance
     {
         public int StudentId { get; set; }
         public int StatusTypeId { get; set; }
-
-        // Evita valores NULL
+        public int MinutesLate { get; set; } = 0;         
         public string Observations { get; set; } = string.Empty;
     }
 }

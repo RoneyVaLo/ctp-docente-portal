@@ -20,7 +20,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
         // ----------------- Helpers -----------------
         private static string ComposeStudentName(StudentsModel s)
         {
-            var parts = new[] { s.Name, s.MiddleName, s.LastName, s.NdLastName }
+            var parts = new[] { s.Name, s.MiddleName, s.LastName, s.ndLastName }
                         .Where(p => !string.IsNullOrWhiteSpace(p));
             return string.Join(" ", parts);
         }
@@ -55,39 +55,40 @@ namespace ctp_docente_portal.Server.Services.Implementations
         };
 
         // ============== Enviar notificaciones de AUSENTES (fecha+sección) ==============
-        public async Task<SendAbsencesResponse> SendAbsencesAsync(SendAbsencesRequest request, CancellationToken ct = default)
+        public async Task<SendAbsencesResponse> SendAbsencesAsync(
+            SendAbsencesRequest request, CancellationToken ct = default)
         {
             var resp = new SendAbsencesResponse();
 
-            // Attendance.Date es DateTime -> comparamos por rango del día (index-friendly)
-            var from = request.Date.ToDateTime(TimeOnly.MinValue);
-            var to   = request.Date.AddDays(1).ToDateTime(TimeOnly.MinValue);
+            var day = request.Date; // DateOnly
 
             var absents = await _db.Attendances
                 .AsNoTracking()
                 .Where(a => a.SectionId == request.SectionId
-                         && a.StatusTypeId == 2   // 2 = Ausente
-                         && a.Date >= from && a.Date < to)
-                .Select(a => new { a.StudentId, a.SectionId }) // columnas mínimas
+                         && a.StatusTypeId == 2     // Ausente
+                         && a.Date == day)          // <- DateOnly == DateOnly
+                .Select(a => new { a.StudentId, a.SectionId })
                 .Distinct()
                 .ToListAsync(ct);
 
-            if (absents.Count == 0) return resp;
+            // Evita error de “grupo de métodos”
+            if (!absents.Any()) return resp;
 
             var studentIds = absents.Select(a => a.StudentId).Distinct().ToArray();
 
             var students = await _db.Students
                 .AsNoTracking()
-                .Where(s => studentIds.Contains(s.Id) && s.IsActive)
+                .Where(s => studentIds.Contains(s.Id) && s.isActive)
                 .ToDictionaryAsync(s => s.Id, s => s, ct);
 
             foreach (var a in absents)
             {
-                // Evitar duplicado mismo estudiante/fecha/sección
+                // n.Date debe ser DateOnly en tu modelo Notifications
                 bool already = await _db.Notifications.AsNoTracking().AnyAsync(n =>
                     n.StudentId == a.StudentId &&
                     n.SectionId == request.SectionId &&
-                    n.Date == request.Date, ct);
+                    n.Date == day, ct);
+
                 if (already) continue;
 
                 var s = students.GetValueOrDefault(a.StudentId);
@@ -98,7 +99,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
                     studentId: a.StudentId,
                     studentName: name,
                     phoneE164: phone,
-                    date: request.Date,
+                    date: day,                      // DateOnly
                     sectionId: request.SectionId,
                     ct: ct);
 
@@ -191,12 +192,12 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
         // compatibilidad con tu interfaz (por si la llaman desde AttendanceService)
         public Task<NotificationDto> QueueAbsenceMessageAsync(Attendance a, CancellationToken ct = default)
-            => QueueAbsenceMessageAsync(
-                a.StudentId,
-                $"Estudiante {a.StudentId}",
-                "",
-                DateOnly.FromDateTime(a.Date),
-                a.SectionId,
-                ct);
+        => QueueAbsenceMessageAsync(
+            a.StudentId,
+            $"Estudiante {a.StudentId}",
+            "",
+            date: a.Date,           // <-- pasa DateOnly directamente
+            sectionId: a.SectionId,
+            ct: ct);
     }
 }

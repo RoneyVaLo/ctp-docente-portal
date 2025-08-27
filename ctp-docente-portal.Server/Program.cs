@@ -3,6 +3,7 @@ using ctp_docente_portal.Server.Data;
 using ctp_docente_portal.Server.Mappings;
 //using ctp_docente_portal.Server.Middleware;
 using ctp_docente_portal.Server.Services.Implementations;
+using ctp_docente_portal.Server.Services.Implentations;
 using ctp_docente_portal.Server.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -15,7 +16,6 @@ namespace ctp_docente_portal.Server
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-
 
             // Add DbContext with PostgreSQL
 
@@ -35,17 +35,13 @@ namespace ctp_docente_portal.Server
                     NullLoggerFactory.Instance
                 );
 
-
-
-
-
-
-
             // 3) Crea el IMapper y regístralo
             var mapper = mapperConfig.CreateMapper();
             builder.Services.AddSingleton<IMapper>(mapper);
             builder.Services.AddScoped<INotificationService, NotificationService>();
             builder.Services.AddScoped<IWhatsAppApiService, WhatsAppApiService>();
+            builder.Services.AddScoped<ISectionsService, SectionsService>();
+            builder.Services.AddScoped<IAttendanceService, AttendanceService>();
             builder.Services.Configure<WhatsAppApiSettings>(
             builder.Configuration.GetSection("WhatsApp"));
             builder.Services.AddDbContext<AppDbContext>(options =>
@@ -65,20 +61,14 @@ namespace ctp_docente_portal.Server
             //builder.Services.AddScoped<ISubjectService, SubjectService>();
             //builder.Services.AddScoped<IStudentService, StudentService>();
             //builder.Services.AddScoped<IEvaluationScoreService, EvaluationScoreService>();
-
-
-            const string ViteCorsPolicy = "ViteCors";
-            builder.Services.AddCors(options =>
+            builder.Services.AddCors(opt =>
             {
-                options.AddPolicy(ViteCorsPolicy, policy =>
-                {
-                    policy.WithOrigins("https://localhost:5173")
-                          .AllowAnyHeader()
-                          .AllowAnyMethod()
-                          .AllowCredentials();
-                });
+                opt.AddPolicy("frontend", p => p
+                    .WithOrigins("https://localhost:5173", "http://localhost:5173") 
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                );
             });
-
 
             var app = builder.Build();
 
@@ -91,7 +81,7 @@ namespace ctp_docente_portal.Server
             // Configure the HTTP request pipeline.
 
             app.UseRouting();
-
+            app.UseCors("frontend");
             app.UseAuthorization();
 
 
