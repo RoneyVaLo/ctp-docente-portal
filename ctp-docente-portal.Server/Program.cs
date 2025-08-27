@@ -4,6 +4,7 @@ using ctp_docente_portal.Server.Data;
 using ctp_docente_portal.Server.Mappings;
 using ctp_docente_portal.Server.Middleware;
 using ctp_docente_portal.Server.Services.Implementations;
+using ctp_docente_portal.Server.Services.Implentations;
 using ctp_docente_portal.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -33,18 +34,13 @@ namespace ctp_docente_portal.Server
             //builder.Services.AddScoped<ISubjectService, SubjectService>();
             //builder.Services.AddScoped<IStudentService, StudentService>();
             //builder.Services.AddScoped<IEvaluationScoreService, EvaluationScoreService>();
-
-
-            const string ViteCorsPolicy = "ViteCors";
-            builder.Services.AddCors(options =>
+            builder.Services.AddCors(opt =>
             {
-                options.AddPolicy(ViteCorsPolicy, policy =>
-                {
-                    policy.WithOrigins("https://localhost:5173")
-                          .AllowAnyHeader()
-                          .AllowAnyMethod()
-                          .AllowCredentials();
-                });
+                opt.AddPolicy("frontend", p => p
+                    .WithOrigins("https://localhost:5173", "http://localhost:5173") 
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                );
             });
 
 
