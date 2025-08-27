@@ -18,12 +18,9 @@ import Loader1 from "./components/loaders/Loader1";
 import PublicRoute from "./routes/PublicRoute";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import RoleRoute from "./routes/RoleRoute";
-import SessionExpired from "./pages/SessionExpired";
 import AccessDenied from "./pages/AccessDenied";
 import AttendancePage from "./pages/Attendance/AttendancePage";
 
-// ❌ elimina este si aún lo tenías
-// import Attendance from "@/pages/Attendance";
 
 function App() {
   const { loading } = useAuth();
@@ -91,7 +88,7 @@ function App() {
                 },
                 {
                   path: "asistencia",
-                  element: <Asistencia />,
+                  element: <AttendancePage />,
                 },
               ],
             },

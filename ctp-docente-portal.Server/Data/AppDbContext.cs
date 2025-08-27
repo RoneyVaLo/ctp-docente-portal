@@ -29,9 +29,11 @@ namespace ctp_docente_portal.Server.Data
         public DbSet<EvaluationItemsModel> EvaluationItems { get; set; }
         public DbSet<SubjectsModel> Subjects{ get; set; }
         public DbSet<UsersModel> Users{ get; set; }
+
         public DbSet<WhatsAppMessage> WhatsAppMessages { get; set; }
         public DbSet<Notification> Notifications { get; set; } = null!;
         public DbSet<StudentRepresentativesModel> StudentRepresentatives { get; set; } = null!;
+        public DbSet<EnrollmentsModel> Enrollments { get; set; } = null!;
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -61,6 +63,18 @@ namespace ctp_docente_portal.Server.Data
             });
             
             modelBuilder.Entity<UsersModel>(entity =>
+            {
+                // Indica que EF Core no debe gestionar esta tabla en migraciones
+                entity.Metadata.SetIsTableExcludedFromMigrations(true);
+            });
+
+            modelBuilder.Entity<StudentRepresentativesModel>(entity =>
+            {
+                // Indica que EF Core no debe gestionar esta tabla en migraciones
+                entity.Metadata.SetIsTableExcludedFromMigrations(true);
+            });
+
+            modelBuilder.Entity<EnrollmentsModel>(entity =>
             {
                 // Indica que EF Core no debe gestionar esta tabla en migraciones
                 entity.Metadata.SetIsTableExcludedFromMigrations(true);

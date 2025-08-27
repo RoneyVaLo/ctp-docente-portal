@@ -20,6 +20,7 @@ namespace ctp_docente_portal.Server.Mappings
             CreateMap<Attendance, AttendanceSummaryDto>().ReverseMap();
             CreateMap<CreateGroupAttendanceDto, Attendance>().ReverseMap();
 
+            // Users
             CreateMap<UsersModel, UserDto>().ReverseMap();
 
             // EvaluationCategories
@@ -29,12 +30,13 @@ namespace ctp_docente_portal.Server.Mappings
             CreateMap<EvaluationItemsModel, EvaluationItemCreateDto>().ReverseMap();
             CreateMap<EvaluationItemsModel, EvaluationItemUpdateDto>().ReverseMap();
             CreateMap<EvaluationItemsModel, EvaluationItemDto>().ReverseMap();
-            // ✅ EvaluationCriteria
+
+            // EvaluationCriteria
             CreateMap<EvaluationCriteriaModel, EvaluationCriteriaCreateDto>().ReverseMap();
             CreateMap<EvaluationCriteriaModel, EvaluationCriteriaUpdateDto>().ReverseMap();
             CreateMap<EvaluationCriteriaModel, EvaluationCriteriaDto>().ReverseMap();
 
-            // ✅ StudentEvaluationScore
+            // StudentEvaluationScore
             CreateMap<StudentEvaluationScoresModel, StudentEvaluationScoreCreateDto>().ReverseMap();
             CreateMap<StudentEvaluationScoresModel, StudentEvaluationScoreUpdateDto>().ReverseMap();
             CreateMap<StudentEvaluationScoresModel, StudentEvaluationScoreDto>().ReverseMap();

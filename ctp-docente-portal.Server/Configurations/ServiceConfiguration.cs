@@ -74,6 +74,12 @@ namespace ctp_docente_portal.Server.Configurations
             services.AddScoped<IEvaluationScoreService, EvaluationScoreService>();
             services.AddScoped<IStudentCriteriaScoreService, StudentCriteriaScoreService>();
             services.AddScoped<IUserService, UserService>();
+
+            services.AddScoped<INotificationService, NotificationService>();
+            services.AddScoped<IWhatsAppApiService, WhatsAppApiService>();
+            services.AddScoped<IAttendanceService, AttendanceService>();
+
+            services.AddHttpClient<IWhatsAppApiService, WhatsAppApiService>();
         }
     }
 }
