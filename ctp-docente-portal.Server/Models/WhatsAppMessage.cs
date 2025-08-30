@@ -1,4 +1,4 @@
-﻿namespace ctp_docente_portal.Server.Models
+namespace ctp_docente_portal.Server.Models
 {
     public class WhatsAppMessage
     {

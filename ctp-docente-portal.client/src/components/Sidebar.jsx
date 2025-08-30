@@ -15,19 +15,32 @@ import {
 import Button from "./ui/Button";
 import NavItem from "./NavItem";
 import { cn } from "../utils/cn";
+import { useAuth } from "../context/AuthContext";
 
-export default function Sidebar() {
+export default function Sidebar({ isMobileOpen, onCloseMobile }) {
+  const { roles } = useAuth();
+
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
+
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
 
   const toggleSidebar = () => {
-    setCollapsed(!collapsed);
+    if (isMobile && isMobileOpen) {
+      onCloseMobile();
+    } else {
+      setCollapsed(!collapsed);
+    }
   };
 
   return (
     <div
       className={cn(
-        "shadow-2xl h-screen flex flex-col transition-all duration-300 sticky top-0 z-10",
+        `${
+          !isMobileOpen
+            ? "hidden"
+            : "flex fixed inset-0 z-50 bg-background dark:bg-background-dark"
+        } shadow-2xl h-screen sm:flex flex-col transition-all duration-300 sm:sticky top-0 z-[51]`,
         collapsed ? "w-16" : "w-64"
       )}
     >
@@ -38,9 +51,16 @@ export default function Sidebar() {
             collapsed && "justify-center"
           )}
         >
-          <BookOpen className="h-6 w-6 text-gray-900 shrink-0 dark:text-white" />
+          <img
+            src="/ctp.avif"
+            alt="Logo del CTP de Los Chiles"
+            className="max-h-6 max-w-6"
+          />
           <span
-            className={cn("font-bold text-gray-900 dark:text-white", collapsed && "hidden")}
+            className={cn(
+              "font-bold text-gray-900 dark:text-white",
+              collapsed && "hidden"
+            )}
           >
             Admin Docente
           </span>
@@ -60,7 +80,7 @@ export default function Sidebar() {
       </div>
 
       <div className="flex-1 py-4 overflow-y-auto">
-        <nav className="space-y-1 px-2">
+        <aside className="space-y-1 px-2">
           <NavItem
             href="/"
             icon={<Home className="h-5 w-5" />}
@@ -68,20 +88,27 @@ export default function Sidebar() {
             active={location.pathname === "/"}
             collapsed={collapsed}
           />
-          <NavItem
-            href="/calificaciones"
-            icon={<CheckSquare className="h-5 w-5" />}
-            label="Calificaciones"
-            active={location.pathname.includes("/calificaciones")}
-            collapsed={collapsed}
-          />
-          <NavItem
-            href="/asistencia"
-            icon={<Calendar className="h-5 w-5" />}
-            label="Asistencia"
-            active={location.pathname.includes("/asistencia")}
-            collapsed={collapsed}
-          />
+          {roles.includes("Docente") && (
+            <>
+              <NavItem
+                href="/calificaciones"
+                icon={<CheckSquare className="h-5 w-5" />}
+                label="Calificaciones"
+                active={
+                  location.pathname.includes("/calificaciones") ||
+                  location.pathname.includes("/item")
+                }
+                collapsed={collapsed}
+              />
+              <NavItem
+                href="/asistencia"
+                icon={<Calendar className="h-5 w-5" />}
+                label="Asistencia"
+                active={location.pathname.includes("/asistencia")}
+                collapsed={collapsed}
+              />
+            </>
+          )}
           <NavItem
             href="/reportes"
             icon={<BarChart3 className="h-5 w-5" />}
@@ -103,18 +130,20 @@ export default function Sidebar() {
             active={location.pathname.includes("/estudiantes")}
             collapsed={collapsed}
           />
-        </nav>
+        </aside>
       </div>
 
-      <div className="p-4 border-t">
-        <NavItem
-          href="/configuracion"
-          icon={<Settings className="h-5 w-5" />}
-          label="Configuración"
-          active={location.pathname.includes("/configuracion")}
-          collapsed={collapsed}
-        />
-      </div>
+      {roles.includes("Administrativo") && (
+        <div className="py-4 px-2 border-t">
+          <NavItem
+            href="/configuracion"
+            icon={<Settings className="h-5 w-5" />}
+            label="Configuración"
+            active={location.pathname.includes("/configuracion")}
+            collapsed={collapsed}
+          />
+        </div>
+      )}
     </div>
   );
 }

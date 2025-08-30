@@ -30,15 +30,14 @@ namespace ctp_docente_portal.Server.Controllers
             .ToArray();
         }
 
-        // ? Método completo para evitar errores de compilación
+        // ? Mï¿½todo completo para evitar errores de compilaciï¿½n
         [HttpGet("grades/pdf")]
-        [ctp_docente_portal.Server.Middlewares.RequiredRole("Administrativo")]
         public async Task<IActionResult> ExportGradesPdf()
         {
             // Por ahora solo devolvemos un mensaje simulado
-            await Task.Delay(100); // Simula proceso asíncrono
+            await Task.Delay(100); // Simula proceso asï¿½ncrono
 
-            return Ok(new { message = "Generación de PDF en construcción." });
+            return Ok(new { message = "Generaciï¿½n de PDF en construcciï¿½n." });
         }
     }
 }

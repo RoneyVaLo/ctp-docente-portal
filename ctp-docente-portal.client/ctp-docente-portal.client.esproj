@@ -9,7 +9,15 @@
     <PublishAssetsDirectory>$(MSBuildProjectDirectory)\dist</PublishAssetsDirectory>
   </PropertyGroup>
   <ItemGroup>
-    <Folder Include="src\NewFolder1\" />
-    <Folder Include="src\NewFolder\" />
+    <TypeScriptConfiguration Remove="src\NewFolder\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="src\NewFolder\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <TypeScriptConfiguration Remove="src\NewFolder1\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="src\NewFolder1\**" />
   </ItemGroup>
 </Project>

@@ -1,12 +1,15 @@
 ﻿using ctp_docente_portal.Server.DTOs.EvaluationCriteria;
 using ctp_docente_portal.Server.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
 
 namespace ctp_docente_portal.Server.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Policy = "DocenteOnly")]
     public class EvaluationCriteriaController : ControllerBase
     {
         private readonly IEvaluationCriteriaService _service;
@@ -16,17 +19,24 @@ namespace ctp_docente_portal.Server.Controllers
             _service = service;
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] EvaluationCriteriaCreateDto dto)
+        // POST /api/evaluationcriteria/bulk
+        [HttpPost("bulk")]
+        public async Task<IActionResult> CreateMany([FromBody] List<EvaluationCriteriaDto> criteriaList)
         {
-            var result = await _service.CreateAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+            // ⚠️ Validación mínima: estructura válida
+            if (criteriaList == null || !criteriaList.Any())
+                return BadRequest("La lista de criterios no puede estar vacía.");
+
+            var result = await _service.CreateManyAsync(criteriaList);
+
+            // 201 Created con datos guardados
+            return Created(string.Empty, result);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] EvaluationCriteriaUpdateDto dto)
+        public async Task<IActionResult> Update([FromBody] List<EvaluationCriteriaDto> criteriaList)
         {
-            var result = await _service.UpdateAsync(id, dto);
+            var result = await _service.UpdateManyAsync(criteriaList);
             return Ok(result);
         }
 
@@ -48,6 +58,7 @@ namespace ctp_docente_portal.Server.Controllers
         public async Task<IActionResult> GetById(int id)
         {
             var result = await _service.GetByIdAsync(id);
+            //Console.WriteLine(result);
             return Ok(result);
         }
     }

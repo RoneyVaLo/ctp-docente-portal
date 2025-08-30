@@ -32,6 +32,8 @@ const DropdownMenu = ({ children }) => {
         props: { ...content.props, isOpen, onClose: handleClose },
       });
     }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [children, isOpen]);
 
   return (
@@ -130,11 +132,7 @@ DropdownMenuItem.displayName = "DropdownMenuItem";
 
 const DropdownMenuSeparator = forwardRef(
   ({ className = "", ...props }, ref) => (
-    <div
-      ref={ref}
-      className={`-mx-1 my-1 h-px bg-muted ${className}`}
-      {...props}
-    />
+    <div ref={ref} className={`-mx-1 my-1 h-px ${className}`} {...props} />
   )
 );
 DropdownMenuSeparator.displayName = "DropdownMenuSeparator";

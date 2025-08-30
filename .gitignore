@@ -363,7 +363,7 @@ MigrationBackup/
 FodyWeavers.xsd
 
 
-
 appsettings.Development.json
 .env
 secrets.json
+commit_generator.py

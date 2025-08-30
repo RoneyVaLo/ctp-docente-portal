@@ -86,13 +86,13 @@ namespace ctp_docente_portal.Server.Controllers
         {
             if (sectionId <= 0) return Ok(new List<StudentListItemDto>());
 
-            var list = await (from ss in _context.SectionStudent.AsNoTracking()
-                              join s in _context.StudentsV2.AsNoTracking() on ss.StudentId equals s.Id
-                              where ss.IsActive && s.IsActive && ss.SectionId == sectionId
+            var list = await (from ss in _context.SectionStudents.AsNoTracking()
+                              join s in _context.Students.AsNoTracking() on ss.StudentId equals s.Id
+                              where ss.isActive && s.isActive && ss.SectionId == sectionId
                               select new StudentListItemDto
                               {
                                   Id = s.Id,
-                                  FullName = ((s.Name ?? "") + " " + (s.MiddleName ?? "") + " " + (s.LastName ?? "") + " " + (s.NdLastName ?? "")).Trim(),
+                                  FullName = ((s.Name ?? "") + " " + (s.MiddleName ?? "") + " " + (s.LastName ?? "") + " " + (s.ndLastName ?? "")).Trim(),
                                   IdentificationNumber = s.IdentificationNumber ?? "",
                                   Subsection = ss.Subsection,
                                   BirthDate = s.BirthDate,
