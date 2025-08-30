@@ -55,7 +55,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
             var query =
                 from s in _context.Sections.AsNoTracking()
                 join e in _context.Enrollments.AsNoTracking() on s.EnrollmentId equals e.Id
-                where (!isActive.HasValue || s.isActive == isActive.Value)
+                where (!isActive.HasValue || s.IsActive == isActive.Value)
                    && (!enrollmentId.HasValue || s.EnrollmentId == enrollmentId.Value)
                    && (!gradeId.HasValue || s.GradeId == gradeId.Value)
                    && (!year.HasValue || e.Year == year.Value)
