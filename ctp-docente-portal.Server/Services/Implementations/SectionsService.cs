@@ -18,7 +18,7 @@ namespace ctp_docente_portal.Server.Services.Implentations
             CancellationToken ct = default)
         {
             var query =
-                from s in _context.Sections.AsNoTracking()
+                from s in _context.Section.AsNoTracking()
                 join e in _context.Enrollments.AsNoTracking() on s.EnrollmentId equals e.Id
                 where (!isActive.HasValue || s.IsActive == isActive.Value)
                    && (!enrollmentId.HasValue || s.EnrollmentId == enrollmentId.Value)

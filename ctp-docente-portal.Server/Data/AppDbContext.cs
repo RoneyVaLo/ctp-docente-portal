@@ -34,7 +34,11 @@ namespace ctp_docente_portal.Server.Data
         public DbSet<Notification> Notifications { get; set; } = null!;
         public DbSet<StudentRepresentativesModel> StudentRepresentatives { get; set; } = null!;
         public DbSet<EnrollmentsModel> Enrollments { get; set; } = null!;
+        public DbSet<SectionModel> Section { get; set; } = null!;
 
+        
+        public DbSet<SectionStudentModel> SectionStudent { get; set; } = null!;
+        public DbSet<StudentsModelV2> StudentsV2 { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
