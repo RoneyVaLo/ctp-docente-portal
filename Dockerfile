@@ -20,6 +20,11 @@ RUN dotnet restore ctp-docente-portal.sln
 # Copiar todo el código
 COPY . .
 
+# Compilar frontend
+WORKDIR /src/ctp-docente-portal.client
+ENV NODE_ENV=production
+RUN npm install && npm run build
+
 # Publicar en Release
 WORKDIR /src/ctp-docente-portal.Server
 RUN dotnet publish -c Release -o /app/publish
