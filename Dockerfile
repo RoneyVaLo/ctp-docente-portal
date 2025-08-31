@@ -22,7 +22,9 @@ COPY . .
 
 # Compilar frontend
 WORKDIR /src/ctp-docente-portal.client
+RUN npm install
 ENV NODE_ENV=production
+RUN npm run build
 
 # Publicar en Release
 WORKDIR /src/ctp-docente-portal.Server
