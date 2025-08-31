@@ -4,22 +4,18 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copiar solo la solución y proyectos .NET (sin el client)
-COPY ctp-docente-portal.sln ./
+# ---- Restaurar dependencias del backend ----
 COPY ctp-docente-portal.Server/*.csproj ./ctp-docente-portal.Server/
-COPY ctp-docente-portal.Tests/*.csproj ./ctp-docente-portal.Tests/
-
-# Restaurar dependencias solo de .NET
+WORKDIR /src/ctp-docente-portal.Server
 RUN dotnet restore
 
-# Copiar todo el código backend y tests
-COPY ctp-docente-portal.Server/. ./ctp-docente-portal.Server/
-COPY ctp-docente-portal.Tests/. ./ctp-docente-portal.Tests/
+# Copiar todo el backend
+COPY ctp-docente-portal.Server/. .
 
 # ---- Build frontend React ----
 WORKDIR /src/ctp-docente-portal.client
 
-# Copiar solo package.json primero para cache
+# Copiar solo package.json primero para cache de npm
 COPY ctp-docente-portal.client/package*.json ./
 RUN npm install
 
@@ -27,11 +23,11 @@ RUN npm install
 COPY ctp-docente-portal.client/. ./
 RUN npm run build
 
-# ---- Build backend ----
+# ---- Publicar backend ----
 WORKDIR /src/ctp-docente-portal.Server
 RUN dotnet publish -c Release -o /app/publish
 
-# Copiar React build al wwwroot del backend
+# Copiar build de React al wwwroot del backend
 RUN cp -r /src/ctp-docente-portal.client/build/* /app/publish/wwwroot/
 
 
