@@ -1,5 +1,11 @@
 <Project Sdk="Microsoft.VisualStudio.JavaScript.Sdk/0.5.128-alpha">
   <PropertyGroup>
+    <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
+    <SpaRoot>ClientApp\</SpaRoot>
+    <NodeEnv>production</NodeEnv>
+    <DisableHttpsDevelopmentCertificateValidation>true</DisableHttpsDevelopmentCertificateValidation>
+  </PropertyGroup>
+  <PropertyGroup>
     <StartupCommand>npm run dev</StartupCommand>
     <JavaScriptTestRoot>src\</JavaScriptTestRoot>
     <JavaScriptTestFramework>Jest</JavaScriptTestFramework>
