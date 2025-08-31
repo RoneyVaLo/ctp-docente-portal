@@ -1,45 +1,53 @@
-# ==============================
-# Etapa 1: Build Backend + Frontend
-# ==============================
+# ------------------------------
+# Stage 1 — Node: build frontend
+# ------------------------------
+FROM node:18 AS node-build
+WORKDIR /src/ctp-docente-portal.client
+
+# Copiar package.json y package-lock para cache
+COPY ctp-docente-portal.client/package*.json ./
+
+# Instalar dependencias (si falla npm ci por no existir lock, cae a npm install)
+RUN npm ci || npm install
+
+# Copiar resto del frontend y construir
+COPY ctp-docente-portal.client/. .
+RUN npm run build
+
+# ------------------------------
+# Stage 2 — .NET SDK: build & publish backend
+# ------------------------------
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# ---- Restaurar dependencias del backend ----
+# Copiar sólo el csproj del backend y restaurar (evita intentar restaurar el proyecto client.esproj)
 COPY ctp-docente-portal.Server/*.csproj ./ctp-docente-portal.Server/
 WORKDIR /src/ctp-docente-portal.Server
 RUN dotnet restore
 
-# Copiar todo el backend
+# Copiar todo el código del backend
 COPY ctp-docente-portal.Server/. .
 
-# ---- Build frontend React ----
-WORKDIR /src/ctp-docente-portal.client
+# Traer el build del frontend desde el stage node-build
+COPY --from=node-build /src/ctp-docente-portal.client/build /src/ctp-docente-portal.client/build
 
-# Copiar solo package.json primero para cache de npm
-COPY ctp-docente-portal.client/package*.json ./
-RUN npm install
-
-# Copiar resto y compilar React
-COPY ctp-docente-portal.client/. ./
-RUN npm run build
-
-# ---- Publicar backend ----
-WORKDIR /src/ctp-docente-portal.Server
+# Publicar la app .NET
 RUN dotnet publish -c Release -o /app/publish
 
-# Copiar build de React al wwwroot del backend
-RUN cp -r /src/ctp-docente-portal.client/build/* /app/publish/wwwroot/
+# Copiar los archivos estáticos (React build) al wwwroot de la app publicada
+RUN mkdir -p /app/publish/wwwroot \
+ && cp -r /src/ctp-docente-portal.client/build/* /app/publish/wwwroot/
 
-
-# ==============================
-# Etapa 2: Runtime
-# ==============================
+# ------------------------------
+# Stage 3 — Runtime: imagen final
+# ------------------------------
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 
+# Copiamos lo publicado
 COPY --from=build /app/publish .
 
-# Render asigna dinámicamente el puerto
+# Puerto dinámico que asigna Render
 ENV ASPNETCORE_URLS=http://+:$PORT
 EXPOSE $PORT
 
