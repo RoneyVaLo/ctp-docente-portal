@@ -4,14 +4,17 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copiar archivos de solución y proyectos
+# Copiar solo la solución y proyectos .NET (sin el client)
 COPY ctp-docente-portal.sln ./
 COPY ctp-docente-portal.Server/*.csproj ./ctp-docente-portal.Server/
 COPY ctp-docente-portal.Tests/*.csproj ./ctp-docente-portal.Tests/
+
+# Restaurar dependencias solo de .NET
 RUN dotnet restore
 
-# Copiar resto de archivos
-COPY . .
+# Copiar todo el código backend y tests
+COPY ctp-docente-portal.Server/. ./ctp-docente-portal.Server/
+COPY ctp-docente-portal.Tests/. ./ctp-docente-portal.Tests/
 
 # ---- Build frontend React ----
 WORKDIR /src/ctp-docente-portal.client
