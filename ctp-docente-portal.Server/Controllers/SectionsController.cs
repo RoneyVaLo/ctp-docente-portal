@@ -8,8 +8,8 @@ namespace ctp_docente_portal.Server.Controllers
     [Route("api/[controller]")]
     public class SectionsController : ControllerBase
     {
-        private readonly ISectionsService _svc;
-        public SectionsController(ISectionsService svc) => _svc = svc;
+        private readonly ISectionService _svc;
+        public SectionsController(ISectionService svc) => _svc = svc;
 
         // GET /api/sections/active
         [HttpGet("active")]
