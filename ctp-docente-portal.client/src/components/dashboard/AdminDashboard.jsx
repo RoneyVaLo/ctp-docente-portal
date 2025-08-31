@@ -1,4 +1,3 @@
-import React from "react";
 import {
   Card,
   CardContent,
@@ -8,16 +7,51 @@ import {
 } from "../ui/Card";
 import {
   Bell,
-  BookOpen,
+  Check,
   GraduationCap,
+  User,
   UserCheck,
   Users,
   UserX,
 } from "lucide-react";
 import Button from "../ui/Button";
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { useTheme } from "../../context/ThemeContext";
+import { useNavigate } from "react-router-dom";
 
-const AdminDashboard = ({ topAbsenteeismSections, gradeDistribution }) => {
+const AdminDashboard = ({ adminStats }) => {
+  const navigate = useNavigate();
+
+  const { administrativeSummary, topSectionAbsences, gradeDistribution } =
+    adminStats;
+
+  const {
+    totalActiveStudents,
+    totalPresentToday,
+    totalPossibleToday,
+    totalAbsentToday,
+    totalControlsToday,
+    totalTeachersWithSections,
+  } = administrativeSummary;
+
+  const { darkMode } = useTheme();
+
+  const axisColor = darkMode ? "#ffffff" : "#000000";
+  const gridColor = darkMode ? "#ffffff" : "#000000";
+
+  const calculateAttendancePercentage = () => {
+    return Number((totalPresentToday * 100) / totalPossibleToday) || 0;
+  };
+
   return (
     <div className="space-y-6">
       {/* KPI Cards */}
@@ -30,9 +64,9 @@ const AdminDashboard = ({ topAbsenteeismSections, gradeDistribution }) => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent className="text-center">
-            <div className="text-2xl font-bold">1,247</div>
+            <div className="text-2xl font-bold">{totalActiveStudents || 0}</div>
             <p className="text-xs text-muted-foreground">
-              +12 desde el mes pasado
+              En el presente curso lectivo
             </p>
           </CardContent>
         </Card>
@@ -45,9 +79,11 @@ const AdminDashboard = ({ topAbsenteeismSections, gradeDistribution }) => {
             <UserCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent className="text-center">
-            <div className="text-2xl font-bold text-green-600">94.2%</div>
+            <div className="text-2xl font-bold text-green-600">
+              {calculateAttendancePercentage()}%
+            </div>
             <p className="text-xs text-muted-foreground">
-              1,175 de 1,247 estudiantes
+              {totalPresentToday} de {totalPossibleToday} estudiantes
             </p>
           </CardContent>
         </Card>
@@ -58,12 +94,11 @@ const AdminDashboard = ({ topAbsenteeismSections, gradeDistribution }) => {
             <UserX className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent className="text-center">
-            <div className="text-2xl font-bold text-red-600">72</div>
+            <div className="text-2xl font-bold text-red-600">
+              {totalAbsentToday}
+            </div>
             <p className="text-xs text-muted-foreground">
-              De 42 controles de asistencia registrados
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              5.8% del total de estudiantes
+              De {totalControlsToday} controles de asistencia registrados
             </p>
           </CardContent>
         </Card>
@@ -76,7 +111,9 @@ const AdminDashboard = ({ topAbsenteeismSections, gradeDistribution }) => {
             <GraduationCap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent className="text-center">
-            <div className="text-2xl font-bold">45</div>
+            <div className="text-2xl font-bold">
+              {totalTeachersWithSections}
+            </div>
             <p className="text-xs text-muted-foreground">
               Con asignaciones activas
             </p>
@@ -95,30 +132,44 @@ const AdminDashboard = ({ topAbsenteeismSections, gradeDistribution }) => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {topAbsenteeismSections.slice(0, 5).map((section, index) => (
-                <div
-                  key={section.section}
-                  className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:scale-105 transition-transform"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-red-100 text-red-600 font-bold text-sm">
-                      {index + 1}
+              {topSectionAbsences?.length > 0 ? (
+                topSectionAbsences.map((section, index) => (
+                  <div
+                    key={section.section}
+                    className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:scale-105 transition-transform"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-red-100 text-red-600 font-bold text-sm">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <h4 className="font-medium">
+                          Sección {section.section} - {section.subject}
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          {section.absent} ausentes de {section.total}{" "}
+                          estudiantes
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="font-medium">Sección {section.section}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {section.absent} ausentes de {section.total} estudiantes
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-red-600">
+                        {section.percentage}%
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        ausentismo
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-lg font-bold text-red-600">
-                      {section.percentage}%
-                    </div>
-                    <p className="text-xs text-muted-foreground">ausentismo</p>
-                  </div>
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center">
+                  <p className="text-gray-800 dark:text-gray-300 font-bold my-10">
+                    No hay datos que mostrar...
+                  </p>
+                  <Check className="w-16 h-16 text-green-500" />
                 </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>
@@ -129,24 +180,44 @@ const AdminDashboard = ({ topAbsenteeismSections, gradeDistribution }) => {
             <CardDescription>Rendimiento académico general</CardDescription>
           </CardHeader>
           <CardContent>
-            <h2>Graficos</h2>
-            <div>{gradeDistribution[0].color}</div>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={gradeDistribution}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  dataKey="value"
-                  label={({ name, value }) => `${name}: ${value}%`}
-                >
+            <ResponsiveContainer width="100%" height={400}>
+              <BarChart
+                data={gradeDistribution}
+                margin={{ top: 20, right: 20, left: -12, bottom: -10 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                <XAxis
+                  dataKey="range"
+                  tick={{ fill: axisColor, fontSize: 12 }}
+                  tickFormatter={(range) => {
+                    const match = range.match(/\((.*?)\)/);
+                    return match ? match[1] : range; // Solo lo que está dentro de paréntesis
+                  }}
+                />
+                <YAxis tick={{ fill: axisColor, fontSize: 14 }} />
+                <Tooltip
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className="bg-white/80 backdrop-blur-lg border border-gray-300 text-black rounded-md p-2 shadow-md">
+                          <p className="text-sm font-semibold text-center">
+                            {label}
+                          </p>
+                          <p className="text-base font-bold text-center">
+                            {payload[0].value}
+                          </p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Bar dataKey="count">
                   {gradeDistribution.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
@@ -160,15 +231,27 @@ const AdminDashboard = ({ topAbsenteeismSections, gradeDistribution }) => {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
-            <Button className="h-20 flex-col gap-2" variant="outline">
+            <Button
+              className="h-20 flex-col gap-2"
+              variant="outline"
+              onClick={() => navigate("reportes")}
+            >
               <Users className="h-6 w-6" />
-              Generar Reporte de Asistencia
+              Generar Reporte Grupal
             </Button>
-            <Button className="h-20 flex-col gap-2" variant="outline">
-              <BookOpen className="h-6 w-6" />
-              Reporte de Calificaciones
+            <Button
+              className="h-20 flex-col gap-2"
+              variant="outline"
+              onClick={() => navigate("estudiantes")}
+            >
+              <User className="h-6 w-6" />
+              Reporte Individual
             </Button>
-            <Button className="h-20 flex-col gap-2" variant="outline">
+            <Button
+              className="h-20 flex-col gap-2"
+              variant="outline"
+              onClick={() => navigate("notificaciones")}
+            >
               <Bell className="h-6 w-6" />
               Enviar Notificaciones
             </Button>

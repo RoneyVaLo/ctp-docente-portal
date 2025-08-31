@@ -9,12 +9,20 @@ import {
 import { Bell, BookOpen, Calendar, UserCheck } from "lucide-react";
 import { Badge } from "../ui/Badge";
 import Button from "../ui/Button";
+import { NavLink } from "react-router-dom";
 
-const TeacherDashboard = ({ teacherSections, pendingEvaluations }) => {
+const TeacherDashboard = ({ teacherStats }) => {
+  const {
+    detailEvaluations,
+    pendingEvaluations,
+    presentStudents,
+    quantitySections,
+    totalStudents,
+  } = teacherStats;
   return (
     <div className="space-y-6">
       {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -23,7 +31,7 @@ const TeacherDashboard = ({ teacherSections, pendingEvaluations }) => {
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent className="text-center">
-            <div className="text-2xl font-bold">{teacherSections.length}</div>
+            <div className="text-2xl font-bold">{quantitySections || 0}</div>
             <p className="text-xs text-muted-foreground">
               Activas este período
             </p>
@@ -39,18 +47,10 @@ const TeacherDashboard = ({ teacherSections, pendingEvaluations }) => {
           </CardHeader>
           <CardContent className="text-center">
             <div className="text-2xl font-bold text-green-600">
-              {teacherSections.reduce(
-                (acc, section) => acc + section.present,
-                0
-              )}
+              {presentStudents || 0}
             </div>
             <p className="text-xs text-muted-foreground">
-              de{" "}
-              {teacherSections.reduce(
-                (acc, section) => acc + section.students,
-                0
-              )}{" "}
-              total
+              de {totalStudents || 0} total
             </p>
           </CardContent>
         </Card>
@@ -64,27 +64,11 @@ const TeacherDashboard = ({ teacherSections, pendingEvaluations }) => {
           </CardHeader>
           <CardContent className="text-center">
             <div className="text-2xl font-bold text-orange-600">
-              {pendingEvaluations.reduce(
-                (acc, pendingEval) => acc + pendingEval.pending,
-                0
-              )}
+              {pendingEvaluations || 0}
             </div>
             <p className="text-xs text-muted-foreground">
               Calificaciones por registrar
             </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Notificaciones
-            </CardTitle>
-            <Bell className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="text-center">
-            <div className="text-2xl font-bold">3</div>
-            <p className="text-xs text-muted-foreground">Nuevas este día</p>
           </CardContent>
         </Card>
       </div>
@@ -99,7 +83,7 @@ const TeacherDashboard = ({ teacherSections, pendingEvaluations }) => {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {pendingEvaluations.map((pendingEval, index) => (
+            {detailEvaluations.map((pendingEval, index) => (
               <div
                 key={index}
                 className="flex flex-col md:flex-row justify-center items-center md:justify-between p-3 border rounded-lg"
@@ -109,14 +93,17 @@ const TeacherDashboard = ({ teacherSections, pendingEvaluations }) => {
                     {pendingEval.subject} - {pendingEval.section}
                   </h4>
                   <p className="text-sm text-muted-foreground">
-                    {pendingEval.type}
+                    {pendingEval.evaluationItem.name}
                   </p>
                 </div>
                 <div className="flex flex-col md:flex-row mt-4 md:mt-0 items-center gap-2">
-                  <Badge variant="secondary">
-                    {pendingEval.pending} pendientes
-                  </Badge>
-                  <Button size="sm">Calificar</Button>
+                  <NavLink
+                    to={`/item/${pendingEval.evaluationItem.id}/calificar`}
+                  >
+                    <Button variant="outline" size="sm">
+                      Calificar
+                    </Button>
+                  </NavLink>
                 </div>
               </div>
             ))}

@@ -37,6 +37,10 @@ export default {
           DEFAULT: "hsl(0, 0%, 96.1%)",
           foreground: "hsl(0, 0%, 9%)",
         },
+        popover: {
+            DEFAULT: 'hsl(0, 0%, 100%)',
+            foreground: 'hsl(var(0, 0%, 3.9%)'
+  		},
       },
     },
   },
