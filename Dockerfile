@@ -28,7 +28,7 @@ RUN npm run build
 
 # Copiar build de React al wwwroot del servidor
 WORKDIR /src
-RUN rm -rf ctp-docente-portal.Server/wwwroot/* \
+RUN mkdir -p ctp-docente-portal.Server/wwwroot \
     && cp -r ctp-docente-portal.client/dist/* ctp-docente-portal.Server/wwwroot/
 
 # Publicar en Release
