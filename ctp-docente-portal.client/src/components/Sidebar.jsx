@@ -52,7 +52,7 @@ export default function Sidebar({ isMobileOpen, onCloseMobile }) {
           )}
         >
           <img
-            src="/ctp.avif"
+            src="/ctp.png"
             alt="Logo del CTP de Los Chiles"
             className="max-h-6 max-w-6"
           />

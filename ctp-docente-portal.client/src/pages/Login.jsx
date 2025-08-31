@@ -110,7 +110,7 @@ const Login = () => {
         <CardHeader className="space-y-1 text-center">
           <article className="flex justify-center mb-2">
             <img
-              src="/ctp.avif"
+              src="/ctp.png"
               alt="Logo del CTP de Los Chiles"
               className="max-h-10 max-w-10"
             />

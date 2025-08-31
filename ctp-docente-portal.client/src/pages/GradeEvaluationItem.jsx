@@ -39,9 +39,12 @@ const GradeEvaluationItem = () => {
     const fetchEvaluationData = async () => {
       try {
         setLoading(true);
+        const token = localStorage.getItem("token");
         const URL = `/api/evaluationitems/item/${itemId}`;
 
-        const response = await axios.get(URL);
+        const response = await axios.get(URL, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         setEvaluation(response.data);
       } catch (error) {
         console.error(error?.response?.data?.Message);
@@ -124,9 +127,13 @@ const GradeEvaluationItem = () => {
         updatedBy
       );
 
+      const token = localStorage.getItem("token");
       const response = await axios.post(
         `/api/studentcriteriascores/section/${selectedGroup}`,
-        payload
+        payload,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
       toast.success(response.data.message);
 
@@ -140,14 +147,14 @@ const GradeEvaluationItem = () => {
     }
   };
 
-  if (loading) {
+  if (loading || evaluation.length === 0) {
     return <Loader1 />;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
-        <NavLink to="/calificaciones">
+        <NavLink to={-1}>
           <Button variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver
