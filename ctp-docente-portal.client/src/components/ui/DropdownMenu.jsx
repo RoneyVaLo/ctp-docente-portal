@@ -102,7 +102,7 @@ const DropdownMenuContent = forwardRef(
     return (
       <div
         ref={contentRef}
-        className={`absolute top-full mt-1 z-50 min-w-[8rem] rounded-md border bg-popover p-1 text-popover-foreground shadow-lg ${alignClasses[align]} ${className}`}
+            className={`absolute top-full mt-1 z-50 min-w-[8rem] rounded-md border bg-white/20 backdrop-blur-xl p-1 text-popover-foreground shadow-lg ${alignClasses[align]} ${className}`}
         {...props}
       >
         {children}
