@@ -2,6 +2,12 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
+# Instalar Node.js (última LTS)
+RUN apt-get update && apt-get install -y curl \
+    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs \
+    && node --version && npm --version
+
 # Copiar sln y csproj
 COPY ctp-docente-portal.sln .
 COPY ctp-docente-portal.Server/ctp-docente-portal.Server.csproj ./ctp-docente-portal.Server/
