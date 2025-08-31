@@ -26,11 +26,6 @@ RUN npm install
 ENV NODE_ENV=production
 RUN npm run build
 
-# Copiar build de React al wwwroot del servidor
-WORKDIR /src
-RUN mkdir -p ctp-docente-portal.Server/wwwroot \
-    && cp -r ctp-docente-portal.client/dist/* ctp-docente-portal.Server/wwwroot/
-
 # Publicar en Release
 WORKDIR /src/ctp-docente-portal.Server
 RUN dotnet publish -c Release -o /app/publish
