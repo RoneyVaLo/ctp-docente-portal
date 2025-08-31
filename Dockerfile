@@ -5,7 +5,7 @@ WORKDIR /src
 # Copiar sln y csproj
 COPY ctp-docente-portal.sln .
 COPY ctp-docente-portal.Server/ctp-docente-portal.Server.csproj ./ctp-docente-portal.Server/
-COPY ctp-docente-portal.client/ctp-docente-portal.client.csproj ./ctp-docente-portal.client/
+COPY ctp-docente-portal.client/ctp-docente-portal.client.esproj ./ctp-docente-portal.client/
 COPY ctp-docente-portal.Tests/ctp-docente-portal.Tests.csproj ./ctp-docente-portal.Tests/
 
 # Restaurar dependencias
