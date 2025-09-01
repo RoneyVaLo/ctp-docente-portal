@@ -21,7 +21,6 @@ import RoleRoute from "./routes/RoleRoute";
 import AccessDenied from "./pages/AccessDenied";
 import AttendancePage from "./pages/Attendance/AttendancePage";
 
-
 function App() {
   const { loading } = useAuth();
 
