@@ -1,108 +1,98 @@
 import { useEffect, useState } from "react";
-import AdminDashboard from "../components/dashboard/AdminDashboard";
-import TeacherDashboard from "../components/dashboard/TeacherDashboard";
-import { useAuth } from "../context/AuthContext";
-import Loader1 from "../components/loaders/Loader1";
+import AdminDashboard from "@/components/dashboard/AdminDashboard";
+import TeacherDashboard from "@/components/dashboard/TeacherDashboard";
+import { useAuth } from "@/context/AuthContext";
+import Loader1 from "@/components/loaders/Loader1";
 import axios from "axios";
+import { useQuery } from "@tanstack/react-query";
+
+const API_ENDPOINTS = {
+  teacher: (staffId, periodoId) =>
+    `api/dashboardstatistics/teacher?staffId=${staffId}&periodoId=${periodoId}`,
+  administrative: "api/dashboardstatistics/administrative",
+  topSectionsAbsences: "api/dashboardstatistics/top-sections-absences",
+  gradesDistribution: "api/dashboardstatistics/grades-distribution",
+};
+
+const fetchTeacherStatistics = async () => {
+  const token = localStorage.getItem("token");
+  const { data } = await axios.get(API_ENDPOINTS.teacher(72, 2), {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  return {
+    quantitySections: data.quantitySections,
+    presentStudents: data.presentStudents,
+    totalStudents: data.totalStudents,
+    pendingEvaluations: data.pendingEvaluations,
+    detailEvaluations: data.detailEvaluations,
+  };
+};
+
+const fetchAdministrativeStatistics = async () => {
+  const token = localStorage.getItem("token");
+  const [summary, topSections, gradesDist] = await Promise.all([
+    axios.get(API_ENDPOINTS.administrative, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+    axios.get(API_ENDPOINTS.topSectionsAbsences, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+    axios.get(API_ENDPOINTS.gradesDistribution, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+  ]);
+
+  return {
+    administrativeSummary: summary.data,
+    topSectionAbsences: topSections.data,
+    gradeDistribution: gradesDist.data,
+  };
+};
 
 const Dashboard = () => {
   const { roles } = useAuth();
-
-  const API_ENDPOINTS = {
-    teacher: (staffId, periodoId) =>
-      `api/dashboardstatistics/teacher?staffId=${staffId}&periodoId=${periodoId}`,
-    administrative: "api/dashboardstatistics/administrative",
-    topSectionsAbsences: "api/dashboardstatistics/top-sections-absences",
-    gradesDistribution: "api/dashboardstatistics/grades-distribution",
-  };
-
   const [isAdmin, setIsAdmin] = useState(null);
-  const [loading, setLoading] = useState(false);
-
-  const [teacherStats, setTeacherStats] = useState({
-    quantitySections: -1,
-    presentStudents: -1,
-    totalStudents: -1,
-    pendingEvaluations: -1,
-    detailEvaluations: [],
-  });
-  const [adminStats, setAdminStats] = useState({
-    administrativeSummary: [],
-    topSectionAbsences: [],
-    gradeDistribution: [],
-  });
 
   useEffect(() => {
     setIsAdmin(roles?.includes("Administrativo"));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [roles]);
 
-  const fetchTeacherStatistics = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem("token");
-      const { data } = await axios.get(API_ENDPOINTS.teacher(72, 2), {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const {
-        quantitySections,
-        presentStudents,
-        totalStudents,
-        pendingEvaluations,
-        detailEvaluations,
-      } = data;
+  // 📌 Teacher query
+  const {
+    data: teacherStats,
+    isLoading: loadingTeacher,
+    error: errorTeacher,
+  } = useQuery({
+    queryKey: ["teacherStats"],
+    queryFn: fetchTeacherStatistics,
+    enabled: isAdmin === false,
+    staleTime: 5 * 60 * 1000, // 5 min cache "fresh"
+    cacheTime: 10 * 60 * 1000, // 10 min en memoria antes de ser garbage collected
+  });
 
-      setTeacherStats({
-        quantitySections,
-        presentStudents,
-        totalStudents,
-        pendingEvaluations,
-        detailEvaluations,
-      });
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // 📌 Admin query
+  const {
+    data: adminStats,
+    isLoading: loadingAdmin,
+    error: errorAdmin,
+  } = useQuery({
+    queryKey: ["adminStats"],
+    queryFn: fetchAdministrativeStatistics,
+    enabled: isAdmin === true,
+    staleTime: 5 * 60 * 1000,
+    cacheTime: 10 * 60 * 1000,
+  });
 
-  const fetchAdministrativeStatistics = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem("token");
-      const [summary, topSections, gradesDist] = await Promise.all([
-        axios.get(API_ENDPOINTS.administrative, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        axios.get(API_ENDPOINTS.topSectionsAbsences, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        axios.get(API_ENDPOINTS.gradesDistribution, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-      ]);
+  if (isAdmin === null) return null;
 
-      setAdminStats({
-        administrativeSummary: summary.data,
-        topSectionAbsences: topSections.data,
-        gradeDistribution: gradesDist.data,
-      });
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  if ((isAdmin && loadingAdmin) || (!isAdmin && loadingTeacher)) {
+    return <Loader1 />;
+  }
 
-  useEffect(() => {
-    if (isAdmin !== null) {
-      isAdmin ? fetchAdministrativeStatistics() : fetchTeacherStatistics();
-    }
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAdmin]);
-
-  if (loading) return <Loader1 />;
+  if (errorAdmin || errorTeacher) {
+    return <p>Error al cargar datos</p>;
+  }
 
   return (
     <>
