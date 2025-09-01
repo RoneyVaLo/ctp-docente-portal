@@ -195,29 +195,35 @@ export default function AttendancePage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         <div>
-          <label className="text-xs text-slate-500">Fecha</label>
+          <label className="text-xs text-slate-500 dark:text-gray-300">
+            Fecha
+          </label>
           <input
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="w-full border rounded px-2 py-1"
+            className="w-full border rounded px-2 py-1 bg-background text-black"
           />
         </div>
 
         <div className="w-40 sm:w-48 md:w-56">
-          <label className="text-xs text-slate-500">Hora</label>
+          <label className="text-xs text-slate-500 dark:text-gray-300">
+            Hora
+          </label>
           <input
             type="time"
             value={time}
             onChange={(e) => setTime(e.target.value)}
             step={60}
-            className="w-full border rounded px-2 py-1"
+            className="w-full border rounded px-2 py-1 bg-background text-black"
             aria-label="Hora de toma (editable)"
           />
         </div>
 
         <div>
-          <label className="text-xs text-slate-500 block mb-1">Sección</label>
+          <label className="text-xs text-slate-500 dark:text-gray-300 block mb-1">
+            Sección
+          </label>
           <FormControl fullWidth size="small">
             <Select
               labelId="section-label"
@@ -225,6 +231,7 @@ export default function AttendancePage() {
               value={sectionId || ""}
               onChange={(e) => setSectionId(Number(e.target.value) || 0)}
               displayEmpty
+              className="bg-background"
               renderValue={(selected) => {
                 if (!selected) return "Seleccioná una sección";
                 const item = sections.find((s) => s.id === selected);
@@ -254,7 +261,7 @@ export default function AttendancePage() {
         </div>
 
         <div className="w-50 sm:w-50 md:w-70">
-          <label className="text-xs text-slate-500 block mb-1">
+          <label className="text-xs text-slate-500 dark:text-gray-300 block mb-1">
             Asignatura
           </label>
           <FormControl fullWidth size="small">
@@ -262,6 +269,7 @@ export default function AttendancePage() {
               labelId="subject-label"
               label="Asignatura"
               value={subjectId || ""}
+              className="bg-background"
               onChange={(e) => {
                 const val = Number(e.target.value) || 0;
                 setSubjectId(val);
@@ -289,7 +297,7 @@ export default function AttendancePage() {
       </div>
 
       <div className="mb-3 flex items-center justify-between">
-        <div className="text-sm text-slate-500">
+        <div className="text-sm text-slate-500 dark:text-gray-300">
           {sectionId
             ? loading
               ? "Cargando estudiantes…"
@@ -332,24 +340,34 @@ export default function AttendancePage() {
 
       <TableContainer component={Paper} elevation={0} className="border">
         <Table size="small">
-          <TableHead className="bg-slate-50">
+          <TableHead className="bg-background dark:bg-background-dark">
             <TableRow>
-              <TableCell>Nombre</TableCell>
-              <TableCell>Cédula</TableCell>
-              <TableCell>Subsec.</TableCell>
-              <TableCell>Nacimiento</TableCell>
-              <TableCell>Notas</TableCell>
-              <TableCell align="right">Asistencia</TableCell>
+              <TableCell className="dark:text-gray-300">Nombre</TableCell>
+              <TableCell className="dark:text-gray-300">Cédula</TableCell>
+              <TableCell className="dark:text-gray-300">Subsec.</TableCell>
+              <TableCell className="dark:text-gray-300">Nacimiento</TableCell>
+              <TableCell className="dark:text-gray-300">Notas</TableCell>
+              <TableCell className="dark:text-gray-300" align="right">
+                Asistencia
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {rows.map((r) => (
-              <TableRow key={r.studentId}>
-                <TableCell className="font-medium">{r.fullName}</TableCell>
-                <TableCell>{r.idNumber || "-"}</TableCell>
-                <TableCell>{r.subsection ?? "-"}</TableCell>
-                <TableCell>{formatBirth(r.birthDate)}</TableCell>
-                <TableCell>
+              <TableRow key={r.studentId} className="dark:bg-background-dark ">
+                <TableCell className="font-medium dark:text-gray-300">
+                  {r.fullName}
+                </TableCell>
+                <TableCell className="dark:text-gray-300">
+                  {r.idNumber || "-"}
+                </TableCell>
+                <TableCell className="dark:text-gray-300">
+                  {r.subsection ?? "-"}
+                </TableCell>
+                <TableCell className="dark:text-gray-300">
+                  {formatBirth(r.birthDate)}
+                </TableCell>
+                <TableCell className="dark:text-gray-300">
                   <input
                     className="text-sm w-full border rounded px-2 py-1"
                     placeholder="Observaciones"
