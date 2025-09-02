@@ -1,166 +1,319 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { notificationsApi } from "@/services/notificationsService";
+import { sectionsApi } from "@/services/sectionsService";
 import { ls } from "@/utils/localStore";
+import {
+    FormControl,
+    Select,
+    MenuItem,
+    CircularProgress,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Paper,
+    Button,
+    Chip,
+    TextField,
+    Tooltip,
+    IconButton,
+} from "@mui/material";
+import ReplayIcon from "@mui/icons-material/Replay";
+import SearchIcon from "@mui/icons-material/Search";
+
+const SUBJECT_OPTIONS = [
+    { id: 1, name: "Matemáticas" },
+    { id: 2, name: "Español" },
+    { id: 3, name: "Ciencias" },
+    { id: 4, name: "Estudios Sociales" },
+    { id: 5, name: "Inglés" },
+];
+
+function formatDate(iso) {
+    if (!iso) return "-";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "-";
+    return d.toLocaleDateString("es-CR");
+}
 
 export default function NotificationsPage() {
-  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
-  const saved = ls.get("ui.attendance.filters", {});
+    const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+    const saved = ls.get("ui.notifications.filters", {}) || {};
 
-  const [date, setDate] = useState(saved.date ?? today);
-  const [sectionId, setSectionId] = useState(saved.sectionId ?? 0);
-  const [subject, setSubject] = useState(saved.subject ?? "");
-  const [status, setStatus] = useState("");
+    const [date, setDate] = useState(saved.date ?? today);
+    const [sectionId, setSectionId] = useState(saved.sectionId ?? 0);
+    const [status, setStatus] = useState(saved.status ?? "");
+    const [subject, setSubject] = useState(saved.subject ?? "");
+    const [subjectId, setSubjectId] = useState(saved.subjectId ?? 0);
 
-  const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState("");
+    const [sections, setSections] = useState([]);
+    const [loadingSections, setLoadingSections] = useState(false);
 
-  const [testTo, setTestTo] = useState("+50687169595");
-  const [testMsg, setTestMsg] = useState("Mensaje de prueba desde el portal.");
+    const [rows, setRows] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [err, setErr] = useState("");
 
-  const canQuery = sectionId > 0;
+    const canQuery = sectionId > 0; // requerimos sección
 
-  const load = useCallback(async () => {
-    if (!canQuery) return;
-    setLoading(true);
-    setErr("");
-    try {
-      const data = await notificationsApi.list({ date, sectionId, status, subject });
-      setRows(Array.isArray(data) ? data : []);
-    } catch (e) {
-      setErr(e?.message ?? "Error al cargar.");
-    } finally {
-      setLoading(false);
-    }
-  }, [canQuery, date, sectionId, status, subject]);
+    // Persistir filtros
+    useEffect(() => {
+        try {
+            ls.set("ui.notifications.filters", {
+                date,
+                sectionId,
+                status,
+                subject,
+                subjectId,
+            });
+        } catch (err) {
+            console.warn("No se pudo persistir filtros en localStorage:", err);
+        }
+    }, [date, sectionId, status, subject, subjectId]);
 
-  const sendAll = useCallback(async () => {
-    if (!canQuery) return;
-    setLoading(true);
-    setErr("");
-    try {
-      await notificationsApi.sendAbsences({ date, sectionId, subject });
-      await load();
-    } catch (e) {
-      setErr(e?.message ?? "Error al enviar.");
-    } finally {
-      setLoading(false);
-    }
-  }, [canQuery, date, sectionId, subject, load]);
 
-  const resend = useCallback(async (id) => {
-    setLoading(true);
-    setErr("");
-    try {
-      await notificationsApi.resend(id);
-      await load();
-    } catch (e) {
-      setErr(e?.message ?? "Error al reintentar.");
-    } finally {
-      setLoading(false);
-    }
-  }, [load]);
+    useEffect(() => {
+        (async () => {
+            setLoadingSections(true);
+            try {
+                const data = await sectionsApi.active();
+                setSections(Array.isArray(data) ? data : []);
+            } catch (e) {
+                console.error("Error cargando secciones", e);
+                setSections([]);
+            } finally {
+                setLoadingSections(false);
+            }
+        })();
+    }, []);
 
-  const testSend = useCallback(async () => {
-    if (!notificationsApi.testSend) return alert("Función de prueba no disponible.");
-    setLoading(true);
-    setErr("");
-    try {
-      await notificationsApi.testSend({ to: testTo, message: testMsg });
-      alert("Envío solicitado. Revisá tu WhatsApp.");
-    } catch (e) {
-      setErr(e?.message ?? "Error al enviar prueba.");
-    } finally {
-      setLoading(false);
-    }
-  }, [testTo, testMsg]);
+    const load = useCallback(async () => {
+        if (!canQuery) return;
+        setLoading(true);
+        setErr("");
+        try {
+            const data = await notificationsApi.list({ date, sectionId, status, subjectId });
+            setRows(Array.isArray(data) ? data : []);
+        } catch (e) {
+            setErr(e?.message ?? "Error al cargar.");
+            setRows([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [canQuery, date, sectionId, status, subjectId]);
 
-  useEffect(() => { load(); }, [load]);
 
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4">Notificaciones</h1>
+    useEffect(() => {
+        if (saved && saved.sectionId > 0) {
+            load();
+        }
+    }, []);
 
-      <div className="flex flex-wrap items-end gap-3 mb-3">
-        <div className="flex flex-col">
-          <label className="text-xs text-slate-600 mb-1">Fecha</label>
-          <input type="date" value={date} onChange={e=>setDate(e.target.value)} className="border rounded px-2 py-1"/>
-        </div>
+    const resend = useCallback(
+        async (id) => {
+            setLoading(true);
+            setErr("");
+            try {
+                await notificationsApi.resend(id);
+                await load();
+            } catch (e) {
+                setErr(e?.message ?? "Error al reintentar.");
+            } finally {
+                setLoading(false);
+            }
+        },
+        [load]
+    );
 
-        <div className="flex flex-col">
-          <label className="text-xs text-slate-600 mb-1">Sección</label>
-          <input type="number" min={0} value={sectionId} onChange={e=>setSectionId(+e.target.value)}
-                 placeholder="Ej: 6" className="border rounded px-2 py-1 w-28"/>
-        </div>
+    const statusChip = (st) => {
+        const map = {
+            SENT: { color: "success", label: "Enviado" },
+            FAILED: { color: "error", label: "Fallido" },
+            QUEUED: { color: "warning", label: "En cola" },
+        };
+        const cfg = map[st] ?? { color: "default", label: st || "-" };
+        return <Chip label={cfg.label} size="small" color={cfg.color} variant={cfg.color === "default" ? "outlined" : undefined} />;
+    };
 
-        <div className="flex flex-col">
-          <label className="text-xs text-slate-600 mb-1">Materia</label>
-          <input type="text" value={subject} onChange={e=>setSubject(e.target.value)}
-                 placeholder="Ej: Matemáticas" className="border rounded px-2 py-1 w-48"/>
-        </div>
+    return (
+        <div className="p-6">
+            <h1 className="text-2xl font-semibold mb-4">Notificaciones</h1>
 
-        <div className="flex flex-col">
-          <label className="text-xs text-slate-600 mb-1">Estado</label>
-          <select value={status} onChange={e=>setStatus(e.target.value)} className="border rounded px-2 py-1">
-            <option value="">Todos</option>
-            <option value="SENT">Enviados</option>
-            <option value="FAILED">Fallidos</option>
-            <option value="QUEUED">En cola</option>
-          </select>
-        </div>
 
-        <button onClick={sendAll} disabled={!canQuery || loading}
-                className="bg-green-600 text-white px-3 py-1 rounded disabled:opacity-50">Enviar ausentes</button>
-        <button onClick={load} disabled={!canQuery || loading}
-                className="bg-slate-600 text-white px-3 py-1 rounded disabled:opacity-50">Refrescar</button>
-      </div>
+            <Paper elevation={0} className="p-4 mb-4 border">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
 
-      {!canQuery && (
-        <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2 mb-3">
-          Ingresá un número de sección para consultar.
-        </div>
-      )}
+                    <div>
+                        <label className="text-xs text-slate-600 mb-1 block">Fecha</label>
+                        <TextField
+                            type="date"
+                            size="small"
+                            fullWidth
+                            value={date}
+                            onChange={(e) => setDate(e.target.value)}
+                            inputProps={{ "aria-label": "Fecha" }}
+                        />
+                    </div>
 
-      <div className="mb-4 p-3 border rounded bg-white">
-        <div className="text-sm font-semibold mb-2">Probar envío real (WhatsApp Cloud API)</div>
-        <div className="flex flex-wrap gap-2 items-center">
-          <input value={testTo} onChange={e=>setTestTo(e.target.value)} className="border rounded px-2 py-1" placeholder="+50687169595" />
-          <input value={testMsg} onChange={e=>setTestMsg(e.target.value)} className="border rounded px-2 py-1 flex-1 min-w-[240px]" placeholder="Mensaje..." />
-          <button onClick={testSend} disabled={loading} className="bg-blue-600 text-white px-3 py-1 rounded disabled:opacity-50">Enviar a mi número</button>
-        </div>
-      </div>
 
-      {err && <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2 mb-3">{err}</div>}
-      {loading && <div className="text-sm">Cargando…</div>}
+                    <div>
+                        <label className="text-xs text-slate-600 mb-1 block">Sección</label>
+                        <FormControl fullWidth size="small">
+                            <Select
+                                value={sectionId || ""}
+                                displayEmpty
+                                onChange={(e) => setSectionId(Number(e.target.value) || 0)}
+                                renderValue={(selected) => {
+                                    if (!selected) return "Seleccioná una sección";
+                                    const item = sections.find((s) => s.id === selected);
+                                    return item ? item.name : selected;
+                                }}
+                            >
+                                <MenuItem value="">
+                                    <em>Seleccioná una sección</em>
+                                </MenuItem>
+                                {loadingSections && (
+                                    <MenuItem disabled>
+                                        <div className="flex items-center gap-2">
+                                            <CircularProgress size={16} /> Cargando…
+                                        </div>
+                                    </MenuItem>
+                                )}
+                                {sections.map((s) => (
+                                    <MenuItem key={s.id} value={s.id}>
+                                        {s.name}
+                                    </MenuItem>
+                                ))}
+                                {!loadingSections && sections.length === 0 && (
+                                    <MenuItem disabled>(Sin secciones activas)</MenuItem>
+                                )}
+                            </Select>
+                        </FormControl>
+                    </div>
 
-      <div className="space-y-3">
-        {rows.map(n => (
-          <div key={n.id} className="border rounded p-3 bg-white">
-            <div className="flex justify-between">
-              <div className="font-semibold">{n.studentName} <span className="text-slate-500">({n.phone})</span></div>
-              <span className={`text-xs px-2 py-0.5 rounded ${
-                n.status === "SENT" ? "bg-green-100 text-green-700"
-                : n.status === "FAILED" ? "bg-red-100 text-red-700"
-                : "bg-amber-100 text-amber-700"}`}>
-                {n.status}
-              </span>
-            </div>
-            {n.subject && <div className="text-xs text-slate-500 mt-0.5">Materia: {n.subject}</div>}
-            <div className="text-sm mt-1">{n.message}</div>
-            <div className="text-[12px] text-slate-500 mt-1">
-              Creado: {n.createdAt ? new Date(n.createdAt).toLocaleString() : "-"}
-              {n.sentAt ? ` | Enviado: ${new Date(n.sentAt).toLocaleString()}` : ""}
-            </div>
-            {n.status === "FAILED" && (
-              <button onClick={() => resend(n.id)} disabled={loading}
-                      className="mt-2 text-sm bg-blue-600 text-white px-2 py-1 rounded disabled:opacity-50">Reintentar</button>
+
+                    <div>
+                        <label className="text-xs text-slate-600 mb-1 block">Asignatura</label>
+                        <FormControl fullWidth size="small">
+                            <Select
+                                value={subjectId || ""}
+                                displayEmpty
+                                onChange={(e) => {
+                                    const val = Number(e.target.value) || 0;
+                                    setSubjectId(val);
+                                    const found = SUBJECT_OPTIONS.find((s) => s.id === val);
+                                    setSubject(found?.name ?? "");
+                                }}
+                                renderValue={(selected) => {
+                                    if (!selected) return "Seleccioná una asignatura";
+                                    const item = SUBJECT_OPTIONS.find((s) => s.id === selected);
+                                    return item ? item.name : selected;
+                                }}
+                            >
+                                <MenuItem value="">
+                                    <em>Seleccioná una asignatura</em>
+                                </MenuItem>
+                                {SUBJECT_OPTIONS.map((s) => (
+                                    <MenuItem key={s.id} value={s.id}>
+                                        {s.name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </div>
+
+
+                    <div>
+                        <label className="text-xs text-slate-600 mb-1 block">Estado</label>
+                        <FormControl fullWidth size="small">
+                            <Select value={status} onChange={(e) => setStatus(e.target.value)} displayEmpty>
+                                <MenuItem value="">
+                                    <em>Todos</em>
+                                </MenuItem>
+                                <MenuItem value="SENT">Enviados</MenuItem>
+                                <MenuItem value="FAILED">Fallidos</MenuItem>
+                                <MenuItem value="QUEUED">En cola</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button
+                            variant="contained"
+                            startIcon={<SearchIcon />}
+                            onClick={load}
+                            disabled={!canQuery || loading}
+                            fullWidth
+                        >
+                            Buscar
+                        </Button>
+                    </div>
+                </div>
+            </Paper>
+
+            {err && (
+                <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2 mb-3">{err}</div>
             )}
-          </div>
-        ))}
-        {rows.length === 0 && !loading && canQuery && (
-          <div className="text-sm text-slate-500">Sin mensajes.</div>
-        )}
-      </div>
-    </div>
-  );
+
+            {/* Tabla */}
+            <TableContainer component={Paper} elevation={0} className="border">
+                <Table size="small">
+                    <TableHead className="bg-slate-50">
+                        <TableRow>
+                            <TableCell>Estudiante</TableCell>
+                            <TableCell>Teléfono</TableCell>
+                            <TableCell>Mensaje</TableCell>
+                            <TableCell>Fecha</TableCell>
+                            <TableCell>Sección</TableCell>
+                            <TableCell>Estado</TableCell>
+                            <TableCell align="right">Acción</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {loading && (
+                            <TableRow>
+                                <TableCell colSpan={7}>
+                                    <div className="flex items-center gap-2 text-sm p-2">
+                                        <CircularProgress size={18} /> Cargando…
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        )}
+
+                        {!loading && canQuery && rows.length === 0 && (
+                            <TableRow>
+                                <TableCell colSpan={7}>
+                                    <div className="text-center text-slate-500 p-3">Sin notificaciones.</div>
+                                </TableCell>
+                            </TableRow>
+                        )}
+
+                        {rows.map((n) => (
+                            <TableRow key={n.id} hover>
+                                <TableCell className="font-medium">{n.studentName}</TableCell>
+                                <TableCell>{n.phone}</TableCell>
+                                <TableCell className="max-w-[28rem] truncate" title={n.message}>
+                                    {n.message}
+                                </TableCell>
+                                <TableCell>{formatDate(n.date)}</TableCell>
+                                <TableCell>{n.sectionId}</TableCell>
+                                <TableCell>{statusChip(n.status)}</TableCell>
+                                <TableCell align="right">
+                                    {n.status === "FAILED" && (
+                                        <Tooltip title="Reintentar">
+                                            <span>
+                                                <IconButton size="small" onClick={() => resend(n.id)} disabled={loading}>
+                                                    <ReplayIcon fontSize="small" />
+                                                </IconButton>
+                                            </span>
+                                        </Tooltip>
+                                    )}
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+        </div>
+    );
 }

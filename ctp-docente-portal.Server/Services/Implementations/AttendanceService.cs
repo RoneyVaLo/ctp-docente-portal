@@ -46,17 +46,14 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
                 if (st.StatusTypeId == 2)
                 {
-                    await _notificationService.QueueAbsenceMessageAsync(new Attendance
-                    {
-                        StudentId = st.StudentId,
-                        SectionId = dto.SectionId,
-                        SubjectId = dto.SubjectId,
-                        Date = dto.Date,
-                        TakenAt = dto.TakenAt,
-                        StatusTypeId = st.StatusTypeId,
-                        MinutesLate = st.MinutesLate,
-                        Observations = st.Observations
-                    });
+                    await _notificationService.QueueAbsenceMessageAsync(
+                        studentId: st.StudentId,
+                        studentName: string.IsNullOrWhiteSpace(st.StudentName) ? $"Estudiante {st.StudentId}" : st.StudentName,
+                        phone: st.Phone ?? "",
+                        date: dto.Date,
+                        sectionId: dto.SectionId,
+                        subjectId: dto.SubjectId
+                    );
                 }
             }
         }

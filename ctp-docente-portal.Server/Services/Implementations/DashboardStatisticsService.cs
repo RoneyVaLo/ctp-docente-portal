@@ -50,7 +50,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 .CountAsync();
 
             var assistanceToday = await (
-                from ss in _context.SectionStudents
+                from ss in _context.SectionStudent
                 join sa in _context.SectionAssignments on ss.SectionId equals sa.SectionId
                 join at in _context.Attendances
                     on new { ss.StudentId, ss.SectionId }
@@ -65,7 +65,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
             var pendingEvaluationsQuery = (
                 from ei in _context.EvaluationItems
                 join sa in _context.SectionAssignments on ei.SectionAssignmentId equals sa.Id
-                join ss in _context.SectionStudents on sa.SectionId equals ss.SectionId
+                join ss in _context.SectionStudent on sa.SectionId equals ss.SectionId
                 where sa.StaffId == staffId && sa.AcademicPeriodId == periodoId
                 where ei.HasCriteria == true
                 where !_context.StudentEvaluationScores
@@ -83,8 +83,8 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 from ei in _context.EvaluationItems
                 join sa in _context.SectionAssignments on ei.SectionAssignmentId equals sa.Id
                 join sub in _context.Subjects on sa.SubjectId equals sub.Id
-                join sec in _context.Sections on sa.SectionId equals sec.Id
-                join ss in _context.SectionStudents on sec.Id equals ss.SectionId
+                join sec in _context.Section on sa.SectionId equals sec.Id
+                join ss in _context.SectionStudent on sec.Id equals ss.SectionId
                 where sa.StaffId == staffId && sa.AcademicPeriodId == periodoId
                 where ei.HasCriteria == true
                 where !_context.StudentEvaluationScores
@@ -119,7 +119,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
         {
             var today = DateOnly.FromDateTime(DateTime.Now);
 
-            var totalActiveStudents = await _context.Students.CountAsync(s => s.isActive);
+            var totalActiveStudents = await _context.StudentsV2.CountAsync(s => s.IsActive);
 
             var totalPossibleToday = await _context.Attendances
                 .Where(a => a.Date == today)
@@ -170,7 +170,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
             var query = await (
                 from a in _context.Attendances
-                join sec in _context.Sections on a.SectionId equals sec.Id
+                join sec in _context.Section on a.SectionId equals sec.Id
                 join sub in _context.Subjects on a.SubjectId equals sub.Id
                 where a.Date == today && a.StatusTypeId == 2 // 2 = Ausente
                 group new { a, sec, sub } by new

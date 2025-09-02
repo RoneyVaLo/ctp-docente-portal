@@ -1,6 +1,4 @@
-//Este DTO representa un formulario de asistencia para un grupo completo (una sección), y permite enviar la asistencia de todos los estudiantes en una sola petición.
-
-// Este DTO representa un formulario de asistencia para un grupo completo (una sección)
+// ctp_docente_portal.Server/DTOs/Attendance/CreateGroupAttendanceDto.cs
 namespace ctp_docente_portal.Server.DTOs.Attendance
 {
     // Formulario de asistencia para una sección/materia en una fecha
@@ -17,6 +15,11 @@ namespace ctp_docente_portal.Server.DTOs.Attendance
     public class StudentAttendanceDto
     {
         public int StudentId { get; set; }
+
+
+        public string? StudentName { get; set; } = null;
+        public string? Phone { get; set; } = null;
+
         public int StatusTypeId { get; set; }
         public int MinutesLate { get; set; } = 0;
         public string Observations { get; set; } = string.Empty;

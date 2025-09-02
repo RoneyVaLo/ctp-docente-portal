@@ -65,13 +65,12 @@ export const attendanceApi = {
             Students: (students ?? []).map(normalizeStudentRow),
         };
 
-        // console.debug("POST /attendance/group payload", payload);
-
         const res = await fetch(`${API_BASE}/attendance/group`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+             credentials: "include", 
             body: JSON.stringify(payload),
-        });
+          });
         if (!res.ok) throw new Error(await res.text());
         return true;
     },
