@@ -20,14 +20,6 @@ import {
 } from "@mui/material";
 
 
-const SUBJECT_OPTIONS = [
-    { id: 1, name: "Matemáticas" },
-    { id: 2, name: "Español" },
-    { id: 3, name: "Ciencias" },
-    { id: 4, name: "Estudios Sociales" },
-    { id: 5, name: "Inglés" },
-];
-
 function nowHHmm() {
     const d = new Date();
     const hh = String(d.getHours()).padStart(2, "0");
@@ -54,19 +46,38 @@ export default function AttendancePage() {
     const saved = ls.get("ui.attendance.filters", {}) || {};
 
     const [date, setDate] = useState(saved.date ?? today);
-    const [time, setTime] = useState(saved.time ?? initialTime); 
+    const [time, setTime] = useState(saved.time ?? initialTime);
 
     const [sectionId, setSectionId] = useState(0);
     const [subject, setSubject] = useState(saved.subject ?? "");
     const [subjectId, setSubjectId] = useState(saved.subjectId ?? 0);
 
     const [sections, setSections] = useState([]);
+    const [subjects, setSubjects] = useState([]);
     const [loadingSections, setLoadingSections] = useState(false);
+    const [loadingSubjects, setLoadingSubjects] = useState(false);
 
     const [rows, setRows] = useState([]);
     const [loading, setLoading] = useState(false);
     const [toast, setToast] = useState("");
 
+
+
+
+    useEffect(() => {
+        const fetchSubjects = async () => {
+            setLoadingSubjects(true);
+            try {
+                const data = await attendanceApi.getSubjects();
+                setSubjects(data);
+            } catch (err) {
+                console.error("Error cargando las materias:", err);
+            } finally {
+                setLoadingSubjects(false);
+            }
+        };
+        fetchSubjects();
+    }, []);
 
     useEffect(() => {
         try {
@@ -208,7 +219,7 @@ export default function AttendancePage() {
                         type="time"
                         value={time}
                         onChange={(e) => setTime(e.target.value)}
-                        step={60}                    
+                        step={60}
                         className="w-full border rounded px-2 py-1"
                         aria-label="Hora de toma (editable)"
                     />
@@ -217,7 +228,7 @@ export default function AttendancePage() {
                 <div>
                     <label className="text-xs text-slate-500 block mb-1">Sección</label>
                     <FormControl fullWidth size="small">
-                       
+
                         <Select
                             labelId="section-label"
                             label="Sección"
@@ -255,7 +266,7 @@ export default function AttendancePage() {
                 <div className="w-50 sm:w-50 md:w-70">
                     <label className="text-xs text-slate-500 block mb-1">Asignatura</label>
                     <FormControl fullWidth size="small">
-                       
+
                         <Select
                             labelId="subject-label"
                             label="Asignatura"
@@ -263,20 +274,20 @@ export default function AttendancePage() {
                             onChange={(e) => {
                                 const val = Number(e.target.value) || 0;
                                 setSubjectId(val);
-                                const found = SUBJECT_OPTIONS.find((s) => s.id === val);
+                                const found = subjects.find((s) => s.id === val);
                                 setSubject(found?.name ?? "");
                             }}
                             displayEmpty
                             renderValue={(selected) => {
                                 if (!selected) return "Seleccioná una asignatura";
-                                const item = SUBJECT_OPTIONS.find((s) => s.id === selected);
+                                const item = subjects.find((s) => s.id === selected);
                                 return item ? item.name : selected;
                             }}
                         >
                             <MenuItem value="">
                                 <em>Seleccioná una asignatura</em>
                             </MenuItem>
-                            {SUBJECT_OPTIONS.map((s) => (
+                            {subjects.map((s) => (
                                 <MenuItem key={s.id} value={s.id}>
                                     {s.name}
                                 </MenuItem>

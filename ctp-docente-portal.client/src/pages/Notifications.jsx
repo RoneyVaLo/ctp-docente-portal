@@ -23,13 +23,7 @@ import {
 import ReplayIcon from "@mui/icons-material/Replay";
 import SearchIcon from "@mui/icons-material/Search";
 
-const SUBJECT_OPTIONS = [
-    { id: 1, name: "Matemáticas" },
-    { id: 2, name: "Español" },
-    { id: 3, name: "Ciencias" },
-    { id: 4, name: "Estudios Sociales" },
-    { id: 5, name: "Inglés" },
-];
+
 
 function formatDate(iso) {
     if (!iso) return "-";
@@ -56,7 +50,8 @@ export default function NotificationsPage() {
     const [err, setErr] = useState("");
 
     const canQuery = sectionId > 0; // requerimos sección
-
+    const [subjects, setSubjects] = useState([]);
+    const [loadingSubjects, setLoadingSubjects] = useState(false);
     // Persistir filtros
     useEffect(() => {
         try {
@@ -72,6 +67,20 @@ export default function NotificationsPage() {
         }
     }, [date, sectionId, status, subject, subjectId]);
 
+    useEffect(() => {
+        const fetchSubjects = async () => {
+            setLoadingSubjects(true);
+            try {
+                const data = await notificationsApi.getSubjects();
+                setSubjects(data);
+            } catch (err) {
+                console.error("Error cargando las materias:", err);
+            } finally {
+                setLoadingSubjects(false);
+            }
+        };
+        fetchSubjects();
+    }, []);
 
     useEffect(() => {
         (async () => {
@@ -197,24 +206,26 @@ export default function NotificationsPage() {
                         <label className="text-xs text-slate-600 mb-1 block">Asignatura</label>
                         <FormControl fullWidth size="small">
                             <Select
+                                labelId="subject-label"
+                                label="Asignatura"
                                 value={subjectId || ""}
-                                displayEmpty
                                 onChange={(e) => {
                                     const val = Number(e.target.value) || 0;
                                     setSubjectId(val);
-                                    const found = SUBJECT_OPTIONS.find((s) => s.id === val);
+                                    const found = subjects.find((s) => s.id === val);
                                     setSubject(found?.name ?? "");
                                 }}
+                                displayEmpty
                                 renderValue={(selected) => {
                                     if (!selected) return "Seleccioná una asignatura";
-                                    const item = SUBJECT_OPTIONS.find((s) => s.id === selected);
+                                    const item = subjects.find((s) => s.id === selected);
                                     return item ? item.name : selected;
                                 }}
                             >
                                 <MenuItem value="">
                                     <em>Seleccioná una asignatura</em>
                                 </MenuItem>
-                                {SUBJECT_OPTIONS.map((s) => (
+                                {subjects.map((s) => (
                                     <MenuItem key={s.id} value={s.id}>
                                         {s.name}
                                     </MenuItem>
@@ -296,7 +307,7 @@ export default function NotificationsPage() {
                                     {n.message}
                                 </TableCell>
                                 <TableCell>{formatDate(n.date)}</TableCell>
-                                <TableCell>{n.sectionId}</TableCell>
+                                <TableCell>{n.sectionName ?? n.sectionId}</TableCell>
                                 <TableCell>{statusChip(n.status)}</TableCell>
                                 <TableCell align="right">
                                     {n.status === "FAILED" && (
@@ -314,6 +325,6 @@ export default function NotificationsPage() {
                     </TableBody>
                 </Table>
             </TableContainer>
-        </div>
-    );
+        </div>
+    );
 }

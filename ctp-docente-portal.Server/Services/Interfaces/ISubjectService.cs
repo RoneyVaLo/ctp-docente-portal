@@ -6,5 +6,7 @@ namespace ctp_docente_portal.Server.Services.Interfaces
     {
         Task<List<SubjectDto>> GetSubjectsByPeriodAsync(int academicPeriodId);
         Task<SubjectDto> GetByIdAsync(int id);
+        Task<List<SubjectDto>> GetAllSubjectsAsync();
+
     }
 }

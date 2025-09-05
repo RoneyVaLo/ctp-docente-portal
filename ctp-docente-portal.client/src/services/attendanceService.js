@@ -57,21 +57,24 @@ export const attendanceApi = {
     /** Guardar asistencia grupal */
     async createGroup({ date, sectionId, subjectId, takenAt, students }) {
         const payload = {
-            // Usa PascalCase para alinear con los DTOs del backend
-            Date: date,                           // "YYYY-MM-DD"
+            Date: date,                      
             SectionId: Number(sectionId),
             SubjectId: Number(subjectId),
-            TakenAt: takenAt,                     // "YYYY-MM-DDTHH:mm:00"
+            TakenAt: takenAt,                    
             Students: (students ?? []).map(normalizeStudentRow),
         };
-
-        const res = await fetch(`${API_BASE}/attendance/group`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-             credentials: "include", 
+        const token = localStorage.getItem("token");
+        const ress = await fetch(`${API_BASE}/attendance/group`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                
+            },
             body: JSON.stringify(payload),
-          });
-        if (!res.ok) throw new Error(await res.text());
+        });
+
+        if (!ress.ok) throw new Error(await ress.text());
         return true;
     },
 
@@ -134,5 +137,18 @@ export const attendanceApi = {
             birthDate: s.birthDate ?? null,
             genderId: s.genderId ?? null,
         }));
+    },
+    async getSubjects() {
+        const token = localStorage.getItem("token");
+
+        const res = await fetch(`${API_BASE}/subject`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+        if (!res.ok) throw new Error(await res.text());
+        return await res.json();  
     },
 };

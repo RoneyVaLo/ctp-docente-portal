@@ -4,7 +4,7 @@ const BASE_URL = (/^https?:\/\//i.test(RAW) ? RAW : RAW).replace(/\/+$/, '');
 
 export const notificationsApi = {
     async sendAbsences({ date, sectionId, subjectId, subject }) {
-        const res = await fetch(${ BASE_URL } / notifications / absences, {
+        const res = await fetch(`${BASE_URL}/notifications/absences`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
@@ -15,7 +15,7 @@ export const notificationsApi = {
     },
 
     async list({ date, sectionId, status, subjectId }) {
-        const url = new URL(${ BASE_URL } / notifications, window.location.origin);
+        const url = new URL(`${BASE_URL}/notifications`, window.location.origin);
         if (date) url.searchParams.set("date", date);
         if (sectionId) url.searchParams.set("sectionId", sectionId);
         if (status) url.searchParams.set("status", status);
@@ -26,7 +26,7 @@ export const notificationsApi = {
     },
 
     async resend(id) {
-        const res = await fetch(${ BASE_URL } / notifications / ${ id } / resend, {
+        const res = await fetch(`${BASE_URL}/notifications/${id}/resend`, {
             method: "POST",
             credentials: "include"
         });
@@ -35,11 +35,24 @@ export const notificationsApi = {
     },
 
     async testSend({ to, message }) {
-        const res = await fetch(${ BASE_URL } / notifications / test, {
+        const res = await fetch(`${BASE_URL}/notifications/test`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
             body: JSON.stringify({ to, message })
+        });
+        if (!res.ok) throw new Error(await res.text());
+        return await res.json();
+    },
+    async getSubjects() {
+        const token = localStorage.getItem("token");
+
+        const res = await fetch(`${BASE_URL}/subject`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
         });
         if (!res.ok) throw new Error(await res.text());
         return await res.json();

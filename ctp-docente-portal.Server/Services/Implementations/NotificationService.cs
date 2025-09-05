@@ -1,3 +1,6 @@
+using System.Net.Http.Headers;
+using System.Text.Json;
+using System.Text;
 using ctp_docente_portal.Server.Data;
 using ctp_docente_portal.Server.DTOs.Notifications;
 using ctp_docente_portal.Server.Models;
@@ -114,26 +117,68 @@ namespace ctp_docente_portal.Server.Services.Implementations
         }
 
         // ================== Listado ==================
-        public async Task<IReadOnlyList<NotificationDto>> ListAsync(
-            DateOnly? date, int? sectionId, int? subjectId, string? status, CancellationToken ct = default)
+        //public async Task<IReadOnlyList<NotificationDto>> ListAsync(
+        //    DateOnly? date, int? sectionId, int? subjectId, string? status, CancellationToken ct = default)
+        //{
+        //    var q = _db.Notifications.AsNoTracking().AsQueryable();
+
+        //    if (date.HasValue) q = q.Where(n => n.Date == date.Value);
+        //    if (sectionId.HasValue) q = q.Where(n => n.SectionId == sectionId.Value);
+        //    if (subjectId.HasValue) q = q.Where(n => n.SubjectId == subjectId.Value);
+        //    if (!string.IsNullOrWhiteSpace(status))
+        //    {
+        //        var s = status.Trim().ToUpperInvariant();
+        //        q = q.Where(n => n.Status == s);
+        //    }
+
+        //    return await q.OrderByDescending(n => n.CreatedAt)
+        //                  .Take(500)
+        //                  .Select(n => ToDto(n))
+        //                  .ToListAsync(ct);
+        //}
+        public async Task<IReadOnlyList<NotificationDto>> ListAsync(DateOnly? date, int? sectionId, int? subjectId, string? status, CancellationToken ct = default)
         {
+            // Empieza la consulta de notifications
             var q = _db.Notifications.AsNoTracking().AsQueryable();
 
+            // Aplicar filtros
             if (date.HasValue) q = q.Where(n => n.Date == date.Value);
             if (sectionId.HasValue) q = q.Where(n => n.SectionId == sectionId.Value);
-            if (subjectId.HasValue) q = q.Where(n => n.SubjectId == subjectId.Value);   // 👈 filtro nuevo
+            if (subjectId.HasValue) q = q.Where(n => n.SubjectId == subjectId.Value);
             if (!string.IsNullOrWhiteSpace(status))
             {
                 var s = status.Trim().ToUpperInvariant();
                 q = q.Where(n => n.Status == s);
             }
 
-            return await q.OrderByDescending(n => n.CreatedAt)
-                          .Take(500)
-                          .Select(n => ToDto(n))
-                          .ToListAsync(ct);
-        }
+            // Hacer join con las secciones para traer el nombre
+            var result = await (from n in q
+                                join s in _db.Section.AsNoTracking()
+                                    on n.SectionId equals s.Id
+                                select new NotificationDto
+                                {
+                                    Id = n.Id,
+                                    StudentId = n.StudentId,
+                                    StudentName = n.StudentName,
+                                    SectionId = n.SectionId,
+                                    SubjectId = n.SubjectId,
+                                    Phone = n.Phone,
+                                    Message = n.Message,
+                                    Status = n.Status,
+                                    ProviderMessageId = n.ProviderMessageId,
+                                    Date = n.Date,
+                                    CreatedAt = n.CreatedAt,
+                                    SentAt = n.SentAt,
+                                    Error = n.Error,
+                                    // Nuevo campo para mostrar nombre de la sección
+                                    SectionName = s.Name
+                                })
+                                .OrderByDescending(n => n.CreatedAt)
+                                .Take(500)
+                                .ToListAsync(ct);
 
+            return result;
+        }
         // ================= Reintentar =================
         public async Task<bool> ResendMessageAsync(int id, CancellationToken ct = default)
         {
@@ -191,15 +236,16 @@ namespace ctp_docente_portal.Server.Services.Implementations
             return ToDto(entity);
         }
         public async Task<NotificationDto> QueueAbsenceMessageAsync(
-            int studentId,
-            string? studentName,
-            string? phone,
-            DateOnly date,
-            int sectionId,
-            int? subjectId,
-            CancellationToken ct = default)
+     int studentId,
+     string? studentName,
+     string? phone,
+     DateOnly date,
+     int sectionId,
+     int? subjectId,
+     CancellationToken ct = default)
         {
             var now = DateTime.UtcNow;
+
 
             var conn = _db.Database.GetDbConnection();
             var mustClose = false;
@@ -209,51 +255,91 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 mustClose = true;
             }
 
+            string name = $"Estudiante {studentId}";
+            string telefono = "";
+
             await using (var cmd = conn.CreateCommand())
             {
+
                 cmd.CommandText = @"
-                SELECT trim(concat_ws(' ', ""Name"", ""MiddleName"", ""LastName"", ""ndLastName""))
-                FROM public.""Students""
-                WHERE ""Id"" = @id
-                LIMIT 1";
+            SELECT
+                trim(concat_ws(' ', ""Name"", ""MiddleName"", ""LastName"", ""ndLastName"")) AS full_name,
+                COALESCE(""FamilyPhoneNumber""::text, '') AS family_phone
+            FROM public.""Students""
+            WHERE ""Id"" = @id
+            LIMIT 1";
+
                 var p = cmd.CreateParameter();
                 p.ParameterName = "@id";
                 p.Value = studentId;
                 cmd.Parameters.Add(p);
 
-                var obj = await cmd.ExecuteScalarAsync(ct);
-                var fullName = obj as string;
-                if (string.IsNullOrWhiteSpace(fullName))
-                    fullName = $"Estudiante {studentId}";
-
-
-                var name = !string.IsNullOrWhiteSpace(studentName) ? studentName.Trim() : fullName;
-                var phoneNorm = phone?.Trim() ?? "";
-
-                var message = subjectId.HasValue
-                    ? $"El estudiante {name} estuvo ausente el {date:yyyy-MM-dd} (Materia #{subjectId})."
-                    : $"El estudiante {name} estuvo ausente el {date:yyyy-MM-dd}.";
-
-                var entity = new Notification
+                await using var reader = await cmd.ExecuteReaderAsync(ct);
+                if (await reader.ReadAsync(ct))
                 {
-                    StudentId = studentId,
-                    StudentName = name,
-                    SectionId = sectionId,
-                    SubjectId = subjectId,
-                    Phone = phoneNorm,
-                    Message = message,
-                    Status = "QUEUED",
-                    Date = date,
-                    CreatedAt = now
-                };
+                    var fullName = reader.IsDBNull(0) ? null : reader.GetString(0);
+                    var familyPhone = reader.IsDBNull(1) ? "" : reader.GetString(1);
 
-                _db.Notifications.Add(entity);
-                await _db.SaveChangesAsync(ct);
+                    if (!string.IsNullOrWhiteSpace(fullName))
+                        name = fullName.Trim();
 
-                if (mustClose) await conn.CloseAsync();
-
-                return ToDto(entity);
+                    // Teléfono dinámico desde FamilyPhoneNumber
+                    telefono = (familyPhone ?? "").Trim();
+                }
             }
+
+
+            if (string.IsNullOrWhiteSpace(telefono))
+                telefono = (phone ?? "").Trim();
+
+
+            var message = subjectId.HasValue
+                ? $"El estudiante {name} estuvo ausente el {date:yyyy-MM-dd} (Materia #{subjectId})."
+                : $"El estudiante {name} estuvo ausente el {date:yyyy-MM-dd}.";
+
+
+
+            var token = "EAALSAZBIbFYQBPaQ7fF2VDozoupq8ZBTHWwVHcRXPMsfzpu9Q0FInGG4KPJqNZCWg9ZCo8pPaaQiQWlK3YPDVwztu8vUIB7bzbpK68MxKUlU9lmujrgDaLYpWrDegeU81BhQicLgW2RlJbAb1F4HVU6VnBM7qpw7wtVJf7AgWmcjQfrQe0ESZCNlNaPfvV5VVBIxa2XJuLavVqdhlEyMWLBZAMGiEeFSqolilVOSFpdHCXZBQZDZD";
+            var idTelefono = "825978877256138";
+
+            if (!string.IsNullOrWhiteSpace(token) &&
+                !string.IsNullOrWhiteSpace(idTelefono) &&
+                !string.IsNullOrWhiteSpace(telefono))
+            {
+
+                //Token
+                HttpClient client = new HttpClient();
+                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, "https://graph.facebook.com/v15.0/" + idTelefono + "/messages");
+                request.Headers.Add("Authorization", "Bearer " + token);
+                request.Content = new StringContent("{ \"messaging_product\": \"whatsapp\", \"to\": \"" + telefono + "\", \"type\": \"template\", \"template\": { \"name\": \"hello_world\", \"language\": { \"code\": \"en_US\" } } }");
+                request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+                HttpResponseMessage response = await client.SendAsync(request);
+                //response.EnsureSuccessStatusCode();
+                string responseBody = await response.Content.ReadAsStringAsync();
+            
+
+        }
+
+
+            var entity = new Notification
+            {
+                StudentId = studentId,
+                StudentName = name,
+                SectionId = sectionId,
+                SubjectId = subjectId,
+                Phone = telefono,
+                Message = message,
+                Status = "QUEUED",
+                Date = date,
+                CreatedAt = now
+            };
+
+            _db.Notifications.Add(entity);
+            await _db.SaveChangesAsync(ct);
+
+            if (mustClose) await conn.CloseAsync();
+
+            return ToDto(entity);
         }
 
 
@@ -268,6 +354,6 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 date: a.Date,
                 sectionId: a.SectionId,
                 subjectId: a.SubjectId,
-                ct: ct);
-    }
+                ct: ct);
+    }
 }
