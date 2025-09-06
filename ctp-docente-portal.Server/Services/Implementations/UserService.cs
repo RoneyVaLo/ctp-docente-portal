@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using ctp_docente_portal.Server.Data;
+using ctp_docente_portal.Server.DTOs.Subjects;
 using ctp_docente_portal.Server.DTOs.Users;
 using ctp_docente_portal.Server.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -61,6 +63,17 @@ namespace ctp_docente_portal.Server.Services.Implementations
             };
 
             return userDto;
+        }
+
+        public async Task<List<UserDto>> GetAllAsync()
+        {
+            var users = await _context.Users
+                .AsNoTracking()
+                .Where(u => !_context.StaffUserLinks
+                .Any(sul => sul.UserId == u.Id))
+                .ToListAsync();
+
+            return _mapper.Map<List<UserDto>>(users);
         }
     }
 }

@@ -10,6 +10,9 @@ using ctp_docente_portal.Server.DTOs.Subjects;
 using ctp_docente_portal.Server.DTOs.Students;
 using ctp_docente_portal.Server.DTOs.EvaluationCategories;
 using ctp_docente_portal.Server.DTOs.Users;
+using ctp_docente_portal.Server.DTOs.Staff;
+using ctp_docente_portal.Server.DTOs.EvaluationRole;
+using ctp_docente_portal.Server.DTOs.Common;
 
 namespace ctp_docente_portal.Server.Mappings
 {
@@ -43,6 +46,21 @@ namespace ctp_docente_portal.Server.Mappings
 
             // AcademicPeriods
             CreateMap<AcademicPeriodsModel, AcademicPeriodDto>().ReverseMap();
+            CreateMap<AcademicPeriodsModel, CreateAcademicPeriodDto>().ReverseMap();
+            CreateMap<AcademicPeriodsModel, UpdateAcademicPeriodDto>().ReverseMap();
+            
+            // Staff
+            CreateMap<StaffModel, StaffDto>()
+                .ForMember(dest => dest.Name, opt => opt.MapFrom(src =>
+                    string.Join(" ", new[]
+                    {
+                        src.Name,
+                        src.MiddleName,
+                        src.LastName,
+                        src.ndLastName
+                    }.Where(s => !string.IsNullOrWhiteSpace(s)))
+                    ))
+                .ReverseMap();
 
             // Subjects
             CreateMap<SubjectsModel, SubjectDto>().ReverseMap();
@@ -62,9 +80,14 @@ namespace ctp_docente_portal.Server.Mappings
                     }.Where(s => !string.IsNullOrWhiteSpace(s)))
                     ));
 
-            // TODO: Configurar luego esto para el tracking correcto
-            // Audit
-            //CreateMap<AuditStudentEvaluationScore, StudentEvaluationScore>().ReverseMap();
+            // Users
+            CreateMap<UsersModel, UserDto>().ReverseMap();
+            
+            // Roles
+            CreateMap<EvaluationRolesModel, EvaluationRoleDto>().ReverseMap();
+            
+            // Enrollments
+            CreateMap<EnrollmentsModel, SimpleDto>().ReverseMap();
         }
     }
 }

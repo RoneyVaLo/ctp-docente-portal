@@ -5,6 +5,7 @@
         public int Id { get; set; }
         public int StaffId { get; set; }
         public int SectionId { get; set; }
+        public int SubSectionId { get; set; }
         public int SubjectId { get; set; }
         public int AcademicPeriodId { get; set; }
         public DateTime CreatedAt { get; set; }
