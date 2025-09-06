@@ -35,5 +35,13 @@ namespace ctp_docente_portal.Server.Controllers
             var result = await _userService.GetByIdAsync(id);
             return Ok(result);
         }
+
+        [HttpGet]
+        [Authorize(Policy = "AdministrativoOnly")]
+        public async Task<IActionResult> GetAll()
+        {
+            var result = await _userService.GetAllAsync();
+            return Ok(result);
+        }
     }
 }

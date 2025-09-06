@@ -3,6 +3,7 @@ using AutoMapper.QueryableExtensions;
 using ctp_docente_portal.Server.Data;
 using ctp_docente_portal.Server.DTOs.Attendance;
 using ctp_docente_portal.Server.DTOs.Sections;
+using ctp_docente_portal.Server.DTOs.Users;
 using ctp_docente_portal.Server.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,6 +18,17 @@ namespace ctp_docente_portal.Server.Services.Implementations
         {
             _context = context;
             _mapper = mapper;
+        }
+
+        public async Task<List<SectionDto>> GetAllAsync()
+        {
+            var sections = await _context.Sections
+                .OrderBy(x => x.Id)
+                .ThenBy(x => x.Name)
+                .AsNoTracking()
+                .ToListAsync();
+
+            return _mapper.Map<List<SectionDto>>(sections);
         }
 
         public async Task<SectionDto> GetByIdAsync(int id)
