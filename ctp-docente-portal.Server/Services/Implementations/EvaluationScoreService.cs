@@ -27,10 +27,10 @@ namespace ctp_docente_portal.Server.Services.Implementations
             _mapper = mapper;
         }
 
-        public async Task<List<StudentEvaluationMatrixDto>> GetStudentScoresMatrixAsync(int subjectId, int sectionId)
+        public async Task<List<StudentEvaluationMatrixDto>> GetStudentScoresMatrixAsync(int subjectId, int sectionId, int userId)
         {
-            var studentDtos = await _studentService.GetStudentsBySectionAsync(sectionId);
-            var itemDtos = await _evaluationService.GetItemsBySubjectAndSectionAsync(subjectId, sectionId);
+            var studentDtos = await _studentService.GetStudentsBySectionAsync(sectionId, userId);
+            var itemDtos = await _evaluationService.GetItemsBySubjectAndSectionAsync(subjectId, sectionId, userId);
 
             var itemIds = itemDtos.Select(i => i.Id).ToList();
             var studentIds = studentDtos.Select(s => s.Id).ToList();

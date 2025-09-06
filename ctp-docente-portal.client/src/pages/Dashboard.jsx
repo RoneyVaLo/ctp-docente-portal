@@ -15,7 +15,7 @@ const API_ENDPOINTS = {
 };
 
 const fetchTeacherStatistics = async () => {
-  const token = localStorage.getItem("token");
+  const token = sessionStorage.getItem("token");
   const { data } = await axios.get(API_ENDPOINTS.teacher(72, 2), {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -30,7 +30,7 @@ const fetchTeacherStatistics = async () => {
 };
 
 const fetchAdministrativeStatistics = async () => {
-  const token = localStorage.getItem("token");
+  const token = sessionStorage.getItem("token");
   const [summary, topSections, gradesDist] = await Promise.all([
     axios.get(API_ENDPOINTS.administrative, {
       headers: { Authorization: `Bearer ${token}` },

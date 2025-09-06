@@ -10,8 +10,8 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const token = localStorage.getItem("token");
-      const userId = localStorage.getItem("userId");
+      const token = sessionStorage.getItem("token");
+      const userId = sessionStorage.getItem("userId");
       // const username = localStorage.getItem("username");
 
       if (token && userId) {
@@ -37,8 +37,8 @@ export const AuthProvider = ({ children }) => {
             }
           }
           toast.error(Message);
-          localStorage.removeItem("token");
-          localStorage.removeItem("userId");
+          sessionStorage.removeItem("token");
+          sessionStorage.removeItem("userId");
         }
       }
       setLoading(false);
@@ -53,8 +53,8 @@ export const AuthProvider = ({ children }) => {
 
       const { token, user } = response.data;
 
-      localStorage.setItem("token", token);
-      localStorage.setItem("userId", user.id);
+      sessionStorage.setItem("token", token);
+      sessionStorage.setItem("userId", user.id);
 
       setUser(user);
       setRoles(user.roles);
@@ -67,8 +67,8 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     setLoading(true);
-    localStorage.removeItem("token");
-    localStorage.removeItem("username");
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("username");
     sessionStorage.removeItem("selectedPeriod");
     sessionStorage.removeItem("selectedSubject");
     sessionStorage.removeItem("selectedGroup");

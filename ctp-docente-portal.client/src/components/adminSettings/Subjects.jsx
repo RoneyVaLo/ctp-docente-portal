@@ -60,7 +60,7 @@ const Subjects = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem("token");
+        const token = sessionStorage.getItem("token");
         const { data } = await axios.get(
           `api/subject/pagination?pageNumber=${pagination.pageNumber}&pageSize=${pagination.pageSize}`,
           {
@@ -118,7 +118,7 @@ const Subjects = () => {
     try {
       if (subjectId > 0) {
         setLoading(true);
-        const token = localStorage.getItem("token");
+        const token = sessionStorage.getItem("token");
         const response = await axios.delete(`api/subject/${subjectId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -155,7 +155,7 @@ const Subjects = () => {
     try {
       if (validateForm()) {
         setLoading(true);
-        const token = localStorage.getItem("token");
+        const token = sessionStorage.getItem("token");
         if (subjectForm.id) {
           const response = await axios.put(
             `api/subject/${subjectForm.id}`,

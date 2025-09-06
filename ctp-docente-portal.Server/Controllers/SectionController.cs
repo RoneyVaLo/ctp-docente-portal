@@ -5,6 +5,7 @@ using ctp_docente_portal.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace ctp_docente_portal.Server.Controllers
 {
@@ -33,7 +34,8 @@ namespace ctp_docente_portal.Server.Controllers
         [Authorize(Policy = "DocenteOnly")]
         public async Task<ActionResult<List<SectionDto>>> GetSections(int academicPeriodId, int subjectId)
         {
-            var sections = await _sectionService.GetSectionsByPeriodAndSubjectAsync(academicPeriodId, subjectId);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var sections = await _sectionService.GetSectionsByPeriodAndSubjectAsync(academicPeriodId, subjectId, userId);
             return Ok(sections);
         }
 

@@ -7,6 +7,7 @@ namespace ctp_docente_portal.Server.Services.Interfaces
     public interface ISectionAssignmentsService
     {
         Task<PagedResult<SectionAssignmentDto>> GetAllAsync(PaginationParams paginationParams);
+        Task<int?> GetSectionAssignmentIdAsync(int subjectId, int sectionId);
         Task<SectionAssignmentsModel> CreateAsync(SectionAssignmentCreateDto dto, int userId);
         Task<SectionAssignmentsModel> UpdateAsync(SectionAssignmentUpdateDto dto, int userId);
         Task<bool> DeleteAsync(int id);

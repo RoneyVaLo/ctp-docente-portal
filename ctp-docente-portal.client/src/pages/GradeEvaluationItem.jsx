@@ -39,7 +39,7 @@ const GradeEvaluationItem = () => {
     const fetchEvaluationData = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem("token");
+        const token = sessionStorage.getItem("token");
         const URL = `/api/evaluationitems/item/${itemId}`;
 
         const response = await axios.get(URL, {
@@ -127,7 +127,7 @@ const GradeEvaluationItem = () => {
         updatedBy
       );
 
-      const token = localStorage.getItem("token");
+      const token = sessionStorage.getItem("token");
       const response = await axios.post(
         `/api/studentcriteriascores/section/${selectedGroup}`,
         payload,

@@ -3,6 +3,7 @@ using ctp_docente_portal.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace ctp_docente_portal.Server.Controllers
 {
@@ -62,7 +63,8 @@ namespace ctp_docente_portal.Server.Controllers
         [HttpGet("subject/{subjectId}/section/{sectionId}")]
         public async Task<IActionResult> GetBySectionAssignment(int subjectId, int sectionId)
         {
-            var result = await _service.GetItemsBySubjectAndSectionAsync(subjectId, sectionId);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var result = await _service.GetItemsBySubjectAndSectionAsync(subjectId, sectionId, userId);
             return Ok(result);
         }
 
@@ -70,7 +72,8 @@ namespace ctp_docente_portal.Server.Controllers
         [HttpGet("item/{itemId}")]
         public async Task<IActionResult> GetItemDetails(int itemId)
         {
-            var result = await _service.GetDetailsByIdAsync(itemId);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var result = await _service.GetDetailsByIdAsync(itemId, userId);
             return Ok(result);
         }
 

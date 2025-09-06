@@ -17,6 +17,15 @@ namespace ctp_docente_portal.Server.Services.Implementations
             _context = context;
         }
 
+        public async Task<int?> GetSectionAssignmentIdAsync(int subjectId, int sectionId)
+        {
+            var assignment = await _context.SectionAssignments
+                .Where(sa => sa.SubjectId == subjectId && sa.SectionId == sectionId)
+                .FirstOrDefaultAsync();
+
+            return assignment?.Id;
+        }
+
         public async Task<PagedResult<SectionAssignmentDto>> GetAllAsync(PaginationParams paginationParams)
         {
             var query =

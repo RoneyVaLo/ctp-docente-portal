@@ -20,6 +20,17 @@ namespace ctp_docente_portal.Server.Controllers
             _sectionAssignmentsService = sectionAssignmentsService;
         }
 
+        [HttpGet("getassignmentid")]
+        public async Task<IActionResult> GetAssignmentId([FromQuery] int subjectId, [FromQuery] int sectionId)
+        {
+            var assignmentId = await _sectionAssignmentsService.GetSectionAssignmentIdAsync(subjectId, sectionId);
+
+            if (assignmentId == null)
+                return NotFound("No se encontró un SectionAssignment con esos parámetros.");
+
+            return Ok(assignmentId);
+        }
+
         [HttpGet]
         [Authorize(Policy = "AdministrativoOnly")]
         public async Task<ActionResult<PagedResult<SectionAssignmentDto>>> GetAllAsync([FromQuery] PaginationParams paginationParams)

@@ -17,7 +17,10 @@ const EvaluationItems = () => {
   const deleteItem = async (id) => {
     try {
       setLoading(true);
-      await axios.delete(`/api/evaluationitems/${id}`);
+      const token = sessionStorage.getItem("token");
+      await axios.delete(`/api/evaluationitems/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       toast.success("Item eliminado correctamente.");
 
       const updateItems = [...evaluationItems].filter((ei) => ei.id !== id);

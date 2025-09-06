@@ -5,7 +5,7 @@ namespace ctp_docente_portal.Server.Services.Interfaces
 {
     public interface IEvaluationScoreService
     {
-        Task<List<StudentEvaluationMatrixDto>> GetStudentScoresMatrixAsync(int subjectId, int sectionId);
+        Task<List<StudentEvaluationMatrixDto>> GetStudentScoresMatrixAsync(int subjectId, int sectionId, int userId);
         Task UpsertStudentScoresAsync(int sectionId, List<StudentEvaluationScoreDto> scores);
     }
 }

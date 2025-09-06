@@ -37,10 +37,16 @@ namespace ctp_docente_portal.Server.Services.Implementations
             return _mapper.Map<SectionDto>(section);
         }
 
-        public async Task<List<SectionDto>> GetSectionsByPeriodAndSubjectAsync(int academicPeriodId, int subjectId)
+        public async Task<List<SectionDto>> GetSectionsByPeriodAndSubjectAsync(int academicPeriodId, int subjectId, int userId)
         {
-            // TODO: El "staffId" debo obtenerlo del usuarios cuando esté listo la autenticación
-            int staffId = 53;
+            int staffId = await _context.StaffUserLinks
+                .Where(x => x.UserId == userId)
+                .Select(x => x.StaffId)
+                .FirstOrDefaultAsync();
+            if (staffId == 0)
+            {
+                throw new KeyNotFoundException($"Usuario con ID {userId} no encontrado");
+            }
 
             if (academicPeriodId <= 0 || subjectId <= 0)
             {
