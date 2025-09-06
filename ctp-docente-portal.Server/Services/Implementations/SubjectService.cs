@@ -175,15 +175,6 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
             return subjects;
         }
-        public async Task<List<SubjectDto>> GetAllSubjectsAsync()
-        {
-            return await _context.Subjects
-                .Select(s => new SubjectDto
-                {
-                    Id = s.Id,
-                    Name = s.Name
-                })
-                .ToListAsync();
-        }
+
     }
 }

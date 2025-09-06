@@ -86,6 +86,9 @@ namespace ctp_docente_portal.Server.Configurations
             services.AddScoped<ISectionAssignmentsService, SectionAssignmentsService>();
             services.AddScoped<IEvaluationStaffRoleService, EvaluationStaffRoleService>();
             services.AddScoped<IEvaluationRoleService, EvaluationRoleService>();
+            services.AddScoped<IDashboardStatisticsService, DashboardStatisticsService>();
+            services.AddScoped<IReportService, ReportService>();
+
             services.AddScoped<IStaffUserLinkService, StaffUserLinkService>();
             services.AddScoped<IEnrollmentService, EnrollmentService>();
         }

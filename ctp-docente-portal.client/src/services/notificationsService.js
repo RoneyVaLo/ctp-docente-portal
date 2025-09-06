@@ -15,7 +15,7 @@ export const notificationsApi = {
     },
 
     async list({ date, sectionId, status, subjectId }) {
-        const url = new URL(`${BASE_URL}/notifications`, window.location.origin);
+        const url = new URL(`${BASE_URL}/notifications/`, window.location.origin);
         if (date) url.searchParams.set("date", date);
         if (sectionId) url.searchParams.set("sectionId", sectionId);
         if (status) url.searchParams.set("status", status);
@@ -45,9 +45,9 @@ export const notificationsApi = {
         return await res.json();
     },
     async getSubjects() {
-        const token = localStorage.getItem("token");
+        const token = sessionStorage.getItem("token");
 
-        const res = await fetch(`${BASE_URL}/subject`, {
+        const res = await fetch(`${BASE_URL}/subject/all`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,

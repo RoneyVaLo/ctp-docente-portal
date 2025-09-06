@@ -136,9 +136,9 @@ export const attendanceApi = {
         }));
     },
     async getSubjects() {
-        const token = localStorage.getItem("token");
+        const token = sessionStorage.getItem("token");
 
-        const res = await fetch(`${API_BASE}/subject`, {
+        const res = await fetch(`${API_BASE}/subject/all`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,

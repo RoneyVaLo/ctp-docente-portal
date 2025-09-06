@@ -22,7 +22,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
         public async Task<List<SectionDto>> GetAllAsync()
         {
-            var sections = await _context.Sections
+            var sections = await _context.Section
                 .OrderBy(x => x.Id)
                 .ThenBy(x => x.Name)
                 .AsNoTracking()
