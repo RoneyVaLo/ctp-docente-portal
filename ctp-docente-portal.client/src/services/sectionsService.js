@@ -3,7 +3,7 @@ import api from "./api";
 
 export const sectionsApi = {
   async active() {
-    const token = localStorage.getItem("token");
+    const token = sessionStorage.getItem("token");
     const { data } = await api.get("/section/active", {
       headers: { Authorization: `Bearer ${token}` },
     });

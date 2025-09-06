@@ -79,7 +79,7 @@ const EvaluationRoles = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem("token");
+        const token = sessionStorage.getItem("token");
         setLoading(true);
         const [usersResponse, evaluationRolesResponse, staffResponse] =
           await Promise.all([
@@ -111,7 +111,7 @@ const EvaluationRoles = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem("token");
+        const token = sessionStorage.getItem("token");
         const { data } = await axios.get(
           `api/evaluationstaffroles/pagination?pageNumber=${pagination.pageNumber}&pageSize=${pagination.pageSize}`,
           {
@@ -187,7 +187,7 @@ const EvaluationRoles = () => {
   const deleteAssignment = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
+      const token = sessionStorage.getItem("token");
       const response = await axios.delete(
         `api/evaluationstaffroles/${staffRoleId}`,
         {
@@ -238,7 +238,7 @@ const EvaluationRoles = () => {
   const handleSave = async () => {
     try {
       if (validateStaffRoleForm()) {
-        const token = localStorage.getItem("token");
+        const token = sessionStorage.getItem("token");
         setLoading(true);
         if (staffRoleForm.id) {
           const response = await axios.put(
@@ -284,7 +284,7 @@ const EvaluationRoles = () => {
   const handleSaveLink = async () => {
     try {
       if (validateStaffUserForm()) {
-        const token = localStorage.getItem("token");
+        const token = sessionStorage.getItem("token");
         setLoading(true);
         const response = await axios.post(
           "api/staffuserlinks",

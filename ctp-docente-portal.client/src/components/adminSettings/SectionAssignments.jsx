@@ -82,7 +82,7 @@ const SectionAssignments = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem("token");
+        const token = sessionStorage.getItem("token");
         const [subjects, staff, academicPeriods, sections] = await Promise.all([
           axios.get("api/subject", {
             headers: { Authorization: `Bearer ${token}` },
@@ -117,7 +117,7 @@ const SectionAssignments = () => {
     const fetchAssignments = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem("token");
+        const token = sessionStorage.getItem("token");
         const { data } = await axios.get(
           `api/sectionassignments?pageNumber=${pagination.pageNumber}&pageSize=${pagination.pageSize}`,
           { headers: { Authorization: `Bearer ${token}` } }
@@ -203,7 +203,7 @@ const SectionAssignments = () => {
     try {
       if (assignmentId > 0) {
         setLoading(true);
-        const token = localStorage.getItem("token");
+        const token = sessionStorage.getItem("token");
         const response = await axios.delete(
           `api/sectionassignments/${assignmentId}`,
           {
@@ -254,7 +254,7 @@ const SectionAssignments = () => {
   const handleSave = async () => {
     try {
       if (validateForm()) {
-        const token = localStorage.getItem("token");
+        const token = sessionStorage.getItem("token");
         if (assignmentForm.id) {
           const response = await axios.put(
             `api/sectionassignments/${assignmentForm.id}`,

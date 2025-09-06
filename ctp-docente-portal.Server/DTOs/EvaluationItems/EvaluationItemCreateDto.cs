@@ -4,6 +4,7 @@ namespace ctp_docente_portal.Server.DTOs.EvaluationItems
 {
     public class EvaluationItemCreateDto
     {
+        public int Id { get; set; }
         public int SectionAssignmentId { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }

@@ -5,6 +5,7 @@ using ctp_docente_portal.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace ctp_docente_portal.Server.Controllers
 {
@@ -25,8 +26,9 @@ namespace ctp_docente_portal.Server.Controllers
         [HttpGet("subject/{subjectId}/section/{sectionId}")]
         public async Task<IActionResult> GetEvaluationMatrixBySection(int subjectId, int sectionId)
         {
-            var matrix = await _evaluationScoreService.GetStudentScoresMatrixAsync(subjectId, sectionId);
-            var items = await _evaluationItemService.GetItemsBySubjectAndSectionAsync(subjectId, sectionId);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var matrix = await _evaluationScoreService.GetStudentScoresMatrixAsync(subjectId, sectionId, userId);
+            var items = await _evaluationItemService.GetItemsBySubjectAndSectionAsync(subjectId, sectionId, userId);
 
             var response = new EvaluationMatrixResponseDto
             {

@@ -39,12 +39,21 @@ const EvaluationItemForm = () => {
           ? `/api/evaluationcriteria/item/${itemId}`
           : null;
 
+        const token = sessionStorage.getItem("token");
         const [categoriesResponse, itemResponse, criteriaResponse] =
           await Promise.all([
-            axios.get(categoriesURL),
-            itemURL ? axios.get(itemURL) : Promise.resolve({ data: {} }),
+            axios.get(categoriesURL, {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+            itemURL
+              ? axios.get(itemURL, {
+                  headers: { Authorization: `Bearer ${token}` },
+                })
+              : Promise.resolve({ data: {} }),
             criteriaURL
-              ? axios.get(criteriaURL)
+              ? axios.get(criteriaURL, {
+                  headers: { Authorization: `Bearer ${token}` },
+                })
               : Promise.resolve({ data: [] }),
           ]);
 
@@ -78,7 +87,14 @@ const EvaluationItemForm = () => {
         SectionAssignmentId: parseInt(selectedGroup),
         CreatedBy: 1,
       };
-      const response = await axios.post("/api/evaluationitems/draft", itemData);
+      const token = sessionStorage.getItem("token");
+      const response = await axios.post(
+        "/api/evaluationitems/draft",
+        itemData,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       console.log("Item creado en modo borrador");
       setCurrentItemId(response.data.evaluationItemId);
     } catch (error) {
@@ -92,7 +108,10 @@ const EvaluationItemForm = () => {
   const deleteItem = async () => {
     try {
       setLoading(true);
-      await axios.delete(`/api/evaluationitems/${currentItemId}`);
+      const token = sessionStorage.getItem("token");
+      await axios.delete(`/api/evaluationitems/${currentItemId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
     } catch (error) {
       console.error(error?.response?.data?.Message);
     } finally {
@@ -261,9 +280,24 @@ const EvaluationItemForm = () => {
       if (currentItemId) {
         try {
           setLoading(true);
+          const token = sessionStorage.getItem("token");
+          const selectedSubject = sessionStorage.getItem("selectedSubject");
+          const selectedGroup = sessionStorage.getItem("selectedGroup");
+
+          const idAssingment = await axios.get(
+            `/api/SectionAssignments/getassignmentid?subjectId=${selectedSubject}&sectionId=${selectedGroup}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+
+          itemData.SectionAssignmentId = idAssingment.data;
           const response = await axios.put(
             `/api/evaluationitems/${currentItemId}`,
-            itemData
+            itemData,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
           );
           console.log(response);
           setItem(false);
@@ -293,13 +327,29 @@ const EvaluationItemForm = () => {
       } else {
         try {
           setLoading(true);
-          const response = await axios.post("/api/evaluationitems/", itemData);
+          const token = sessionStorage.getItem("token");
+          const selectedSubject = sessionStorage.getItem("selectedSubject");
+          const selectedGroup = sessionStorage.getItem("selectedGroup");
+
+          const idAssingment = await axios.get(
+            `/api/SectionAssignments/getassignmentid?subjectId=${selectedSubject}&sectionId=${selectedGroup}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+
+          itemData.SectionAssignmentId = idAssingment.data;
+
+          const response = await axios.post("/api/evaluationitems/", itemData, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
           const { data } = response;
           data.evaluationCategoryName = item.evaluationCategoryName;
           const updatedEvaluationItems = [...evaluationItems, data];
           toast.success("Ítem creado exitosamente.");
           updateEvaluationItems(updatedEvaluationItems);
           setItem(false);
+          // window.location.reload();
           navigate("/calificaciones");
         } catch (error) {
           console.error(error?.response?.data?.Message);
@@ -326,8 +376,11 @@ const EvaluationItemForm = () => {
     if (criteria[index].id !== 0) {
       try {
         setLoading(true);
+        const token = sessionStorage.getItem("token");
         const id = criteria[index].id;
-        await axios.delete(`/api/evaluationcriteria/${id}`);
+        await axios.delete(`/api/evaluationcriteria/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         toast.success("Criterio eliminado exitosamente.");
         setCriteria(criteria.filter((_, i) => i !== index));
       } catch (error) {

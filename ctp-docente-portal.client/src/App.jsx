@@ -111,10 +111,10 @@ function App() {
               path: "notificaciones",
               element: <Notificaciones />,
             },
-            {
-              path: "estudiantes",
-              element: <Estudiantes />,
-            },
+            // {
+            //   path: "estudiantes",
+            //   element: <Estudiantes />,
+            // },
           ],
         },
       ],
@@ -129,7 +129,7 @@ function App() {
 
   return (
     <>
-      <Suspense fallback={null}>
+      <Suspense fallback={<Loader1 />}>
         <RouterProvider router={router} />
         <Toaster
           toastOptions={{

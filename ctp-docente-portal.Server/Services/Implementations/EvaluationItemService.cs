@@ -26,6 +26,13 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
         public async Task<EvaluationItemDto> CreateAsync(EvaluationItemCreateDto dto)
         {
+            //int sectionId = await _context.SectionAssignments
+            //    .Where(x => x.SectionId == dto.SectionAssignmentId)
+            //    .Select(x => x.Id)
+            //    .FirstOrDefaultAsync();
+            
+            //dto.SectionAssignmentId = sectionId;
+
             var sectionExists = await _context.SectionAssignments.AnyAsync(sa => sa.Id == dto.SectionAssignmentId);
             if (!sectionExists)
                 throw new ArgumentException("La Sección no existe.");
@@ -148,9 +155,17 @@ namespace ctp_docente_portal.Server.Services.Implementations
         }
 
         // GET All
-        public async Task<List<EvaluationItemDto>> GetItemsBySubjectAndSectionAsync(int subjectId, int sectionId)
+        public async Task<List<EvaluationItemDto>> GetItemsBySubjectAndSectionAsync(int subjectId, int sectionId, int userId)
         {
-            int staffId = 53;
+            int staffId = await _context.StaffUserLinks
+                .Where(x => x.UserId == userId)
+                .Select(x => x.StaffId)
+                .FirstOrDefaultAsync();
+
+            if (staffId == 0)
+            {
+                throw new KeyNotFoundException($"Usuario con ID {userId} no encontrado");
+            }
 
             // ✅ Validar si el profesor tiene asignada esa sección
             bool isAssigned = await _context.SectionAssignments
@@ -194,7 +209,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
         }
 
         // GET By Id
-        public async Task<EvaluationItemDetailsDto> GetDetailsByIdAsync(int id, int? studentId = null)
+        public async Task<EvaluationItemDetailsDto> GetDetailsByIdAsync(int id, int userId, int? studentId = null)
         {
             var item = await GetByIdAsync(id);
 
@@ -229,7 +244,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
             var criteria = await _criteriaService.GetByEvaluationItemIdAsync(item.Id);
 
             // Obtener todos los estudiantes de la sección usando el servicio
-            var studentsDto = await _studentService.GetStudentsBySectionAsync(assignment.SectionId);
+            var studentsDto = await _studentService.GetStudentsBySectionAsync(assignment.SectionId, userId);
 
             // Filtrar por studentId si fue proporcionado
             if (studentId.HasValue)

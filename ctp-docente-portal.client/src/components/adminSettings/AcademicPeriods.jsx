@@ -75,7 +75,7 @@ const AcademicPeriods = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem("token");
+        const token = sessionStorage.getItem("token");
         const response = await axios.get("api/enrollment", {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -93,7 +93,7 @@ const AcademicPeriods = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem("token");
+        const token = sessionStorage.getItem("token");
         const { data } = await axios.get(
           `api/academicperiods/pagination?pageNumber=${pagination.pageNumber}&pageSize=${pagination.pageSize}`,
           {
@@ -185,7 +185,7 @@ const AcademicPeriods = () => {
     try {
       if (periodId > 0) {
         setLoading(true);
-        const token = localStorage.getItem("token");
+        const token = sessionStorage.getItem("token");
         const response = await axios.delete(`api/academicperiods/${periodId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -215,7 +215,7 @@ const AcademicPeriods = () => {
   const handleSave = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
+      const token = sessionStorage.getItem("token");
       if (validateForm()) {
         const year = new Date(periodForm.startDate).getFullYear();
         const dataToSend = {

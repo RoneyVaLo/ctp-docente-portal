@@ -8,8 +8,8 @@ namespace ctp_docente_portal.Server.Services.Interfaces
         Task<EvaluationItemDto> UpdateAsync(int id, EvaluationItemUpdateDto dto);
         Task DeleteAsync(int id);
         Task<EvaluationItemDto> GetByIdAsync(int id);
-        Task<EvaluationItemDetailsDto> GetDetailsByIdAsync(int id, int? studentId = null);
-        Task<List<EvaluationItemDto>> GetItemsBySubjectAndSectionAsync(int subjectId, int sectionId);
+        Task<EvaluationItemDetailsDto> GetDetailsByIdAsync(int id, int userId, int? studentId = null);
+        Task<List<EvaluationItemDto>> GetItemsBySubjectAndSectionAsync(int subjectId, int sectionId, int userId);
         Task<int> CreateDraftEvaluationItemAsync(EvaluationItemDraftCreateDto dto);
     }
 }
