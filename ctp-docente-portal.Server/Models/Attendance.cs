@@ -12,17 +12,17 @@ namespace ctp_docente_portal.Server.Models
 
         public int StudentId { get; set; }
         public int SectionId { get; set; }
-        public int SubjectId { get; set; }
+        public int SubjectId { get; set; } 
 
         [Column(TypeName = "date")]
         public DateOnly Date { get; set; }
 
         [Column(TypeName = "timestamp with time zone")]
-        public DateTime TakenAt { get; set; }
+        public DateTime TakenAt { get; set; } 
 
         public int StatusTypeId { get; set; }
 
-        public int MinutesLate { get; set; } = 0;
+        public int MinutesLate { get; set; } = 0; 
 
         public string? Observations { get; set; }
 
@@ -33,6 +33,6 @@ namespace ctp_docente_portal.Server.Models
         public DateTime? UpdatedAt { get; set; }
 
         public int CreatedBy { get; set; }
-        public int? UpdatedBy { get; set; }
-    }
+        public int? UpdatedBy { get; set; }
+    }
 }

@@ -2,6 +2,7 @@ using ctp_docente_portal.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using ctp_docente_portal.Server.Helpers;
 using System.Text;
+using System.Globalization;
 
 
 namespace ctp_docente_portal.Server.Controllers
@@ -24,13 +25,26 @@ namespace ctp_docente_portal.Server.Controllers
             return Ok(result);
 
         }
+
         [HttpGet("grades")]
-        public async Task<IActionResult> GetGrades([FromQuery] int? groupId, [FromQuery] string? subject)
+        public async Task<IActionResult> GetGrades([FromQuery] string? date, [FromQuery] int? sectionId)
         {
-            var result = await _reportService.GetGradesByGroupOrSubjectAsync(groupId, subject);
+            DateOnly? d = null;
+
+            if (!string.IsNullOrWhiteSpace(date))
+            {
+                
+                if (!DateOnly.TryParseExact(date, "yyyy-MM-dd", CultureInfo.InvariantCulture,
+                                            DateTimeStyles.None, out var parsed))
+                {
+                    return BadRequest($"Formato de fecha inválido: {date}. Usa yyyy-MM-dd.");
+                }
+                d = parsed;
+            }
+
+            var result = await _reportService.GetGradesBySectionAndDateAsync(sectionId, d);
             return Ok(result);
         }
-
         [HttpGet("student-consolidated")]
         public async Task<IActionResult> GetStudentConsolidated([FromQuery] int studentId)
         {
@@ -74,8 +88,22 @@ namespace ctp_docente_portal.Server.Controllers
             return File(pdfBytes, "application/pdf", "reporte_asistencia.pdf");
         }
 
+        [HttpGet("grades/detail")]
+        public async Task<IActionResult> GetGradesDetail([FromQuery] string? date, [FromQuery] int? sectionId)
+        {
+            DateOnly? d = null;
+            if (!string.IsNullOrWhiteSpace(date))
+            {
+                if (!DateOnly.TryParseExact(date, "yyyy-MM-dd", CultureInfo.InvariantCulture,
+                                            DateTimeStyles.None, out var parsed))
+                    return BadRequest($"Formato de fecha inválido: {date}. Usa yyyy-MM-dd.");
+                d = parsed;
+            }
+
+            var result = await _reportService.GetGradesBySectionAndDateAsync(sectionId, d);
+            return Ok(result);
+        }
 
 
-
-    }
+    }
 }

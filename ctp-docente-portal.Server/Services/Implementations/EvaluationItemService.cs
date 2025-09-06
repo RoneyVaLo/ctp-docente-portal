@@ -235,7 +235,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 .Select(s => s.Name)
                 .FirstOrDefaultAsync();
 
-            var sectionName = await _context.Sections
+            var sectionName = await _context.Section
                 .Where(s => s.Id == assignment.SectionId)
                 .Select(s => s.Name)
                 .FirstOrDefaultAsync();

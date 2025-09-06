@@ -32,7 +32,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
             from sa in _context.SectionAssignments
             join st in _context.Staff on sa.StaffId equals st.Id
             join su in _context.Subjects on sa.SubjectId equals su.Id
-            join se in _context.Sections on sa.SectionId equals se.Id
+            join se in _context.Section on sa.SectionId equals se.Id
             join ap in _context.AcademicPeriods on sa.AcademicPeriodId equals ap.Id
             select new SectionAssignmentDto
             {
