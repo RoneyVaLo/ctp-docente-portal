@@ -36,9 +36,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="$(SpaRoot)\dist\**\*"
-             CopyToOutputDirectory="PreserveNewest"
-             CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="$(SpaRoot)\dist\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

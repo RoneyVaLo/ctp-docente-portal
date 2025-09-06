@@ -42,47 +42,58 @@ namespace ctp_docente_portal.Server.Services.Implementations
         /// <exception cref="UnauthorizedAccessException">If the credentials are invalid or the user is inactive.</exception>
         public async Task<LoginResponseDto> LoginAsync(LoginRequestDto request)
         {
-            var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Email == request.Email && u.isActive);
+            var query = from u in _context.Users
+                        where u.Email == request.Email && u.isActive
+                        join sul in _context.StaffUserLinks on u.Id equals sul.UserId into staffLinks
+                        from sul in staffLinks.DefaultIfEmpty()
+                        join sr in _context.EvaluationStaffRoles on sul.StaffId equals sr.StaffId into staffRoles
+                        from sr in staffRoles.DefaultIfEmpty()
+                        join r in _context.EvaluationRoles on sr.RoleId equals r.Id into roleGroup
+                        from r in roleGroup.DefaultIfEmpty()
+                        select new
+                        {
+                            User = u,
+                            StaffLink = sul,
+                            RoleName = r != null ? r.Name : null
+                        };
 
-            if (user == null)
+            var results = await query.ToListAsync();
+
+            if (!results.Any())
                 throw new UnauthorizedAccessException("Usuario no encontrado o inactivo");
 
+            var user = results.First().User;
 
+            // Verificación de contraseña
             if (!BCrypt.Net.BCrypt.Verify(request.Password, user.Password))
                 throw new UnauthorizedAccessException("Credenciales inválidas");
 
-            var staffLink = await _context.StaffUserLinks
-                .FirstOrDefaultAsync(s => s.UserId == user.Id);
-            
+            var staffLink = results.First().StaffLink;
             if (staffLink == null)
                 throw new UnauthorizedAccessException("No existe relación entre usuario y staff");
 
-            var roles = await _context.EvaluationStaffRoles
-                .Where(r => r.StaffId == staffLink.StaffId)
-                .Join(_context.EvaluationRoles,
-                    sr => sr.RoleId,
-                    r => r.Id,
-                    (sr, r) => r.Name)
-                .ToListAsync();
+            var roles = results
+                .Where(r => !string.IsNullOrEmpty(r.RoleName))
+                .Select(r => r.RoleName)
+                .Distinct()
+                .ToList();
 
             if (!roles.Any())
                 throw new UnauthorizedAccessException("El usuario no tiene roles asignados");
-          
-            var token = GenerateJwtToken(user, roles);
 
-            var userDto = new UserDto
-            {
-                Id = user.Id,
-                Email = user.Email,
-                Username = user.Username,
-                Roles = roles
-            };
+            // Generar token
+            var token = GenerateJwtToken(user, roles);
 
             return new LoginResponseDto
             {
                 Token = token,
-                User = userDto
+                User = new UserDto
+                {
+                    Id = user.Id,
+                    Email = user.Email,
+                    Username = user.Username,
+                    Roles = roles
+                }
             };
         }
 
@@ -114,7 +125,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 issuer: _config["Jwt:Issuer"],
                 audience: _config["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(30),
+                expires: DateTime.UtcNow.AddMinutes(60),
                 signingCredentials: creds
             );
 

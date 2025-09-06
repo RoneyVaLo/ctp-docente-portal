@@ -52,7 +52,7 @@ export const useEvaluationLogic = () => {
     const fetchAcademicPeriods = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem("token");
+        const token = sessionStorage.getItem("token");
         const response = await axios.get("/api/academicperiods", {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -72,13 +72,14 @@ export const useEvaluationLogic = () => {
       try {
         setLoading(true);
         if (selectedPeriod) {
-          const token = localStorage.getItem("token");
+          const token = sessionStorage.getItem("token");
           const response = await axios.get(
             `/api/subject/period/${selectedPeriod}/subjects`,
             {
               headers: { Authorization: `Bearer ${token}` },
             }
           );
+
           setSubjects(response.data);
         }
       } catch (error) {
@@ -99,7 +100,7 @@ export const useEvaluationLogic = () => {
           // setSelectedGroup("");
           setStudents([]);
           setEvaluationItems([]);
-          const token = localStorage.getItem("token");
+          const token = sessionStorage.getItem("token");
           const response = await axios.get(
             `/api/section/period/${selectedPeriod}/subjects/${selectedSubject}/sections`,
             {
@@ -135,7 +136,7 @@ export const useEvaluationLogic = () => {
         if (selectedPeriod && selectedSubject && selectedGroup) {
           setStudents([]);
           setEvaluationItems([]);
-          const token = localStorage.getItem("token");
+          const token = sessionStorage.getItem("token");
           const response = await axios.get(
             `/api/evaluationscores/subject/${selectedSubject}/section/${selectedGroup}`,
             {

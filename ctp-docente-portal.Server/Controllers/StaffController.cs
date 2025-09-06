@@ -1,10 +1,7 @@
-﻿using ctp_docente_portal.Server.Data;
-using ctp_docente_portal.Server.DTOs.Staff;
+﻿using ctp_docente_portal.Server.DTOs.Staff;
+using ctp_docente_portal.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace ctp_docente_portal.Server.Controllers
 {
@@ -13,32 +10,27 @@ namespace ctp_docente_portal.Server.Controllers
     [Authorize]
     public class StaffController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IStaffService _staffService;
 
-        public StaffController(AppDbContext context)
+        public StaffController(IStaffService staffService)
         {
-            _context = context;
+            _staffService = staffService;
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<StaffDto>>> Get()
+        [Authorize(Policy = "AdministrativoOnly")]
+        public async Task<ActionResult<List<StaffDto>>> GetAllAsync()
         {
-            var staffDtos = await _context.Staff
-       .Select(s => new StaffDto
-       {
-           Id = s.Id,
-           Name = s.Name,
-       })
-       .ToListAsync();
-
-            return Ok(staffDtos);
+            var staff = await _staffService.GetAllAsync();
+            return Ok(staff);
         }
 
-        // GET api/<StaffController>/5
-        //[HttpGet("{id}")]
-        //public string Get(int id)
-        //{
-        //    return "value";
-        //}
+        [HttpGet("{id}")]
+        public async Task<ActionResult<StaffDto>> GetByIdAsync(int id)
+        {
+            var staff = await _staffService.GetByIdAsync(id);
+            return Ok(staff);
+        }
+
     }
 }

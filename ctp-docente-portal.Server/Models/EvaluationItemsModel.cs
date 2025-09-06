@@ -8,8 +8,8 @@
         public int CategoryId { get; set; }
         public string Name { get; set; }
         public decimal Percentage { get; set; }
-        public bool HasCriteria { get; set; } // Indica si el ítem usa rúbrica/criterios
-        public bool IsDraft { get; set; } // <--- NUEVO
+        public bool HasCriteria { get; set; }
+        public bool IsDraft { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public int CreatedBy { get; set; }

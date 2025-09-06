@@ -1,4 +1,4 @@
-import { BarChart3, FileText, GraduationCap, Settings } from "lucide-react";
+import { BarChart3, FileText, GraduationCap } from "lucide-react";
 import TabsList from "./TabsList";
 import TabsTrigger from "./TabsTrigger ";
 import GradingInterface from "./GradingInterface";
@@ -9,13 +9,12 @@ import Analytics from "./Analytics";
 const EvaluationTabs = ({ activeTab, handleTabChange }) => {
   return (
     <>
-      {/* TODO: Validar cómo se ve mejor en laptop, con "w-full" o "lg:w-fit" */}
       <TabsList className="grid w-full grid-cols-3">
         {[
           { value: "grading", icon: GraduationCap, label: "Calificaciones" },
           { value: "items", icon: FileText, label: "Items" },
-          // { value: "rubrics", icon: Settings, label: "Rúbricas" },
           { value: "analytics", icon: BarChart3, label: "Análisis" },
+          // eslint-disable-next-line no-unused-vars
         ].map(({ value, icon: Icon, label }) => (
           <TabsTrigger
             key={value}
@@ -24,7 +23,6 @@ const EvaluationTabs = ({ activeTab, handleTabChange }) => {
             onClick={handleTabChange}
           >
             <Icon className="w-4 h-4" />
-            {/* {React.createElement(Icon, { className: "w-4 h-4" })} */}
             <span className="hidden sm:inline">{label}</span>
           </TabsTrigger>
         ))}

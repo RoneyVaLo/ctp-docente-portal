@@ -87,9 +87,13 @@ const GradingInterface = () => {
         }))
       );
 
+      const token = sessionStorage.getItem("token");
       const response = await axios.post(
         `/api/evaluationscores/section/${selectedGroup}`,
-        payload
+        payload,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
       console.log(response.data);
       toast.success("Cambios guardados correctamente.");
@@ -137,7 +141,7 @@ const GradingInterface = () => {
       </Card>
 
       {/* Save Status */}
-      <Alert
+      {/* <Alert
         className={`mt-4 ${saveStatus === "idle" && "opacity-0"}
             ${
               saveStatus === "error"
@@ -154,20 +158,20 @@ const GradingInterface = () => {
           {saveStatus === "error" && "Error al guardar los cambios"}
           {saveStatus === "idle" && "Hola Mundo"}
         </AlertDescription>
-      </Alert>
+      </Alert> */}
 
       {/* Grading Table */}
-      <Card className="mt-4">
-        <CardHeader>
+      <Card className="mt-4 max-h-[600px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <CardHeader className="sticky top-0 bg-background-dark/80 z-10">
           <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
             <span className="mx-auto sm:mx-0 mb-4 sm:mb-0">
               Estudiantes ({filteredStudents.length})
             </span>
             <div className="flex gap-4 flex-col sm:flex-row">
-              <Button size="sm" variant="outline">
+              {/* <Button size="sm" variant="outline">
                 <Download className="w-4 h-4 mr-2" />
                 Descargar Reporte
-              </Button>
+              </Button> */}
 
               <Button
                 size="sm"
@@ -190,7 +194,7 @@ const GradingInterface = () => {
             </div>
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="mt-4">
           <GradeTable
             students={filteredStudents}
             criteria={evaluationItems}

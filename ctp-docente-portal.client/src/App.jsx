@@ -1,27 +1,30 @@
-// src/App.jsx
+import { lazy, Suspense } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Layout from "./components/Layout";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import Calificaciones from "./pages/Evaluations";
-import Reportes from "./pages/Reports";
-import Notificaciones from "./pages/Notifications";
-import Estudiantes from "./pages/Students";
-import Configuracion from "./pages/Configuration";
-import EvaluationItemForm from "./pages/EvaluationItemForm";
-import GradeEvaluationItem from "./pages/GradeEvaluationItem";
 import { EvaluationProvider } from "./context/EvaluationContext";
 import { Toaster } from "react-hot-toast";
-import NotFound from "./pages/NotFound";
 import { useAuth } from "./context/AuthContext";
 import Loader1 from "./components/loaders/Loader1";
 import PublicRoute from "./routes/PublicRoute";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import RoleRoute from "./routes/RoleRoute";
-import AccessDenied from "./pages/AccessDenied";
-import AttendancePage from "./pages/Attendance/AttendancePage";
 
 function App() {
+  const Login = lazy(() => import("./pages/Login"));
+  const Dashboard = lazy(() => import("./pages/Dashboard"));
+  const Calificaciones = lazy(() => import("./pages/Evaluations"));
+  const Reportes = lazy(() => import("./pages/Reports"));
+  const Notificaciones = lazy(() => import("./pages/Notifications"));
+  const Estudiantes = lazy(() => import("./pages/Students"));
+  const Configuracion = lazy(() => import("./pages/Configuration"));
+  const EvaluationItemForm = lazy(() => import("./pages/EvaluationItemForm"));
+  const GradeEvaluationItem = lazy(() => import("./pages/GradeEvaluationItem"));
+  const AccessDenied = lazy(() => import("./pages/AccessDenied"));
+  const NotFound = lazy(() => import("./pages/NotFound"));
+  const AttendancePage = lazy(() =>
+    import("./pages/Attendance/AttendancePage")
+  );
+
   const { loading } = useAuth();
 
   const router = createBrowserRouter([
@@ -108,10 +111,10 @@ function App() {
               path: "notificaciones",
               element: <Notificaciones />,
             },
-            {
-              path: "estudiantes",
-              element: <Estudiantes />,
-            },
+            // {
+            //   path: "estudiantes",
+            //   element: <Estudiantes />,
+            // },
           ],
         },
       ],
@@ -126,14 +129,16 @@ function App() {
 
   return (
     <>
-      <RouterProvider router={router} />
-      <Toaster
-        toastOptions={{
-          style: {
-            textAlign: "center",
-          },
-        }}
-      />
+      <Suspense fallback={<Loader1 />}>
+        <RouterProvider router={router} />
+        <Toaster
+          toastOptions={{
+            style: {
+              textAlign: "center",
+            },
+          }}
+        />
+      </Suspense>
     </>
   );
 }

@@ -1,9 +1,11 @@
 ﻿using ctp_docente_portal.Server.DTOs.Attendance;
 using ctp_docente_portal.Server.DTOs.Sections;
+using ctp_docente_portal.Server.Services.Implementations;
 using ctp_docente_portal.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace ctp_docente_portal.Server.Controllers
 {
@@ -19,11 +21,21 @@ namespace ctp_docente_portal.Server.Controllers
             _sectionService = sectionService;
         }
 
+        [HttpGet]
+        [Authorize(Policy = "AdministrativoOnly")]
+        public async Task<IActionResult> GetAll()
+        {
+            var result = await _sectionService.GetAllAsync();
+            return Ok(result);
+        }
+
         // GET: api/section/period/{academicPeriodId}/subjects/{subjectId}/sections
         [HttpGet("period/{academicPeriodId}/subjects/{subjectId}/sections")]
+        [Authorize(Policy = "DocenteOnly")]
         public async Task<ActionResult<List<SectionDto>>> GetSections(int academicPeriodId, int subjectId)
         {
-            var sections = await _sectionService.GetSectionsByPeriodAndSubjectAsync(academicPeriodId, subjectId);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var sections = await _sectionService.GetSectionsByPeriodAndSubjectAsync(academicPeriodId, subjectId, userId);
             return Ok(sections);
         }
 
@@ -36,7 +48,7 @@ namespace ctp_docente_portal.Server.Controllers
         }
 
         // (opcional) genérico con filtros
-        [HttpGet]
+        [HttpGet("filter")]
         public async Task<ActionResult<List<SectionOptionDto>>> Get(
             [FromQuery] int? year,
             [FromQuery] int? enrollmentId,

@@ -18,9 +18,17 @@ namespace ctp_docente_portal.Server.Services.Implementations
             _mapper = mapper;
         }
 
-        public async Task<List<StudentDto>> GetStudentsBySectionAsync(int sectionId)
+        public async Task<List<StudentDto>> GetStudentsBySectionAsync(int sectionId, int userId)
         {
-            int staffId = 53;
+            int staffId = await _context.StaffUserLinks
+                .Where(x => x.UserId == userId)
+                .Select(x => x.StaffId)
+                .FirstOrDefaultAsync();
+
+            if (staffId == 0)
+            {
+                throw new KeyNotFoundException($"Usuario con ID {userId} no encontrado");
+            }
 
             // Validación de asignación de sección
             bool isAssigned = await _context.SectionAssignments

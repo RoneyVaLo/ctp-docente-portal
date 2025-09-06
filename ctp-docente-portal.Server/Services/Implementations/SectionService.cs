@@ -3,6 +3,7 @@ using AutoMapper.QueryableExtensions;
 using ctp_docente_portal.Server.Data;
 using ctp_docente_portal.Server.DTOs.Attendance;
 using ctp_docente_portal.Server.DTOs.Sections;
+using ctp_docente_portal.Server.DTOs.Users;
 using ctp_docente_portal.Server.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,16 +20,33 @@ namespace ctp_docente_portal.Server.Services.Implementations
             _mapper = mapper;
         }
 
+        public async Task<List<SectionDto>> GetAllAsync()
+        {
+            var sections = await _context.Sections
+                .OrderBy(x => x.Id)
+                .ThenBy(x => x.Name)
+                .AsNoTracking()
+                .ToListAsync();
+
+            return _mapper.Map<List<SectionDto>>(sections);
+        }
+
         public async Task<SectionDto> GetByIdAsync(int id)
         {
             var section = await _context.Section.FindAsync(id);
             return _mapper.Map<SectionDto>(section);
         }
 
-        public async Task<List<SectionDto>> GetSectionsByPeriodAndSubjectAsync(int academicPeriodId, int subjectId)
+        public async Task<List<SectionDto>> GetSectionsByPeriodAndSubjectAsync(int academicPeriodId, int subjectId, int userId)
         {
-            // TODO: El "staffId" debo obtenerlo del usuarios cuando esté listo la autenticación
-            int staffId = 53;
+            int staffId = await _context.StaffUserLinks
+                .Where(x => x.UserId == userId)
+                .Select(x => x.StaffId)
+                .FirstOrDefaultAsync();
+            if (staffId == 0)
+            {
+                throw new KeyNotFoundException($"Usuario con ID {userId} no encontrado");
+            }
 
             if (academicPeriodId <= 0 || subjectId <= 0)
             {
