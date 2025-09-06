@@ -37,7 +37,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 .AsNoTracking()
                 .Where(ss => ss.SectionId == sectionId && ss.IsActive)
                 .Join(
-                _context.StudentsV2.Where(s => s.IsActive),
+                _context.Students.Where(s => s.IsActive),
                 ss => ss.StudentId,
                 s => s.Id,
                 (ss, s) => s

@@ -80,8 +80,10 @@ namespace ctp_docente_portal.Server.Configurations
             services.AddScoped<IAttendanceService, AttendanceService>();
 
             services.AddHttpClient<IWhatsAppApiService, WhatsAppApiService>();
-            
+
             services.AddScoped<IDashboardStatisticsService, DashboardStatisticsService>();
+            services.AddScoped<IDashboardStatisticsService, DashboardStatisticsService>();
+            services.AddScoped<IReportService, ReportService>();
         }
     }
 }

@@ -6,8 +6,10 @@ namespace ctp_docente_portal.Server.Services.Interfaces
     {
         Task<List<SectionAttendanceStatsDto>> GetAttendanceStatsBySectionAsync();
         Task<List<GradeReportDto>> GetGradesByGroupOrSubjectAsync(int? groupId = null, string? subject = null);
-        Task<StudentConsolidatedReportDto> GetStudentConsolidatedReportAsync(int studentId);
-        
+        Task<List<GradeDetailRowDto>> GetGradesBySectionAndDateAsync(int? sectionId, DateOnly? date);
 
-    }
+        Task<StudentConsolidatedReportDto> GetStudentConsolidatedReportAsync(int studentId);
+        
+
+    }
 }

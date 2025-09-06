@@ -1,4 +1,4 @@
-using ctp_docente_portal.Server.Models;               // <-- Asegúrate de tener este using
+using ctp_docente_portal.Server.Models;              
 using ctp_docente_portal.Server.DTOs.Notifications;
 
 namespace ctp_docente_portal.Server.Services.Interfaces
@@ -21,6 +21,6 @@ namespace ctp_docente_portal.Server.Services.Interfaces
                 int sectionId,
                 int? subjectId,
                 CancellationToken ct = default
-  );
-    }
+  );
+    }
 }

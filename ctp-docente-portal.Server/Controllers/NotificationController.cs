@@ -38,6 +38,6 @@ namespace ctp_docente_portal.Server.Controllers
             return result.Success
                 ? Ok(new { ok = true, result.ProviderMessageId })
                 : StatusCode(502, new { ok = false, error = result.Error });
-        }
-    }
+        }
+    }
 }

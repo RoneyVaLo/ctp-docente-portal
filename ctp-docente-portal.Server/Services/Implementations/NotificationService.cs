@@ -1,6 +1,3 @@
-using System.Net.Http.Headers;
-using System.Text.Json;
-using System.Text;
 using ctp_docente_portal.Server.Data;
 using ctp_docente_portal.Server.DTOs.Notifications;
 using ctp_docente_portal.Server.Models;
@@ -21,7 +18,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
         }
 
         // ----------------- Helpers -----------------
-        private static string ComposeStudentName(StudentsModelV2 s)
+        private static string ComposeStudentName(StudentsModel s)
         {
             var parts = new[] { s.Name, s.MiddleName, s.LastName, s.NdLastName }
                         .Where(p => !string.IsNullOrWhiteSpace(p));
@@ -79,7 +76,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
             var studentIds = absents.Select(a => a.StudentId).Distinct().ToArray();
 
-            var students = await _db.StudentsV2
+            var students = await _db.Students
                 .AsNoTracking()
                 .Where(s => studentIds.Contains(s.Id) && s.IsActive)
                 .ToDictionaryAsync(s => s.Id, s => s, ct);
@@ -116,26 +113,6 @@ namespace ctp_docente_portal.Server.Services.Implementations
             return resp;
         }
 
-        // ================== Listado ==================
-        //public async Task<IReadOnlyList<NotificationDto>> ListAsync(
-        //    DateOnly? date, int? sectionId, int? subjectId, string? status, CancellationToken ct = default)
-        //{
-        //    var q = _db.Notifications.AsNoTracking().AsQueryable();
-
-        //    if (date.HasValue) q = q.Where(n => n.Date == date.Value);
-        //    if (sectionId.HasValue) q = q.Where(n => n.SectionId == sectionId.Value);
-        //    if (subjectId.HasValue) q = q.Where(n => n.SubjectId == subjectId.Value);
-        //    if (!string.IsNullOrWhiteSpace(status))
-        //    {
-        //        var s = status.Trim().ToUpperInvariant();
-        //        q = q.Where(n => n.Status == s);
-        //    }
-
-        //    return await q.OrderByDescending(n => n.CreatedAt)
-        //                  .Take(500)
-        //                  .Select(n => ToDto(n))
-        //                  .ToListAsync(ct);
-        //}
         public async Task<IReadOnlyList<NotificationDto>> ListAsync(DateOnly? date, int? sectionId, int? subjectId, string? status, CancellationToken ct = default)
         {
             // Empieza la consulta de notifications
@@ -179,7 +156,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
             return result;
         }
-        // ================= Reintentar =================
+
         public async Task<bool> ResendMessageAsync(int id, CancellationToken ct = default)
         {
             var n = await _db.Notifications.FirstOrDefaultAsync(x => x.Id == id, ct);
@@ -194,15 +171,42 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 return false;
             }
 
-            var res = await _wa.SendTextAsync(n.Phone, n.Message, ct);
-            n.Status = res.Success ? "SENT" : "FAILED";
-            n.Error = res.Success ? null : res.Error;
-            n.ProviderMessageId = res.ProviderMessageId;
-            n.SentAt = res.Success ? DateTime.UtcNow : null;
+            n.Status = "QUEUED";
+            n.Error = null;
+            n.SentAt = null;
+            await _db.SaveChangesAsync(ct);
+
+            string? subjectName = null;
+            if (n.SubjectId.HasValue)
+            {
+                subjectName = await _db.Subjects
+                    .Where(s => s.Id == n.SubjectId.Value)
+                    .Select(s => s.Name)
+                    .FirstOrDefaultAsync(ct);
+            }
+            var studentName = !string.IsNullOrWhiteSpace(n.StudentName)
+                ? n.StudentName!
+                : (n.StudentId > 0 ? $"Estudiante {n.StudentId}" : "Estudiante");
+
+            var waRes = await _wa.SendAbsenceTemplateAsync(
+                phoneE164: n.Phone!,
+                studentName: studentName,
+                date: n.Date,              
+                subjectName: subjectName,
+                subjectId: n.SubjectId,
+                ct: ct
+            );
+
+            n.Status = waRes.Success ? "SENT" : "FAILED";
+            n.Error = waRes.Success ? null : (waRes.Error ?? "SEND_FAILED");
+            n.ProviderMessageId = waRes.ProviderMessageId;
+            n.SentAt = waRes.Success ? DateTime.UtcNow : null;
 
             await _db.SaveChangesAsync(ct);
-            return res.Success;
+            return waRes.Success;
         }
+
+
 
         // ======= Encola/envía UNA (usado por SendAbsencesAsync) =======
         public async Task<NotificationDto> QueueAbsenceMessageAsync(
@@ -235,91 +239,99 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
             return ToDto(entity);
         }
-        public async Task<NotificationDto> QueueAbsenceMessageAsync(
-     int studentId,
-     string? studentName,
-     string? phone,
-     DateOnly date,
-     int sectionId,
-     int? subjectId,
-     CancellationToken ct = default)
+        public async Task<NotificationDto> QueueAbsenceMessageAsync(int studentId,string? studentName,string? phone, DateOnly date,int sectionId, int? subjectId,CancellationToken ct = default)
         {
             var now = DateTime.UtcNow;
 
-
-            var conn = _db.Database.GetDbConnection();
-            var mustClose = false;
-            if (conn.State != System.Data.ConnectionState.Open)
-            {
-                await conn.OpenAsync(ct);
-                mustClose = true;
-            }
+            var st = await _db.Students
+                .AsNoTracking()
+                .Where(s => s.Id == studentId)
+                .Select(s => new
+                {
+                    s.Name,
+                    s.MiddleName,
+                    s.LastName,
+                    s.NdLastName
+                })
+                .FirstOrDefaultAsync(ct);
 
             string name = $"Estudiante {studentId}";
-            string telefono = "";
-
-            await using (var cmd = conn.CreateCommand())
+            if (st != null)
             {
-
-                cmd.CommandText = @"
-            SELECT
-                trim(concat_ws(' ', ""Name"", ""MiddleName"", ""LastName"", ""ndLastName"")) AS full_name,
-                COALESCE(""FamilyPhoneNumber""::text, '') AS family_phone
-            FROM public.""Students""
-            WHERE ""Id"" = @id
-            LIMIT 1";
-
-                var p = cmd.CreateParameter();
-                p.ParameterName = "@id";
-                p.Value = studentId;
-                cmd.Parameters.Add(p);
-
-                await using var reader = await cmd.ExecuteReaderAsync(ct);
-                if (await reader.ReadAsync(ct))
-                {
-                    var fullName = reader.IsDBNull(0) ? null : reader.GetString(0);
-                    var familyPhone = reader.IsDBNull(1) ? "" : reader.GetString(1);
-
-                    if (!string.IsNullOrWhiteSpace(fullName))
-                        name = fullName.Trim();
-
-                    // Teléfono dinámico desde FamilyPhoneNumber
-                    telefono = (familyPhone ?? "").Trim();
-                }
+                var parts = new[] { st.Name, st.MiddleName, st.LastName, st.NdLastName };
+                name = string.Join(" ", parts.Where(p => !string.IsNullOrWhiteSpace(p))).Trim();
+                if (string.IsNullOrWhiteSpace(name))
+                    name = $"Estudiante {studentId}";
             }
 
+            var telefonoRaw = await _db.StudentRepresentatives
+                .AsNoTracking()
+                .Where(r => r.StudentId == studentId && r.isActive && !string.IsNullOrWhiteSpace(r.PhoneNumber))
+                .OrderBy(r => r.Id)
+                .Select(r => r.PhoneNumber!.Trim())
+                .FirstOrDefaultAsync(ct);
 
-            if (string.IsNullOrWhiteSpace(telefono))
-                telefono = (phone ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(telefonoRaw))
+            {
+                telefonoRaw = (phone ?? "").Trim();
+            }
+            string? telefono = null;
 
+            if (!string.IsNullOrWhiteSpace(telefonoRaw))
+            {
+                var partes = telefonoRaw.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                var numero = partes.FirstOrDefault();
+
+                if (!string.IsNullOrWhiteSpace(numero))
+                {
+                    numero = numero.Replace(" ", "").Replace("-", "");
+                    if (!numero.StartsWith("506"))
+                        numero = "506" + numero;
+                    telefono = numero;
+                }
+            }
+            string? subjectName = null;
+            if (subjectId.HasValue)
+            {
+                subjectName = await _db.Subjects
+                    .AsNoTracking()
+                    .Where(s => s.Id == subjectId.Value)
+                    .Select(s => s.Name)
+                    .FirstOrDefaultAsync(ct);
+
+                subjectName = string.IsNullOrWhiteSpace(subjectName) ? null : subjectName.Trim();
+            }
 
             var message = subjectId.HasValue
-                ? $"El estudiante {name} estuvo ausente el {date:yyyy-MM-dd} (Materia #{subjectId})."
+                ? $"El estudiante {name} estuvo ausente el {date:yyyy-MM-dd} (Materia {(subjectName ?? $"#{subjectId.Value}")})."
                 : $"El estudiante {name} estuvo ausente el {date:yyyy-MM-dd}.";
 
+            string finalStatus;
+            string? providerMessageId = null;
+            string? error = null;
+            DateTime? sentAt = null;
 
-
-            var token = "EAALSAZBIbFYQBPaQ7fF2VDozoupq8ZBTHWwVHcRXPMsfzpu9Q0FInGG4KPJqNZCWg9ZCo8pPaaQiQWlK3YPDVwztu8vUIB7bzbpK68MxKUlU9lmujrgDaLYpWrDegeU81BhQicLgW2RlJbAb1F4HVU6VnBM7qpw7wtVJf7AgWmcjQfrQe0ESZCNlNaPfvV5VVBIxa2XJuLavVqdhlEyMWLBZAMGiEeFSqolilVOSFpdHCXZBQZDZD";
-            var idTelefono = "825978877256138";
-
-            if (!string.IsNullOrWhiteSpace(token) &&
-                !string.IsNullOrWhiteSpace(idTelefono) &&
-                !string.IsNullOrWhiteSpace(telefono))
+            if (string.IsNullOrWhiteSpace(telefono))
             {
+                finalStatus = "FAILED";
+                error = "NO_PHONE";
+            }
+            else
+            {
+                var waRes = await _wa.SendAbsenceTemplateAsync(
+                    phoneE164: telefono,
+                    studentName: name,
+                    date: date,
+                    subjectName: subjectName,
+                    subjectId: subjectId,
+                    ct: ct
+                );
 
-                //Token
-                HttpClient client = new HttpClient();
-                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, "https://graph.facebook.com/v15.0/" + idTelefono + "/messages");
-                request.Headers.Add("Authorization", "Bearer " + token);
-                request.Content = new StringContent("{ \"messaging_product\": \"whatsapp\", \"to\": \"" + telefono + "\", \"type\": \"template\", \"template\": { \"name\": \"hello_world\", \"language\": { \"code\": \"en_US\" } } }");
-                request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-                HttpResponseMessage response = await client.SendAsync(request);
-                //response.EnsureSuccessStatusCode();
-                string responseBody = await response.Content.ReadAsStringAsync();
-            
-
-        }
-
+                finalStatus = waRes.Success ? "SENT" : "FAILED";
+                providerMessageId = waRes.ProviderMessageId;
+                error = waRes.Success ? null : (waRes.Error ?? "SEND_FAILED");
+                sentAt = waRes.Success ? DateTime.UtcNow : null;
+            }
 
             var entity = new Notification
             {
@@ -329,7 +341,10 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 SubjectId = subjectId,
                 Phone = telefono,
                 Message = message,
-                Status = "QUEUED",
+                Status = finalStatus,
+                Error = error,
+                ProviderMessageId = providerMessageId,
+                SentAt = sentAt,
                 Date = date,
                 CreatedAt = now
             };
@@ -337,15 +352,9 @@ namespace ctp_docente_portal.Server.Services.Implementations
             _db.Notifications.Add(entity);
             await _db.SaveChangesAsync(ct);
 
-            if (mustClose) await conn.CloseAsync();
-
             return ToDto(entity);
         }
 
-
-
-
-        // compatibilidad con tu interfaz (por si la llaman desde AttendanceService)
         public Task<NotificationDto> QueueAbsenceMessageAsync(Attendance a, CancellationToken ct = default) =>
             QueueAbsenceMessageAsync(
                 studentId: a.StudentId,

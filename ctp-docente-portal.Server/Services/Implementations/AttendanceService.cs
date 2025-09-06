@@ -117,6 +117,6 @@ namespace ctp_docente_portal.Server.Services.Implementations
                     TotalLate = g.Count(a => a.StatusTypeId == 4),
                 })
                 .ToListAsync();
-        }
-    }
+        }
+    }
 }

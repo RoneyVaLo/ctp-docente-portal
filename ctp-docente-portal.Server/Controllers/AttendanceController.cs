@@ -65,7 +65,7 @@ namespace ctp_docente_portal.Server.Controllers
             if (sectionId <= 0) return Ok(new List<StudentOptionDto>());
 
             var list = await (from ss in _context.SectionStudent.AsNoTracking()
-                              join s in _context.StudentsV2.AsNoTracking() on ss.StudentId equals s.Id
+                              join s in _context.Students.AsNoTracking() on ss.StudentId equals s.Id
                               where ss.IsActive && s.IsActive && ss.SectionId == sectionId
                               select new StudentOptionDto
                               {
@@ -87,7 +87,7 @@ namespace ctp_docente_portal.Server.Controllers
             if (sectionId <= 0) return Ok(new List<StudentListItemDto>());
 
             var list = await (from ss in _context.SectionStudent.AsNoTracking()
-                              join s in _context.StudentsV2.AsNoTracking() on ss.StudentId equals s.Id
+                              join s in _context.Students.AsNoTracking() on ss.StudentId equals s.Id
                               where ss.IsActive && s.IsActive && ss.SectionId == sectionId
                               select new StudentListItemDto
                               {

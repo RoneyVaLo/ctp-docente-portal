@@ -1,6 +1,3 @@
-// src/services/attendanceService.js
-// const BASE_URL = import.meta.env.VITE_API_URL ?? "https://localhost:5001";
-// const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:5103";
 const API_BASE = import.meta.env.VITE_API_URL ?? "/api";
 
 /** Arma una URL segura con query params sin usar `new URL` cuando es base relativa */
@@ -150,5 +147,38 @@ export const attendanceApi = {
         });
         if (!res.ok) throw new Error(await res.text());
         return await res.json();  
+    },
+    async newList({ date, sectionId, subjectId, fromDate, toDate, studentId, statusTypeId }) {
+
+        const FromDate = (fromDate ?? date) || undefined;
+        const ToDate = (toDate ?? date) || undefined;
+
+        const params = {
+            StudentId: studentId ?? undefined,
+            SectionId: sectionId ?? undefined,
+            SubjectId: subjectId ?? undefined,
+            StatusTypeId: statusTypeId ?? undefined,
+            FromDate,
+            ToDate,
+        };
+
+        const url = buildUrl("/attendance", params);
+        const token = localStorage.getItem("token");
+        const res = await fetch(url, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!res.ok) throw new Error(await res.text());
+        return await res.json();
+    },
+    async listReport({ date, sectionId, subjectId }) {
+        const url = buildUrl("/attendance", {
+            fromDate: date,  
+            toDate: date, 
+            sectionId,
+            subjectId,
+        });
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(await res.text());
+        return await res.json();
     },
 };

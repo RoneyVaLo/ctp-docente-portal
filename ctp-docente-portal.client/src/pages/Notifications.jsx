@@ -19,11 +19,11 @@ import {
     TextField,
     Tooltip,
     IconButton,
+    Snackbar,
 } from "@mui/material";
+import Alert from "@mui/material/Alert";
 import ReplayIcon from "@mui/icons-material/Replay";
 import SearchIcon from "@mui/icons-material/Search";
-
-
 
 function formatDate(iso) {
     if (!iso) return "-";
@@ -47,11 +47,19 @@ export default function NotificationsPage() {
 
     const [rows, setRows] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [err, setErr] = useState("");
 
-    const canQuery = sectionId > 0; // requerimos sección
+    const canQuery = sectionId > 0; 
     const [subjects, setSubjects] = useState([]);
     const [loadingSubjects, setLoadingSubjects] = useState(false);
+
+
+    const [snack, setSnack] = useState({ open: false, message: "", severity: "success" });
+
+    const handleSnackClose = (_, reason) => {
+        if (reason === "clickaway") return;
+        setSnack((s) => ({ ...s, open: false }));
+    };
+
     // Persistir filtros
     useEffect(() => {
         try {
@@ -100,18 +108,16 @@ export default function NotificationsPage() {
     const load = useCallback(async () => {
         if (!canQuery) return;
         setLoading(true);
-        setErr("");
         try {
             const data = await notificationsApi.list({ date, sectionId, status, subjectId });
             setRows(Array.isArray(data) ? data : []);
         } catch (e) {
-            setErr(e?.message ?? "Error al cargar.");
+            console.error("Error al cargar notificaciones:", e);
             setRows([]);
         } finally {
             setLoading(false);
         }
     }, [canQuery, date, sectionId, status, subjectId]);
-
 
     useEffect(() => {
         if (saved && saved.sectionId > 0) {
@@ -122,12 +128,13 @@ export default function NotificationsPage() {
     const resend = useCallback(
         async (id) => {
             setLoading(true);
-            setErr("");
             try {
                 await notificationsApi.resend(id);
                 await load();
+                setSnack({ open: true, message: "Mensaje reenviado", severity: "success" });
             } catch (e) {
-                setErr(e?.message ?? "Error al reintentar.");
+                console.error("Error al reintentar envío:", e);
+                setSnack({ open: true, message: "No se pudo reenviar el mensaje.", severity: "error" });
             } finally {
                 setLoading(false);
             }
@@ -142,17 +149,22 @@ export default function NotificationsPage() {
             QUEUED: { color: "warning", label: "En cola" },
         };
         const cfg = map[st] ?? { color: "default", label: st || "-" };
-        return <Chip label={cfg.label} size="small" color={cfg.color} variant={cfg.color === "default" ? "outlined" : undefined} />;
+        return (
+            <Chip
+                label={cfg.label}
+                size="small"
+                color={cfg.color}
+                variant={cfg.color === "default" ? "outlined" : undefined}
+            />
+        );
     };
 
     return (
         <div className="p-6">
             <h1 className="text-2xl font-semibold mb-4">Notificaciones</h1>
 
-
             <Paper elevation={0} className="p-4 mb-4 border">
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
-
                     <div>
                         <label className="text-xs text-slate-600 mb-1 block">Fecha</label>
                         <TextField
@@ -164,7 +176,6 @@ export default function NotificationsPage() {
                             inputProps={{ "aria-label": "Fecha" }}
                         />
                     </div>
-
 
                     <div>
                         <label className="text-xs text-slate-600 mb-1 block">Sección</label>
@@ -201,7 +212,6 @@ export default function NotificationsPage() {
                         </FormControl>
                     </div>
 
-
                     <div>
                         <label className="text-xs text-slate-600 mb-1 block">Asignatura</label>
                         <FormControl fullWidth size="small">
@@ -234,7 +244,6 @@ export default function NotificationsPage() {
                         </FormControl>
                     </div>
 
-
                     <div>
                         <label className="text-xs text-slate-600 mb-1 block">Estado</label>
                         <FormControl fullWidth size="small">
@@ -248,13 +257,22 @@ export default function NotificationsPage() {
                             </Select>
                         </FormControl>
                     </div>
+
                     <div className="flex gap-2">
                         <Button
+                            size="small"
                             variant="contained"
                             startIcon={<SearchIcon />}
                             onClick={load}
                             disabled={!canQuery || loading}
                             fullWidth
+                            sx={{
+                                height: 36,
+                                borderRadius: 2,
+                                px: 2,
+                                textTransform: "none",
+                                fontWeight: 600,
+                            }}
                         >
                             Buscar
                         </Button>
@@ -262,11 +280,6 @@ export default function NotificationsPage() {
                 </div>
             </Paper>
 
-            {err && (
-                <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2 mb-3">{err}</div>
-            )}
-
-            {/* Tabla */}
             <TableContainer component={Paper} elevation={0} className="border">
                 <Table size="small">
                     <TableHead className="bg-slate-50">
@@ -325,6 +338,17 @@ export default function NotificationsPage() {
                     </TableBody>
                 </Table>
             </TableContainer>
-        </div>
-    );
+
+            <Snackbar
+                open={snack.open}
+                autoHideDuration={3000}
+                onClose={handleSnackClose}
+                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            >
+                <Alert onClose={handleSnackClose} severity={snack.severity} variant="filled" sx={{ width: "100%" }}>
+                    {snack.message}
+                </Alert>
+            </Snackbar>
+        </div>
+    );
 }
