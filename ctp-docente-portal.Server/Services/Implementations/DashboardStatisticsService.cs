@@ -119,7 +119,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
         {
             var today = DateOnly.FromDateTime(DateTime.Now);
 
-            var totalActiveStudents = await _context.Students.CountAsync(s => s.isActive);
+            var totalActiveStudents = await _context.Students.CountAsync(s => s.IsActive);
 
             var totalPossibleToday = await _context.Attendances
                 .Where(a => a.Date == today)

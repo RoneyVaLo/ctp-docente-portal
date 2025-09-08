@@ -1,13 +1,9 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ctp_docente_portal.Server.Models
 {
-    //[NotMapped]
     public class SectionsModel
     {
-        //[Key]
-        //[Column("Id")]
         public int Id { get; set; }
         public int GradeId { get; set; }
         public int EnrollmentId { get; set; }

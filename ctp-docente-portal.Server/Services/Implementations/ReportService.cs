@@ -1,10 +1,18 @@
 using ctp_docente_portal.Server.DTOs.Reports;
 using ctp_docente_portal.Server.Services.Interfaces;
+using ctp_docente_portal.Server.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace ctp_docente_portal.Server.Services.Implementations
 {
     public class ReportService : IReportService
     {
+        private readonly AppDbContext _db;
+
+        public ReportService(AppDbContext db)
+        {
+            _db = db;
+        }
         public async Task<List<SectionAttendanceStatsDto>> GetAttendanceStatsBySectionAsync()
         {
             // Simulación de datos
@@ -53,7 +61,95 @@ namespace ctp_docente_portal.Server.Services.Implementations
             };
 
             return await Task.FromResult(student);
-         }
+        }
+         
+
+          public async Task<List<GradeDetailRowDto>> GetGradesBySectionAndDateAsync(int? sectionId, DateOnly? date)
+        {
+            DateTime? startUtc = null, endUtc = null;
+            if (date.HasValue)
+            {
+                var offset = TimeSpan.FromHours(-6);
+                var startLocal = date.Value.ToDateTime(TimeOnly.MinValue);
+                var start = new DateTimeOffset(startLocal, offset);
+                startUtc = start.UtcDateTime;
+                endUtc = start.AddDays(1).UtcDateTime;
+            }
+
+            var qProper =
+                from ses in _db.StudentEvaluationScores.AsNoTracking()
+                join ei in _db.EvaluationItems.AsNoTracking() on ses.EvaluationItemId equals ei.Id
+                join sa in _db.SectionAssignments.AsNoTracking() on ei.SectionAssignmentId equals sa.Id
+                join sec in _db.Sections.AsNoTracking() on sa.SectionId equals sec.Id
+                join en in _db.Enrollments.AsNoTracking() on sec.EnrollmentId equals en.Id
+                join es in _db.EnrollmentStudent.AsNoTracking()
+                     on new { E = en.Id, S = ses.StudentId } equals new { E = es.EnrollmentId, S = es.StudentId }
+                join st in _db.Students.AsNoTracking() on ses.StudentId equals st.Id
+                where (sectionId == null || sec.Id == sectionId.Value)
+                   && !ei.IsDraft
+                   && (es.IsActive ?? true)
+                   && st.IsActive
+                   && (!startUtc.HasValue || (ses.CreatedAt >= startUtc.Value && ses.CreatedAt < endUtc!.Value))
+                select new GradeDetailRowDto
+                {
+                    StudentId = st.Id,
+                    StudentName = (
+                        (st.Name ?? "")
+                        + ((st.MiddleName ?? "") != "" ? " " + st.MiddleName : "")
+                        + ((st.LastName ?? "") != "" ? " " + st.LastName : "")
+                        + ((st.NdLastName ?? "") != "" ? " " + st.NdLastName : "")
+                    ).Trim(),
+                    SectionId = sec.Id,
+                    SectionName = sec.Name,
+                    EvaluationItemId = ei.Id,
+                    EvaluationItemName = ei.Name ?? "",
+                    Score = (double?)ses.Score ?? 0d,
+                    Percentage = (double?)ei.Percentage ?? 0d,
+                    CreatedAtUtc = ses.CreatedAt
+                };
+
+            
+           var qFallback =
+                from ses in _db.StudentEvaluationScores.AsNoTracking()
+                join ei in _db.EvaluationItems.AsNoTracking() on ses.EvaluationItemId equals ei.Id
+                join sec in _db.Sections.AsNoTracking() on ei.SectionAssignmentId equals sec.Id
+                join en in _db.Enrollments.AsNoTracking() on sec.EnrollmentId equals en.Id
+                join es in _db.EnrollmentStudent.AsNoTracking()
+                     on new { E = en.Id, S = ses.StudentId } equals new { E = es.EnrollmentId, S = es.StudentId }
+                join st in _db.Students.AsNoTracking() on ses.StudentId equals st.Id
+                where !_db.SectionAssignments.Any(sa => sa.Id == ei.SectionAssignmentId)
+                   && (sectionId == null || sec.Id == sectionId.Value)
+                   && !ei.IsDraft
+                   && (es.IsActive ?? true)
+                   && st.IsActive
+                   && (!startUtc.HasValue || (ses.CreatedAt >= startUtc.Value && ses.CreatedAt < endUtc!.Value))
+                select new GradeDetailRowDto
+                {
+                    StudentId = st.Id,
+                    StudentName = (
+                        (st.Name ?? "")
+                        + ((st.MiddleName ?? "") != "" ? " " + st.MiddleName : "")
+                        + ((st.LastName ?? "") != "" ? " " + st.LastName : "")
+                        + ((st.NdLastName ?? "") != "" ? " " + st.NdLastName : "")
+                    ).Trim(),
+                    SectionId = sec.Id,
+                    SectionName = sec.Name,
+                    EvaluationItemId = ei.Id,
+                    EvaluationItemName = ei.Name ?? "",
+                    Score = (double?)ses.Score ?? 0d,
+                    Percentage = (double?)ei.Percentage ?? 0d,
+                    CreatedAtUtc = ses.CreatedAt
+                };
+
+            var rows = await qProper
+                .Concat(qFallback)
+                .OrderBy(r => r.SectionName)
+                .ThenBy(r => r.StudentName)
+                .ThenBy(r => r.EvaluationItemId)
+                .ToListAsync();
+
+            return rows;
+        }
 
 
     }

@@ -12,5 +12,8 @@ namespace ctp_docente_portal.Server.Services.Interfaces
         Task<PagedResult<SubjectDto>> GetAllSubjectsWithPaginationAsync(PaginationParams paginationParams);
         Task<bool> DeleteSubjectAsync(int id);
         Task<List<SubjectDto>> GetSubjectsByPeriodAsync(int academicPeriodId, int userId);
+
+
+       
     }
 }

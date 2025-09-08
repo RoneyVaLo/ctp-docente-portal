@@ -76,7 +76,7 @@ namespace ctp_docente_portal.Server.Mappings
                         src.Name,
                         src.MiddleName,
                         src.LastName,
-                        src.ndLastName
+                        src.NdLastName
                     }.Where(s => !string.IsNullOrWhiteSpace(s)))
                     ));
 

@@ -21,6 +21,7 @@ namespace ctp_docente_portal.Server.Controllers
             _subjectService = subjectService;
         }
 
+
         [HttpPost]
         [Authorize(Policy = "AdministrativoOnly")]
         public async Task<IActionResult> Create([FromBody] CreateSubjectDto dto)
@@ -50,7 +51,7 @@ namespace ctp_docente_portal.Server.Controllers
         [HttpGet("pagination")]
         [Authorize(Policy = "AdministrativoOnly")]
         public async Task<ActionResult<PagedResult<SubjectDto>>> GetAllSubjectsPaginated([FromQuery] PaginationParams paginationParams)
-        {
+         {
             var result = await _subjectService.GetAllSubjectsWithPaginationAsync(paginationParams);
             return Ok(result);
         }
@@ -70,6 +71,12 @@ namespace ctp_docente_portal.Server.Controllers
         {
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
             var subjects = await _subjectService.GetSubjectsByPeriodAsync(academicPeriodId, userId);
+            return Ok(subjects);
+        }
+        [HttpGet("all")]
+        public async Task<ActionResult<List<SubjectDto>>> GetSubjects()
+        {
+            var subjects = await _subjectService.GetAllSubjectsAsync();
             return Ok(subjects);
         }
 

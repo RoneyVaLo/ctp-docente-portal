@@ -22,8 +22,9 @@ namespace ctp_docente_portal.Server.Controllers
             => Ok(await _notifications.SendAbsencesAsync(request, ct));
 
         [HttpGet]
-        public async Task<ActionResult> List([FromQuery] DateOnly? date, [FromQuery] int? sectionId, [FromQuery] string? status, CancellationToken ct)
-            => Ok(await _notifications.ListAsync(date, sectionId, status, ct));
+        public async Task<ActionResult> List([FromQuery] DateOnly? date, [FromQuery] int? sectionId, [FromQuery] int? subjectId, [FromQuery] string? status,
+            CancellationToken ct) => Ok(await _notifications.ListAsync(date, sectionId, subjectId, status, ct));
+
 
         [HttpPost("{id:int}/resend")]
         public async Task<IActionResult> Resend([FromRoute] int id, CancellationToken ct)
@@ -37,5 +38,6 @@ namespace ctp_docente_portal.Server.Controllers
             return result.Success
                 ? Ok(new { ok = true, result.ProviderMessageId })
                 : StatusCode(502, new { ok = false, error = result.Error });
-        }
-    }}
+        }
+    }
+}

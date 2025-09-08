@@ -4,7 +4,7 @@
     {
         public int Id { get; set; }
         public int StudentId { get; set; }
-        public int EvaluationItemId { get; set; } // Referencia al ítem de evaluación
+        public int EvaluationItemId { get; set; }
         public decimal Score { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }

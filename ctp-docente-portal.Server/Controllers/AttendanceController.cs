@@ -66,11 +66,11 @@ namespace ctp_docente_portal.Server.Controllers
 
             var list = await (from ss in _context.SectionStudents.AsNoTracking()
                               join s in _context.Students.AsNoTracking() on ss.StudentId equals s.Id
-                              where ss.isActive && s.isActive && ss.SectionId == sectionId
+                              where ss.isActive && s.IsActive && ss.SectionId == sectionId
                               select new StudentOptionDto
                               {
                                   Id = s.Id,
-                                  Name = ((s.Name ?? "") + " " + (s.MiddleName ?? "") + " " + (s.LastName ?? "") + " " + (s.ndLastName ?? "")).Trim()
+                                  Name = ((s.Name ?? "") + " " + (s.MiddleName ?? "") + " " + (s.LastName ?? "") + " " + (s.NdLastName ?? "")).Trim()
                               })
                              .OrderBy(x => x.Name)
                              .ToListAsync(ct);
@@ -88,11 +88,11 @@ namespace ctp_docente_portal.Server.Controllers
 
             var list = await (from ss in _context.SectionStudents.AsNoTracking()
                               join s in _context.Students.AsNoTracking() on ss.StudentId equals s.Id
-                              where ss.isActive && s.isActive && ss.SectionId == sectionId
+                              where ss.isActive && s.IsActive && ss.SectionId == sectionId
                               select new StudentListItemDto
                               {
                                   Id = s.Id,
-                                  FullName = ((s.Name ?? "") + " " + (s.MiddleName ?? "") + " " + (s.LastName ?? "") + " " + (s.ndLastName ?? "")).Trim(),
+                                  FullName = ((s.Name ?? "") + " " + (s.MiddleName ?? "") + " " + (s.LastName ?? "") + " " + (s.NdLastName ?? "")).Trim(),
                                   IdentificationNumber = s.IdentificationNumber ?? "",
                                   Subsection = ss.Subsection,
                                   BirthDate = s.BirthDate,
@@ -102,6 +102,6 @@ namespace ctp_docente_portal.Server.Controllers
                              .ToListAsync(ct);
 
             return Ok(list);
-        }
-    }
+        }
+    }
 }

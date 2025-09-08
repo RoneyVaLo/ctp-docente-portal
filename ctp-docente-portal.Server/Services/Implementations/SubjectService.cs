@@ -175,5 +175,6 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
             return subjects;
         }
+
     }
 }

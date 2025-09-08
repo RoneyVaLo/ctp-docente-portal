@@ -39,6 +39,9 @@ namespace ctp_docente_portal.Server.Migrations
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("EnrollmentId")
+                        .HasColumnType("integer");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
@@ -72,13 +75,16 @@ namespace ctp_docente_portal.Server.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<int>("CreatedBy")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<int>("MinutesLate")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Observations")
                         .HasColumnType("text");
@@ -92,6 +98,53 @@ namespace ctp_docente_portal.Server.Migrations
                     b.Property<int>("StudentId")
                         .HasColumnType("integer");
 
+                    b.Property<int>("SubjectId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("TakenAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex(new[] { "StudentId", "SectionId", "SubjectId", "Date" }, "UX_Attendances_Student_Section_Subject_Date")
+                        .IsUnique();
+
+                    b.ToTable("Attendances");
+                });
+
+            modelBuilder.Entity("ctp_docente_portal.Server.Models.EnrollmentStudentModel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("EnrollmentId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("GradeId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool?>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("isActive");
+
+                    b.Property<int>("StudentId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -100,7 +153,63 @@ namespace ctp_docente_portal.Server.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Attendances");
+                    b.HasIndex("EnrollmentId");
+
+                    b.HasIndex("StudentId");
+
+                    b.ToTable("EnrollmentStudent", "public", t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
+                });
+
+            modelBuilder.Entity("ctp_docente_portal.Server.Models.EnrollmentsModel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("isActive");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("UpdatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Enrollments", t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
                 });
 
             modelBuilder.Entity("ctp_docente_portal.Server.Models.EvaluationCategoriesModel", b =>
@@ -286,6 +395,69 @@ namespace ctp_docente_portal.Server.Migrations
                     b.ToTable("EvaluationStaffRoles");
                 });
 
+            modelBuilder.Entity("ctp_docente_portal.Server.Models.Notification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Error")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProviderMessageId")
+                        .HasColumnType("text");
+
+                    b.Property<int>("SectionId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("SentAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("StudentId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("StudentName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int?>("SubjectId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SectionId", "Date")
+                        .HasDatabaseName("IX_Notifications_Section_Date");
+
+                    b.HasIndex("StudentId", "Date")
+                        .HasDatabaseName("IX_Notifications_Student_Date");
+
+                    b.HasIndex("StudentId", "SectionId", "Date")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Notifications_Student_Section_Date");
+
+                    b.ToTable("Notifications");
+                });
+
             modelBuilder.Entity("ctp_docente_portal.Server.Models.SectionAssignmentsModel", b =>
                 {
                     b.Property<int>("Id")
@@ -307,6 +479,9 @@ namespace ctp_docente_portal.Server.Migrations
                         .HasColumnType("integer");
 
                     b.Property<int>("StaffId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SubSectionId")
                         .HasColumnType("integer");
 
                     b.Property<int>("SubjectId")
@@ -387,6 +562,10 @@ namespace ctp_docente_portal.Server.Migrations
                     b.Property<int>("GradeId")
                         .HasColumnType("integer");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("isActive");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
@@ -405,9 +584,6 @@ namespace ctp_docente_portal.Server.Migrations
 
                     b.Property<int>("UpdatedBy")
                         .HasColumnType("integer");
-
-                    b.Property<bool>("isActive")
-                        .HasColumnType("boolean");
 
                     b.HasKey("Id");
 
@@ -609,6 +785,34 @@ namespace ctp_docente_portal.Server.Migrations
                     b.ToTable("StudentEvaluationScores");
                 });
 
+            modelBuilder.Entity("ctp_docente_portal.Server.Models.StudentRepresentativesModel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("text");
+
+                    b.Property<int>("RelationshipTypeId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("StudentId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("isActive")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("StudentRepresentatives", t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
+                });
+
             modelBuilder.Entity("ctp_docente_portal.Server.Models.StudentsModel", b =>
                 {
                     b.Property<int>("Id")
@@ -617,10 +821,10 @@ namespace ctp_docente_portal.Server.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("AdequacyTypeId")
+                    b.Property<int?>("AdequacyTypeId")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime>("BirthDate")
+                    b.Property<DateTime?>("BirthDate")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("CreatedAt")
@@ -629,36 +833,43 @@ namespace ctp_docente_portal.Server.Migrations
                     b.Property<int>("CreatedBy")
                         .HasColumnType("integer");
 
-                    b.Property<int>("GenderId")
+                    b.Property<int?>("GenderId")
                         .HasColumnType("integer");
+
+                    b.Property<bool>("HasExitPermit")
+                        .HasColumnType("boolean")
+                        .HasColumnName("hasExitPermit");
 
                     b.Property<string>("IdentificationNumber")
-                        .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("IdentificationTypeId")
+                    b.Property<int?>("IdentificationTypeId")
                         .HasColumnType("integer");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("isActive");
+
                     b.Property<string>("LastName")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("MiddleName")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Name")
-                        .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("NationalityId")
+                    b.Property<int?>("NationalityId")
                         .HasColumnType("integer");
 
+                    b.Property<string>("NdLastName")
+                        .HasColumnType("text")
+                        .HasColumnName("ndLastName");
+
                     b.Property<string>("Notes")
-                        .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("StatusId")
+                    b.Property<int?>("StatusId")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("UpdatedAt")
@@ -666,16 +877,6 @@ namespace ctp_docente_portal.Server.Migrations
 
                     b.Property<int>("UpdatedBy")
                         .HasColumnType("integer");
-
-                    b.Property<bool>("hasExitPermit")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("isActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("ndLastName")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -763,6 +964,55 @@ namespace ctp_docente_portal.Server.Migrations
                         {
                             t.ExcludeFromMigrations();
                         });
+                });
+
+            modelBuilder.Entity("ctp_docente_portal.Server.Models.WhatsAppMessage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Sent")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("StudentId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("WhatsAppMessages");
+                });
+
+            modelBuilder.Entity("ctp_docente_portal.Server.Models.EnrollmentStudentModel", b =>
+                {
+                    b.HasOne("ctp_docente_portal.Server.Models.EnrollmentsModel", "Enrollment")
+                        .WithMany()
+                        .HasForeignKey("EnrollmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ctp_docente_portal.Server.Models.StudentsModel", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Enrollment");
+
+                    b.Navigation("Student");
                 });
 #pragma warning restore 612, 618
         }
