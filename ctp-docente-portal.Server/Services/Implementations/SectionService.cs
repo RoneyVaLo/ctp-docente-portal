@@ -22,7 +22,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
         public async Task<List<SectionDto>> GetAllAsync()
         {
-            var sections = await _context.Section
+            var sections = await _context.Sections
                 .OrderBy(x => x.Id)
                 .ThenBy(x => x.Name)
                 .AsNoTracking()
@@ -33,7 +33,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
         public async Task<SectionDto> GetByIdAsync(int id)
         {
-            var section = await _context.Section.FindAsync(id);
+            var section = await _context.Sections.FindAsync(id);
             return _mapper.Map<SectionDto>(section);
         }
 
@@ -57,7 +57,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 .Where(sa => sa.StaffId == staffId
                   && sa.AcademicPeriodId == academicPeriodId
                   && sa.SubjectId == subjectId)
-                .Join(_context.Section,
+                .Join(_context.Sections,
                 sa => sa.SectionId,
                 sec => sec.Id,
                 (sa, sec) => sec)
@@ -71,7 +71,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
         public async Task<List<SectionOptionDto>> GetOptionsAsync(int? year = null, int? enrollmentId = null, bool? isActive = null, int? gradeId = null, CancellationToken ct = default)
         {
             var query =
-                from s in _context.Section.AsNoTracking()
+                from s in _context.Sections.AsNoTracking()
                 join e in _context.Enrollments.AsNoTracking() on s.EnrollmentId equals e.Id
                 where (!isActive.HasValue || s.IsActive == isActive.Value)
                    && (!enrollmentId.HasValue || s.EnrollmentId == enrollmentId.Value)

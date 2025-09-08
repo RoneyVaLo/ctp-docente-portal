@@ -121,8 +121,8 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 throw new ArgumentException("La lista de calificaciones está vacía.");
 
             // Obtener estudiantes válidos de la sección
-            var validStudentIds = await _context.SectionStudent
-                .Where(ss => ss.SectionId == sectionId && ss.IsActive)
+            var validStudentIds = await _context.SectionStudents
+                .Where(ss => ss.SectionId == sectionId && ss.isActive)
                 .Select(ss => ss.StudentId)
                 .ToListAsync();
 

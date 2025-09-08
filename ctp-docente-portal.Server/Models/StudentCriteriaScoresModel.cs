@@ -4,9 +4,9 @@
     {
         public int Id { get; set; }
         public int StudentId { get; set; }
-        public int EvaluationItemId { get; set; } // FK a SubjectEvaluationItemsModel (para agrupación)
-        public int CriteriaId { get; set; } // FK a EvaluationCriteriaModel
-        public decimal Score { get; set; } // Nota del estudiante en este criterio específico
+        public int EvaluationItemId { get; set; }
+        public int CriteriaId { get; set; }
+        public decimal Score { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public int CreatedBy { get; set; }

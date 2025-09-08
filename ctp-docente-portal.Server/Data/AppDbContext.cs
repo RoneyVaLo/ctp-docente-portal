@@ -18,55 +18,49 @@ namespace ctp_docente_portal.Server.Data
         public DbSet<EvaluationCategoriesModel> EvaluationCategories { get; set; }
         public DbSet<EvaluationRolesModel> EvaluationRoles { get; set; }
         public DbSet<EvaluationStaffRolesModel> EvaluationStaffRoles { get; set; }
-
+        public DbSet<SectionsModel> Sections { get; set; }
         public DbSet<SectionAssignmentsModel> SectionAssignments { get; set; }
-
+        public DbSet<SectionStudentsModel> SectionStudents { get; set; }
         public DbSet<StaffModel> Staff { get; set; }
         public DbSet<StaffUserLinksModel> StaffUserLinks { get; set; }
-
+        public DbSet<StudentsModel> Students { get; set; }
         public DbSet<StudentCriteriaScoresModel> StudentCriteriaScores { get; set; }
         public DbSet<StudentEvaluationScoresModel> StudentEvaluationScores { get; set; }
         public DbSet<EvaluationItemsModel> EvaluationItems { get; set; }
-        public DbSet<SubjectsModel> Subjects{ get; set; }
-        public DbSet<UsersModel> Users{ get; set; }
-
+        public DbSet<SubjectsModel> Subjects { get; set; }
+        public DbSet<UsersModel> Users { get; set; }
         public DbSet<WhatsAppMessage> WhatsAppMessages { get; set; }
         public DbSet<Notification> Notifications { get; set; } = null!;
         public DbSet<StudentRepresentativesModel> StudentRepresentatives { get; set; } = null!;
         public DbSet<EnrollmentsModel> Enrollments { get; set; } = null!;
-        public DbSet<SectionModel> Section { get; set; } = null!;
-
-        public DbSet<SectionStudentModel> SectionStudent { get; set; } = null!;
-        public DbSet<StudentsModel> Students { get; set; } = null!;
         public DbSet<EnrollmentStudentModel> EnrollmentStudent { get; set; } = null!;
-
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<SectionModel>(entity =>
+            modelBuilder.Entity<SectionsModel>(entity =>
             {
                 // Indica que EF Core no debe gestionar esta tabla en migraciones
                 entity.Metadata.SetIsTableExcludedFromMigrations(true);
             });
 
-            modelBuilder.Entity<SectionStudentModel>(entity =>
+            modelBuilder.Entity<SectionStudentsModel>(entity =>
             {
                 // Indica que EF Core no debe gestionar esta tabla en migraciones
                 entity.Metadata.SetIsTableExcludedFromMigrations(true);
             });
-            
+
             modelBuilder.Entity<StaffModel>(entity =>
             {
                 // Indica que EF Core no debe gestionar esta tabla en migraciones
                 entity.Metadata.SetIsTableExcludedFromMigrations(true);
             });
-            
+
             modelBuilder.Entity<StudentsModel>(entity =>
             {
                 // Indica que EF Core no debe gestionar esta tabla en migraciones
                 entity.Metadata.SetIsTableExcludedFromMigrations(true);
             });
-            
+
             modelBuilder.Entity<UsersModel>(entity =>
             {
                 // Indica que EF Core no debe gestionar esta tabla en migraciones
@@ -85,22 +79,41 @@ namespace ctp_docente_portal.Server.Data
                 entity.Metadata.SetIsTableExcludedFromMigrations(true);
             });
 
+            modelBuilder.Entity<EnrollmentStudentModel>(entity =>
+            {
+                // Indica que EF Core no debe gestionar esta tabla en migraciones
+                entity.Metadata.SetIsTableExcludedFromMigrations(true);
+            });
+
             //  Crea un Unique Index compuesto
             modelBuilder.Entity<StudentEvaluationScoresModel>()
                 .HasIndex(ses => new { ses.StudentId, ses.EvaluationItemId })
                 .IsUnique();
-            
+
             modelBuilder.Entity<StudentCriteriaScoresModel>()
                 .HasIndex(scs => new { scs.StudentId, scs.EvaluationItemId, scs.CriteriaId })
                 .IsUnique();
-            
+
             modelBuilder.Entity<StaffUserLinksModel>()
                 .HasIndex(sul => new { sul.StaffId, sul.UserId })
                 .IsUnique();
-            
+
             modelBuilder.Entity<EvaluationStaffRolesModel>()
                 .HasIndex(esr => new { esr.StaffId, esr.RoleId })
                 .IsUnique();
-        }
-    }
+
+            modelBuilder.Entity<Notification>(entity =>
+            {
+                entity.HasIndex(e => new { e.SectionId, e.Date })
+                      .HasDatabaseName("IX_Notifications_Section_Date");
+
+                entity.HasIndex(e => new { e.StudentId, e.Date })
+                      .HasDatabaseName("IX_Notifications_Student_Date");
+
+                entity.HasIndex(e => new { e.StudentId, e.SectionId, e.Date })
+                      .IsUnique()
+                      .HasDatabaseName("UX_Notifications_Student_Section_Date");
+            });
+        }
+    }
 }

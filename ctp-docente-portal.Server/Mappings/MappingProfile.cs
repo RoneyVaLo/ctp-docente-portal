@@ -66,7 +66,7 @@ namespace ctp_docente_portal.Server.Mappings
             CreateMap<SubjectsModel, SubjectDto>().ReverseMap();
 
             // Sections
-            CreateMap<SectionModel, SectionDto>().ReverseMap();
+            CreateMap<SectionsModel, SectionDto>().ReverseMap();
 
             // Students
             CreateMap<StudentsModel, StudentDto>()

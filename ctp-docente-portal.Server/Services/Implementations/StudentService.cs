@@ -41,9 +41,9 @@ namespace ctp_docente_portal.Server.Services.Implementations
             }
 
             // Proyección directa a DTO con AutoMapper
-            var students = await _context.SectionStudent
+            var students = await _context.SectionStudents
                 .AsNoTracking()
-                .Where(ss => ss.SectionId == sectionId && ss.IsActive)
+                .Where(ss => ss.SectionId == sectionId && ss.isActive)
                 .Join(
                 _context.Students.Where(s => s.IsActive),
                 ss => ss.StudentId,

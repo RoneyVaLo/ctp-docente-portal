@@ -130,7 +130,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
             // Hacer join con las secciones para traer el nombre
             var result = await (from n in q
-                                join s in _db.Section.AsNoTracking()
+                                join s in _db.Sections.AsNoTracking()
                                     on n.SectionId equals s.Id
                                 select new NotificationDto
                                 {

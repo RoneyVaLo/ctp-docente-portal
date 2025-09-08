@@ -80,7 +80,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 from ses in _db.StudentEvaluationScores.AsNoTracking()
                 join ei in _db.EvaluationItems.AsNoTracking() on ses.EvaluationItemId equals ei.Id
                 join sa in _db.SectionAssignments.AsNoTracking() on ei.SectionAssignmentId equals sa.Id
-                join sec in _db.Section.AsNoTracking() on sa.SectionId equals sec.Id
+                join sec in _db.Sections.AsNoTracking() on sa.SectionId equals sec.Id
                 join en in _db.Enrollments.AsNoTracking() on sec.EnrollmentId equals en.Id
                 join es in _db.EnrollmentStudent.AsNoTracking()
                      on new { E = en.Id, S = ses.StudentId } equals new { E = es.EnrollmentId, S = es.StudentId }
@@ -112,7 +112,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
            var qFallback =
                 from ses in _db.StudentEvaluationScores.AsNoTracking()
                 join ei in _db.EvaluationItems.AsNoTracking() on ses.EvaluationItemId equals ei.Id
-                join sec in _db.Section.AsNoTracking() on ei.SectionAssignmentId equals sec.Id
+                join sec in _db.Sections.AsNoTracking() on ei.SectionAssignmentId equals sec.Id
                 join en in _db.Enrollments.AsNoTracking() on sec.EnrollmentId equals en.Id
                 join es in _db.EnrollmentStudent.AsNoTracking()
                      on new { E = en.Id, S = ses.StudentId } equals new { E = es.EnrollmentId, S = es.StudentId }
