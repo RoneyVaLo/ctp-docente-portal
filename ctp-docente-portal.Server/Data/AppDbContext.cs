@@ -29,6 +29,7 @@ namespace ctp_docente_portal.Server.Data
         public DbSet<EvaluationItemsModel> EvaluationItems { get; set; }
         public DbSet<SubjectsModel> Subjects { get; set; }
         public DbSet<UsersModel> Users { get; set; }
+        public DbSet<LoginAttempts> LoginAttempts { get; set; } = null!;
         public DbSet<WhatsAppMessage> WhatsAppMessages { get; set; }
         public DbSet<Notification> Notifications { get; set; } = null!;
         public DbSet<StudentRepresentativesModel> StudentRepresentatives { get; set; } = null!;

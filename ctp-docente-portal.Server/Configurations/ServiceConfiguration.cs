@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using ctp_docente_portal.Server.Data;
+using ctp_docente_portal.Server.Helpers;
 using ctp_docente_portal.Server.Mappings;
 using ctp_docente_portal.Server.Services.Implementations;
 using ctp_docente_portal.Server.Services.Interfaces;
@@ -63,6 +64,7 @@ namespace ctp_docente_portal.Server.Configurations
         /// <param name="services">The service collection to which the custom services will be added.</param>
         private static void RegisterAppServices(IServiceCollection services)
         {
+            services.AddScoped<EncryptionService>();
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IEvaluationCategoriesService, EvaluationCategoriesService>();
             services.AddScoped<IEvaluationCriteriaService, EvaluationCriteriaService>();

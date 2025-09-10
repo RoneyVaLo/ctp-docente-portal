@@ -34,7 +34,16 @@ En el archivo `secrets.json` que se abre, pega lo siguiente con tus propios dato
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Port=5432;Database=ctp_develop_tunombre;Username=tuusuario;Password=tucontraseña"
+    "DefaultConnection": "Host=tuhost;Port=5432;Database=tubasededatos;Username=tuusuario;Password=tucontraseña"
+  },
+  "Jwt": {
+    "Key": "tu-propia-llave",
+    "Issuer": "app-receptora",
+    "Audience": "app-emisora"
+  },
+  "Encryption": {
+    "Key": "tu-propia-key",
+    "IV": "tu-propio-IV"
   }
 }
 ````
@@ -60,6 +69,15 @@ Esto permite mantener los secretos fuera del código.
 {
   "ConnectionStrings": {
     "DefaultConnection": ""
+  },
+  "Jwt": {
+    "Key": "",
+    "Issuer": "",
+    "Audience": ""
+  },
+  "Encryption": {
+    "Key": "",
+    "IV": ""
   }
 }
 ```
