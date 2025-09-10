@@ -49,7 +49,8 @@ const AdminDashboard = ({ adminStats }) => {
   const gridColor = darkMode ? "#ffffff" : "#000000";
 
   const calculateAttendancePercentage = () => {
-    return Number((totalPresentToday * 100) / totalPossibleToday) || 0;
+    const attendancePercentage = (totalPresentToday * 100) / totalPossibleToday;
+    return Number(attendancePercentage.toFixed(1)) || 0;
   };
 
   return (
@@ -64,7 +65,9 @@ const AdminDashboard = ({ adminStats }) => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent className="text-center">
-            <div className="text-2xl font-bold">{totalActiveStudents || 0}</div>
+            <div className="text-2xl font-bold">
+              {Number(totalActiveStudents) || 0}
+            </div>
             <p className="text-xs text-muted-foreground">
               En el presente curso lectivo
             </p>
@@ -95,10 +98,12 @@ const AdminDashboard = ({ adminStats }) => {
           </CardHeader>
           <CardContent className="text-center">
             <div className="text-2xl font-bold text-red-600">
-              {totalAbsentToday}
+              {Number(totalAbsentToday)}
             </div>
             <p className="text-xs text-muted-foreground">
-              De {totalControlsToday} controles de asistencia registrados
+              De {totalControlsToday}{" "}
+              {totalControlsToday === 1 ? "control" : "controles"} de asistencia
+              registrados
             </p>
           </CardContent>
         </Card>
@@ -112,7 +117,7 @@ const AdminDashboard = ({ adminStats }) => {
           </CardHeader>
           <CardContent className="text-center">
             <div className="text-2xl font-bold">
-              {totalTeachersWithSections}
+              {Number(totalTeachersWithSections)}
             </div>
             <p className="text-xs text-muted-foreground">
               Con asignaciones activas
@@ -154,7 +159,7 @@ const AdminDashboard = ({ adminStats }) => {
                     </div>
                     <div className="text-right">
                       <div className="text-lg font-bold text-red-600">
-                        {section.percentage}%
+                        {Number(section.percentage.toFixed(1))}%
                       </div>
                       <p className="text-xs text-muted-foreground">
                         ausentismo

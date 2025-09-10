@@ -123,13 +123,13 @@ export default function Sidebar({ isMobileOpen, onCloseMobile }) {
             active={location.pathname.includes("/notificaciones")}
             collapsed={collapsed}
           />
-          {/* <NavItem
+          <NavItem
             href="/estudiantes"
             icon={<Users className="h-5 w-5" />}
             label="Estudiantes"
             active={location.pathname.includes("/estudiantes")}
             collapsed={collapsed}
-          /> */}
+          />
         </aside>
       </div>
 

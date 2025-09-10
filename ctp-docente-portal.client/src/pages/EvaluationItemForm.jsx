@@ -266,11 +266,11 @@ const EvaluationItemForm = () => {
 
       if (itemData.HasCriteria) {
         const { isValid, errors } = validateCriteria();
-        errors.forEach((err) => console.error(err));
+        errors.forEach((err) => toast.error(err));
         if (!isValid) {
-          toast.error(
-            "La validación de los criterios ha fallado. Revisa los campos."
-          );
+          // toast.error(
+          //   "La validación de los criterios ha fallado. Revisa los campos."
+          // );
           return;
         }
 
@@ -299,9 +299,13 @@ const EvaluationItemForm = () => {
               headers: { Authorization: `Bearer ${token}` },
             }
           );
-          console.log(response);
+          const message = itemId
+            ? "Ítem actualizado correctamente."
+            : "Ítem creado correctamente.";
           setItem(false);
-          toast.success("Ítem actualizado correctamente.");
+          toast.success(message);
+          const updatedEvaluationItems = [...evaluationItems, response.data];
+          updateEvaluationItems(updatedEvaluationItems);
           navigate("/calificaciones");
         } catch (error) {
           console.error(error?.response?.data?.Message);

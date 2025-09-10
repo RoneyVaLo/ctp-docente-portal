@@ -25,7 +25,8 @@ import { useEvaluation } from "../context/EvaluationContext";
 import toast from "react-hot-toast";
 
 const GradeEvaluationItem = () => {
-  const { loading, setLoading, selectedGroup } = useEvaluation();
+  const { loading, setLoading, selectedGroup, updateGradesWithCriteria } =
+    useEvaluation();
 
   const { itemId } = useParams();
   const { studentId } = useParams();
@@ -115,6 +116,8 @@ const GradeEvaluationItem = () => {
     return payload;
   };
 
+  // console.log(evaluation);
+
   const saveChanges = async () => {
     try {
       setLoading(true);
@@ -136,6 +139,7 @@ const GradeEvaluationItem = () => {
         }
       );
       toast.success(response.data.message);
+      updateGradesWithCriteria(evaluation, grades);
 
       setEditMode(false);
       setSuccessfulSave(false);

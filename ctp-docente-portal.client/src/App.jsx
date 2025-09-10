@@ -111,10 +111,10 @@ function App() {
               path: "notificaciones",
               element: <Notificaciones />,
             },
-            // {
-            //   path: "estudiantes",
-            //   element: <Estudiantes />,
-            // },
+            {
+              path: "estudiantes",
+              element: <Estudiantes />,
+            },
           ],
         },
       ],

@@ -59,6 +59,8 @@ export const AuthProvider = ({ children }) => {
       setUser(user);
       setRoles(user.roles);
 
+      toast.success(`Bienvenido ${user.username}`);
+
       return response.data;
     } catch (error) {
       throw error.response?.data;
