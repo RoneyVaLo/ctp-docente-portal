@@ -28,5 +28,22 @@ namespace ctp_docente_portal.Server.Controllers
             var students = await _studentService.GetStudentsBySectionAsync(sectionId, userId);
             return Ok(students);
         }
+
+        [HttpGet("{sectionId}")]
+        public async Task<IActionResult> GetReporteEstudiantes(int sectionId)
+        {
+            var reporte = await _studentService.GetStudentReportsAsync(sectionId);
+            return Ok(reporte);
+        }
+
+        [HttpGet("student/{id}")]
+        public async Task<IActionResult> GetStudentDetail(int id)
+        {
+            var student = await _studentService.GetStudentDetailAsync(id);
+            if (student == null)
+                return NotFound();
+
+            return Ok(student);
+        }
     }
 }

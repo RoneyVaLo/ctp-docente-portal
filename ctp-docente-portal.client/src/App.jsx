@@ -16,6 +16,7 @@ function App() {
   const Reportes = lazy(() => import("./pages/Reports"));
   const Notificaciones = lazy(() => import("./pages/Notifications"));
   const Estudiantes = lazy(() => import("./pages/Students"));
+  const EstudiantesDetalle = lazy(() => import("./pages/StudentDetail"));
   const Configuracion = lazy(() => import("./pages/Configuration"));
   const EvaluationItemForm = lazy(() => import("./pages/EvaluationItemForm"));
   const GradeEvaluationItem = lazy(() => import("./pages/GradeEvaluationItem"));
@@ -111,10 +112,19 @@ function App() {
               path: "notificaciones",
               element: <Notificaciones />,
             },
-            // {
-            //   path: "estudiantes",
-            //   element: <Estudiantes />,
-            // },
+            {
+              element: <RoleRoute listRoles={["Administrativo"]} />,
+              children: [
+                {
+                  path: "estudiantes",
+                  element: <Estudiantes />,
+                },
+              ],
+            },
+            {
+              path: "estudiantes/:id",
+              element: <EstudiantesDetalle />,
+            },
           ],
         },
       ],

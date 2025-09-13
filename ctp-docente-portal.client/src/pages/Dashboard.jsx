@@ -1,6 +1,4 @@
-import { useEffect, useState } from "react";
-import AdminDashboard from "@/components/dashboard/AdminDashboard";
-import TeacherDashboard from "@/components/dashboard/TeacherDashboard";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import Loader1 from "@/components/loaders/Loader1";
 import axios from "axios";
@@ -51,6 +49,13 @@ const fetchAdministrativeStatistics = async () => {
 };
 
 const Dashboard = () => {
+  const AdminDashboard = lazy(() =>
+    import("../components/dashboard/AdminDashboard")
+  );
+  const TeacherDashboard = lazy(() =>
+    import("../components/dashboard/TeacherDashboard")
+  );
+
   const { roles } = useAuth();
   const [isAdmin, setIsAdmin] = useState(null);
 
@@ -96,11 +101,13 @@ const Dashboard = () => {
 
   return (
     <>
-      {isAdmin ? (
-        <AdminDashboard adminStats={adminStats} />
-      ) : (
-        <TeacherDashboard teacherStats={teacherStats} />
-      )}
+      <Suspense fallback={<Loader1 />}>
+        {isAdmin ? (
+          <AdminDashboard adminStats={adminStats} />
+        ) : (
+          <TeacherDashboard teacherStats={teacherStats} />
+        )}
+      </Suspense>
     </>
   );
 };

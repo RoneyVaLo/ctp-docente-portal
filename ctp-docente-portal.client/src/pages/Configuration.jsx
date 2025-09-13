@@ -1,5 +1,5 @@
 import { useState } from "react";
-import ConfigurationTabs from "@/components/adminSettings/ConfigurationTabs";
+import ConfigurationTabs from "../components/adminSettings/ConfigurationTabs";
 
 const Configuration = () => {
   const [activeTab, setActiveTab] = useState("periods");

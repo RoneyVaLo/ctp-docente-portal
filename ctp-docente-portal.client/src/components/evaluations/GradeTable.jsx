@@ -6,6 +6,7 @@ import { SquareArrowOutUpRight } from "lucide-react";
 import Input from "../ui/Input";
 import { Card, CardContent } from "../ui/Card";
 import { Label } from "../ui/Label";
+import Tooltip from "../Tooltip";
 
 const GradeTable = ({
   students,
@@ -59,14 +60,10 @@ const GradeTable = ({
                                 <SquareArrowOutUpRight className="h-4 w-4" />
                               </button>
                             </NavLink>
-                            <div
-                              className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2
-                              opacity-0 translate-y-1 scale-95 group-hover:opacity-100 group-hover:translate-y-0 
-                              group-hover:scale-100 transition-all duration-150 ease-outbg-gray-800 text-white 
-                              text-sm px-2 py-1 rounded shadow-lg z-10 whitespace-nowrap bg-slate-500"
-                            >
-                              Calificar item con rúbrica
-                            </div>
+                            <Tooltip
+                              message={"Calificar item con rúbrica"}
+                              possition={"bottom-full"}
+                            />
                           </div>
                         )}
                       </div>

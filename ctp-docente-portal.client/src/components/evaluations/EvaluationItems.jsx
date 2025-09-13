@@ -1,18 +1,27 @@
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";
+import axios from "axios";
+import toast from "react-hot-toast";
+import { NavLink } from "react-router-dom";
 import { Edit, FileText, Plus, Settings, Trash2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";
 import { Badge } from "../ui/Badge";
 import Button from "../ui/Button";
-import { NavLink } from "react-router-dom";
-
 import { useEvaluation } from "../../context/EvaluationContext";
-import { formatDate } from "../../utils/gradeUtils";
-import axios from "axios";
 import Loader1 from "../loaders/Loader1";
-import toast from "react-hot-toast";
+import { formatDate } from "../../utils/gradeUtils";
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../ui/Dialog";
 
 const EvaluationItems = () => {
   const { evaluationItems, loading, setLoading, updateEvaluationItems } =
     useEvaluation();
+
+  const [itemToDelete, setItemToDelete] = useState(null);
 
   const deleteItem = async (id) => {
     try {
@@ -145,18 +154,47 @@ const EvaluationItems = () => {
                       <Settings className="w-4 h-4" />
                     </Button>
                   </NavLink>
+
                   <Button
-                    variant="outline"
                     size="sm"
-                    onClick={() => deleteItem(item.id)}
+                    variant="outline"
+                    onClick={() => setItemToDelete(item)}
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
             </CardContent>
           </Card>
         ))}
+
+        <Dialog
+          open={!!itemToDelete}
+          onOpenChange={(open) => !open && setItemToDelete(null)}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                ¿Desea eliminar este Item de Evaluación?
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="flex justify-end gap-2">
+                <Button onClick={() => setItemToDelete(null)}>Cancelar</Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    deleteItem(itemToDelete.id);
+                    setItemToDelete(null);
+                  }}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

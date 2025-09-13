@@ -167,6 +167,37 @@ export const useEvaluationLogic = () => {
     setEvaluationItems(updatedItems);
   };
 
+  const calculateFinalGradeCriteria = (studentId, grades, criteria) => {
+    if (!grades[studentId]) return 0;
+
+    let finalGrade = 0;
+
+    for (let i = 0; i < criteria.length; i++) {
+      finalGrade += (grades[studentId][i] * criteria[i].weight) / 100;
+    }
+
+    return Number(finalGrade.toFixed(1));
+  };
+
+  const updateGradesWithCriteria = (item, grades) => {
+    setStudents((prevStudents) =>
+      prevStudents.map((student) => {
+        const newScore = calculateFinalGradeCriteria(
+          student.studentId,
+          grades,
+          item.criteria
+        );
+        return {
+          ...student,
+          scoresByItemId: {
+            ...student.scoresByItemId,
+            [item.id]: newScore,
+          },
+        };
+      })
+    );
+  };
+
   return {
     loading,
     setLoading,
@@ -183,5 +214,6 @@ export const useEvaluationLogic = () => {
     setStudents,
     evaluationItems,
     updateEvaluationItems,
+    updateGradesWithCriteria,
   };
 };

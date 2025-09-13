@@ -271,6 +271,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
             // Armar el DTO final
             return new EvaluationItemDetailsDto
             {
+                Id = item.Id,
                 ItemName = item.Name,
                 Description = item.Description,
                 Percentage = item.Percentage,

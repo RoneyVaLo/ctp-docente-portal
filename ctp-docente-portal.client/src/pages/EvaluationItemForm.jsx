@@ -266,11 +266,11 @@ const EvaluationItemForm = () => {
 
       if (itemData.HasCriteria) {
         const { isValid, errors } = validateCriteria();
-        errors.forEach((err) => console.error(err));
+        errors.forEach((err) => toast.error(err));
         if (!isValid) {
-          toast.error(
-            "La validación de los criterios ha fallado. Revisa los campos."
-          );
+          // toast.error(
+          //   "La validación de los criterios ha fallado. Revisa los campos."
+          // );
           return;
         }
 
@@ -299,12 +299,16 @@ const EvaluationItemForm = () => {
               headers: { Authorization: `Bearer ${token}` },
             }
           );
-          console.log(response);
+          const message = itemId
+            ? "Ítem actualizado correctamente."
+            : "Ítem creado correctamente.";
           setItem(false);
-          toast.success("Ítem actualizado correctamente.");
+          toast.success(message);
+          const updatedEvaluationItems = [...evaluationItems, response.data];
+          updateEvaluationItems(updatedEvaluationItems);
           navigate("/calificaciones");
         } catch (error) {
-          console.error(error?.response?.data?.Message);
+          // console.error(error?.response?.data?.Message);
           const { Message } = error.response.data;
           if (
             Message.toLocaleLowerCase().includes(
@@ -319,7 +323,7 @@ const EvaluationItemForm = () => {
               "Error actualizando el ítem: \nNo es posible desactivar criterios que ya tienen notas asignadas."
             );
           } else {
-            toast.error("Ocurrió un error al actualizar el ítem.");
+            toast.error(error?.response?.data?.Message);
           }
         } finally {
           setLoading(false);
@@ -349,11 +353,10 @@ const EvaluationItemForm = () => {
           toast.success("Ítem creado exitosamente.");
           updateEvaluationItems(updatedEvaluationItems);
           setItem(false);
-          // window.location.reload();
           navigate("/calificaciones");
         } catch (error) {
-          console.error(error?.response?.data?.Message);
-          toast.error("Ocurrió un error al crear el ítem.");
+          // console.error(error?.response?.data?.Message);
+          toast.error(error?.response?.data?.Message);
         } finally {
           setLoading(false);
         }

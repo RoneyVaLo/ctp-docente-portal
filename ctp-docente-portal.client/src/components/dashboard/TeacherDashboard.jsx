@@ -31,7 +31,9 @@ const TeacherDashboard = ({ teacherStats }) => {
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent className="text-center">
-            <div className="text-2xl font-bold">{quantitySections || 0}</div>
+            <div className="text-2xl font-bold">
+              {Number(quantitySections) || 0}
+            </div>
             <p className="text-xs text-muted-foreground">
               Activas este período
             </p>
@@ -47,10 +49,10 @@ const TeacherDashboard = ({ teacherStats }) => {
           </CardHeader>
           <CardContent className="text-center">
             <div className="text-2xl font-bold text-green-600">
-              {presentStudents || 0}
+              {Number(presentStudents) || 0}
             </div>
             <p className="text-xs text-muted-foreground">
-              de {totalStudents || 0} total
+              de {Number(totalStudents) || 0} total
             </p>
           </CardContent>
         </Card>
@@ -64,7 +66,7 @@ const TeacherDashboard = ({ teacherStats }) => {
           </CardHeader>
           <CardContent className="text-center">
             <div className="text-2xl font-bold text-orange-600">
-              {pendingEvaluations || 0}
+              {Number(pendingEvaluations) || 0}
             </div>
             <p className="text-xs text-muted-foreground">
               Calificaciones por registrar
