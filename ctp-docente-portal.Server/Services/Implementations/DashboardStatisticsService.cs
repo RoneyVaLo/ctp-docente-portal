@@ -139,6 +139,8 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
             var totalControlsToday = await _context.Attendances
                 .Where(a => a.Date == today)
+                .Select(a => new { a.SectionId, a.SubjectId })
+                .Distinct()
                 .CountAsync();
 
             var totalTeachersWithSections = await _context.Staff

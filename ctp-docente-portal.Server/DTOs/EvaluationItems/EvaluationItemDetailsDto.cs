@@ -5,6 +5,7 @@ namespace ctp_docente_portal.Server.DTOs.EvaluationItems
 {
     public class EvaluationItemDetailsDto
     {
+        public int Id { get; set; }
         public string ItemName { get; set; }
         public string Description { get; set; }
         public decimal Percentage { get; set; }

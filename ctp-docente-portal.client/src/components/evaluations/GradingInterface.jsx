@@ -18,12 +18,13 @@ import { useEvaluation } from "../../context/EvaluationContext";
 import axios from "axios";
 import Loader1 from "../loaders/Loader1";
 import toast from "react-hot-toast";
+import Tooltip from "../Tooltip";
 
 const GradingInterface = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   // <"idle" | "saving" | "saved" | "error">
-  const [saveStatus, setSaveStatus] = useState("idle");
+  // const [saveStatus, setSaveStatus] = useState("idle");
   const [isEditing, setIsEditing] = useState(false);
 
   const {
@@ -68,9 +69,9 @@ const GradingInterface = () => {
       })
     );
 
-    setSaveStatus("saving");
-    setTimeout(() => setSaveStatus("saved"), 1000);
-    setTimeout(() => setSaveStatus("idle"), 3000);
+    // setSaveStatus("saving");
+    // setTimeout(() => setSaveStatus("saved"), 1000);
+    // setTimeout(() => setSaveStatus("idle"), 3000);
   };
 
   const saveChanges = async () => {
@@ -97,7 +98,7 @@ const GradingInterface = () => {
       );
       console.log(response.data);
       toast.success("Cambios guardados correctamente.");
-      setSaveStatus("idle");
+      // setSaveStatus("idle");
     } catch (error) {
       console.error(error?.response?.data?.Message);
       toast.error("Ocurrió un error al guardar los cambios.");
@@ -119,13 +120,13 @@ const GradingInterface = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="w-5 h-5" />
-            Filtros de Evaluación
+            Busqueda de Estudiantes
           </CardTitle>
         </CardHeader>
 
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
-            <div className="flex flex-col sm:flex-row gap-4 items-center rounded-md w-[98%] mx-auto">
+          <div className="grid grid-cols-1 gap-4 my-4">
+            <div className="flex flex-col sm:flex-row gap-4 items-center rounded-md w-full mx-auto">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input
@@ -168,29 +169,58 @@ const GradingInterface = () => {
               Estudiantes ({filteredStudents.length})
             </span>
             <div className="flex gap-4 flex-col sm:flex-row">
-              {/* <Button size="sm" variant="outline">
-                <Download className="w-4 h-4 mr-2" />
-                Descargar Reporte
-              </Button> */}
-
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={isEditing ? saveChanges : handleEditToggle}
-                className="sm:min-w-48"
+              <div
+                className={`relative group inline-block ${
+                  evaluationItems.length <= 0 && "cursor-not-allowed"
+                }`}
               >
-                {isEditing ? (
-                  <>
-                    <Save className="w-4 h-4 mr-2" />
-                    Guardar Calificaciones
-                  </>
-                ) : (
-                  <>
-                    <Edit className="w-4 h-4 mr-2" />
-                    Editar Calificaciones
-                  </>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!evaluationItems.length > 0}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Descargar Reporte
+                </Button>
+                {evaluationItems.length <= 0 && (
+                  <Tooltip
+                    message={"Primero Añada Items de Evaluación"}
+                    possition={"top-full"}
+                  />
                 )}
-              </Button>
+              </div>
+
+              <div
+                className={`relative group inline-block ${
+                  evaluationItems.length <= 0 && "cursor-not-allowed"
+                }`}
+              >
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={isEditing ? saveChanges : handleEditToggle}
+                  className="sm:min-w-48"
+                  disabled={!evaluationItems.length > 0}
+                >
+                  {isEditing ? (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Guardar Calificaciones
+                    </>
+                  ) : (
+                    <>
+                      <Edit className="w-4 h-4 mr-2" />
+                      Editar Calificaciones
+                    </>
+                  )}
+                </Button>
+                {evaluationItems.length <= 0 && (
+                  <Tooltip
+                    message={"Primero Añada Items de Evaluación"}
+                    possition={"top-full"}
+                  />
+                )}
+              </div>
             </div>
           </CardTitle>
         </CardHeader>

@@ -17,15 +17,21 @@ const FilterSelect = ({ label, value, onChange, options, placeholder }) => {
           <SelectValue placeholder={placeholder} options={options} />
         </SelectTrigger>
         <SelectContent className="z-50">
-          {options.map((option) => (
-            <SelectItem
-              className="sticky z-20"
-              value={option.id.toString()}
-              key={`${label}-${option.id}`}
-            >
-              {option.name}
-            </SelectItem>
-          ))}
+          {options.length > 0 ? (
+            options.map((option) => (
+              <SelectItem
+                className="sticky z-20"
+                value={option.id.toString()}
+                key={`${label}-${option.id}`}
+              >
+                {option.name}
+              </SelectItem>
+            ))
+          ) : (
+            <div className="sticky z-20 flex w-full cursor-not-allowed text-black font-medium text-center items-center rounded-sm py-2 px-8 text-sm outline-none">
+              No hay elementos disponibles
+            </div>
+          )}
         </SelectContent>
       </Select>
     </div>
