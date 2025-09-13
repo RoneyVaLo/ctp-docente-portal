@@ -107,7 +107,7 @@ const SelectContent = React.forwardRef((props, ref) => {
     <div
       ref={ref}
       className={cn(
-        "absolute z-50 max-h-96 min-w-[8rem] w-full overflow-y-scroll [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] rounded-md bg-popover text-popover-foreground shadow-md bg-slate-300/80 dark:bg-slate-400/90 backdrop-blur-sm",
+        "absolute z-50 max-h-40 min-w-[8rem] w-full overflow-y-scroll [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] rounded-md bg-popover text-popover-foreground shadow-md bg-slate-300/80 dark:bg-slate-400/90 backdrop-blur-sm",
         "animate-in fade-in-0 zoom-in-95",
         position === "popper" && "top-full mt-1",
         className

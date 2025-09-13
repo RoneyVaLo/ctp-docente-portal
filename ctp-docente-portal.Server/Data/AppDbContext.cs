@@ -35,6 +35,7 @@ namespace ctp_docente_portal.Server.Data
         public DbSet<StudentRepresentativesModel> StudentRepresentatives { get; set; } = null!;
         public DbSet<EnrollmentsModel> Enrollments { get; set; } = null!;
         public DbSet<EnrollmentStudentModel> EnrollmentStudent { get; set; } = null!;
+        public DbSet<GendersModel> Genders { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -81,6 +82,12 @@ namespace ctp_docente_portal.Server.Data
             });
 
             modelBuilder.Entity<EnrollmentStudentModel>(entity =>
+            {
+                // Indica que EF Core no debe gestionar esta tabla en migraciones
+                entity.Metadata.SetIsTableExcludedFromMigrations(true);
+            });
+
+            modelBuilder.Entity<GendersModel>(entity =>
             {
                 // Indica que EF Core no debe gestionar esta tabla en migraciones
                 entity.Metadata.SetIsTableExcludedFromMigrations(true);

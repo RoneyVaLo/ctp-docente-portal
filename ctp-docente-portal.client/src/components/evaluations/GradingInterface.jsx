@@ -24,7 +24,7 @@ const GradingInterface = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   // <"idle" | "saving" | "saved" | "error">
-  const [saveStatus, setSaveStatus] = useState("idle");
+  // const [saveStatus, setSaveStatus] = useState("idle");
   const [isEditing, setIsEditing] = useState(false);
 
   const {
@@ -69,9 +69,9 @@ const GradingInterface = () => {
       })
     );
 
-    setSaveStatus("saving");
-    setTimeout(() => setSaveStatus("saved"), 1000);
-    setTimeout(() => setSaveStatus("idle"), 3000);
+    // setSaveStatus("saving");
+    // setTimeout(() => setSaveStatus("saved"), 1000);
+    // setTimeout(() => setSaveStatus("idle"), 3000);
   };
 
   const saveChanges = async () => {
@@ -98,7 +98,7 @@ const GradingInterface = () => {
       );
       console.log(response.data);
       toast.success("Cambios guardados correctamente.");
-      setSaveStatus("idle");
+      // setSaveStatus("idle");
     } catch (error) {
       console.error(error?.response?.data?.Message);
       toast.error("Ocurrió un error al guardar los cambios.");

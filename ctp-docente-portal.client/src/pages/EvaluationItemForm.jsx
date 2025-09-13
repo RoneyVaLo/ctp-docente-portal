@@ -308,7 +308,7 @@ const EvaluationItemForm = () => {
           updateEvaluationItems(updatedEvaluationItems);
           navigate("/calificaciones");
         } catch (error) {
-          console.error(error?.response?.data?.Message);
+          // console.error(error?.response?.data?.Message);
           const { Message } = error.response.data;
           if (
             Message.toLocaleLowerCase().includes(
@@ -323,7 +323,7 @@ const EvaluationItemForm = () => {
               "Error actualizando el ítem: \nNo es posible desactivar criterios que ya tienen notas asignadas."
             );
           } else {
-            toast.error("Ocurrió un error al actualizar el ítem.");
+            toast.error(error?.response?.data?.Message);
           }
         } finally {
           setLoading(false);
@@ -353,11 +353,10 @@ const EvaluationItemForm = () => {
           toast.success("Ítem creado exitosamente.");
           updateEvaluationItems(updatedEvaluationItems);
           setItem(false);
-          // window.location.reload();
           navigate("/calificaciones");
         } catch (error) {
-          console.error(error?.response?.data?.Message);
-          toast.error("Ocurrió un error al crear el ítem.");
+          // console.error(error?.response?.data?.Message);
+          toast.error(error?.response?.data?.Message);
         } finally {
           setLoading(false);
         }
