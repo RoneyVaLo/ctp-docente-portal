@@ -1,109 +1,52 @@
-using ctp_docente_portal.Server.Services.Interfaces;
-using Microsoft.AspNetCore.Mvc;
+using ctp_docente_portal.Server.DTOs.Reports;
+using ctp_docente_portal.Server.DTOs.Reports.PDF;
 using ctp_docente_portal.Server.Helpers;
-using System.Text;
-using System.Globalization;
+using ctp_docente_portal.Server.Services.Implementations;
+using ctp_docente_portal.Server.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 
 namespace ctp_docente_portal.Server.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class ReportController : ControllerBase
     {
-        private readonly IReportService _reportService;
+        private readonly IReportService _reportsService;
 
-        public ReportController(IReportService reportService)
+        public ReportController(IReportService reportsService)
         {
-            _reportService = reportService;
+            _reportsService = reportsService;
         }
 
-        [HttpGet("attendance-stats")]
-        public async Task<IActionResult> GetAttendanceStats()
+        [HttpPost("grades")]
+        public async Task<IActionResult> GetGrades([FromBody] ReportFilterDto filter)
         {
-            var result = await _reportService.GetAttendanceStatsBySectionAsync();
-            return Ok(result);
-
-        }
-
-        [HttpGet("grades")]
-        public async Task<IActionResult> GetGrades([FromQuery] string? date, [FromQuery] int? sectionId)
-        {
-            DateOnly? d = null;
-
-            if (!string.IsNullOrWhiteSpace(date))
-            {
-                
-                if (!DateOnly.TryParseExact(date, "yyyy-MM-dd", CultureInfo.InvariantCulture,
-                                            DateTimeStyles.None, out var parsed))
-                {
-                    return BadRequest($"Formato de fecha inválido: {date}. Usa yyyy-MM-dd.");
-                }
-                d = parsed;
-            }
-
-            var result = await _reportService.GetGradesBySectionAndDateAsync(sectionId, d);
-            return Ok(result);
-        }
-        [HttpGet("student-consolidated")]
-        public async Task<IActionResult> GetStudentConsolidated([FromQuery] int studentId)
-        {
-            var result = await _reportService.GetStudentConsolidatedReportAsync(studentId);
+            var result = await _reportsService.GetGradesAsync(filter);
             return Ok(result);
         }
 
-         
-
-        [HttpGet("attendance-stats/csv")]
-        public async Task<IActionResult> ExportAttendanceStatsCsv()
+        [HttpPost("attendance")]
+        public async Task<IActionResult> GetAttendance([FromBody] ReportFilterDto filter)
         {
-            var stats = await _reportService.GetAttendanceStatsBySectionAsync();
-            var csv = CsvExportHelper.ExportAttendanceStats(stats);
-            var bytes = Encoding.UTF8.GetBytes(csv);
-            return File(bytes, "text/csv", "asistencia_por_seccion.csv");
-        }
-
-        [HttpGet("grades/csv")]
-        public async Task<IActionResult> ExportGradesCsv([FromQuery] int? groupId, [FromQuery] string? subject)
-        {
-            var grades = await _reportService.GetGradesByGroupOrSubjectAsync(groupId, subject);
-            var csv = CsvExportHelper.ExportGrades(grades);
-            var bytes = Encoding.UTF8.GetBytes(csv);
-            return File(bytes, "text/csv", "calificaciones.csv");
-        }
-
-        [HttpGet("grades/pdf")]
-        public async Task<IActionResult> ExportGradesPdf([FromQuery] int? groupId, [FromQuery] string? subject)
-        {
-            var grades = await _reportService.GetGradesByGroupOrSubjectAsync(groupId, subject);
-            var pdfBytes = PdfExportHelper.ExportGradesPdf(grades);
-            return File(pdfBytes, "application/pdf", "reporte_calificaciones.pdf");
-        }
-
-        [HttpGet("attendance-stats/pdf")]
-        public async Task<IActionResult> ExportAttendanceStatsPdf()
-        {
-            var stats = await _reportService.GetAttendanceStatsBySectionAsync();
-            var pdfBytes = PdfExportHelper.ExportAttendanceStatsPdf(stats);
-            return File(pdfBytes, "application/pdf", "reporte_asistencia.pdf");
-        }
-
-        [HttpGet("grades/detail")]
-        public async Task<IActionResult> GetGradesDetail([FromQuery] string? date, [FromQuery] int? sectionId)
-        {
-            DateOnly? d = null;
-            if (!string.IsNullOrWhiteSpace(date))
-            {
-                if (!DateOnly.TryParseExact(date, "yyyy-MM-dd", CultureInfo.InvariantCulture,
-                                            DateTimeStyles.None, out var parsed))
-                    return BadRequest($"Formato de fecha inválido: {date}. Usa yyyy-MM-dd.");
-                d = parsed;
-            }
-
-            var result = await _reportService.GetGradesBySectionAndDateAsync(sectionId, d);
+            var result = await _reportsService.GetAttendanceAsync(filter);
             return Ok(result);
-        }
+        }
 
+        [HttpPost("group-report")]
+        public async Task<IActionResult> GetGroupReport([FromBody] ReportFilterDto filter)
+        {
+            var result = await _reportsService.GetGroupReportAsync(filter);
+            return Ok(result);
+        }
 
-    }
+        [HttpPost("general-stats")]
+        public async Task<IActionResult> GetGeneralStats([FromBody] ReportFilterDto filter)
+        {
+            var result = await _reportsService.GetGeneralStatsAsync(filter);
+            return Ok(result);
+        }
+    }
 }

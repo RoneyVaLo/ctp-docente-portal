@@ -6,6 +6,7 @@ using ctp_docente_portal.Server.Services.Implementations;
 using ctp_docente_portal.Server.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
+using QuestPDF.Infrastructure;
 
 namespace ctp_docente_portal.Server.Configurations
 {
@@ -30,6 +31,9 @@ namespace ctp_docente_portal.Server.Configurations
 
             // AutoMapper
             builder.Services.AddSingleton(CreateMapper());
+
+            // Iniatilize QuestPDF
+            QuestPDF.Settings.License = LicenseType.Community;
 
             // Registrar servicios
             RegisterAppServices(builder.Services);
@@ -90,6 +94,8 @@ namespace ctp_docente_portal.Server.Configurations
             services.AddScoped<IEvaluationRoleService, EvaluationRoleService>();
             services.AddScoped<IDashboardStatisticsService, DashboardStatisticsService>();
             services.AddScoped<IReportService, ReportService>();
+            services.AddScoped<IPdfReportService, PdfReportService>();
+            services.AddScoped<ICsvReportService, CsvReportService>();
 
             services.AddScoped<IStaffUserLinkService, StaffUserLinkService>();
             services.AddScoped<IEnrollmentService, EnrollmentService>();

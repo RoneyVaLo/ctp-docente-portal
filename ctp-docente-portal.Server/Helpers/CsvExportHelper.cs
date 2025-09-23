@@ -1,34 +1,39 @@
+using ctp_docente_portal.Server.DTOs.Reports.CSV;
 using System.Text;
-using ctp_docente_portal.Server.DTOs.Reports;
 
 namespace ctp_docente_portal.Server.Helpers
 {
     public static class CsvExportHelper
     {
-        public static string ExportAttendanceStats(List<SectionAttendanceStatsDto> data)
+        public static byte[] ExportToCsv(List<StudentCsvDto> data)
         {
-            var csv = new StringBuilder();
-            csv.AppendLine("Sección,Total Sesiones,Presentes,Ausencias,Porcentaje");
+            var sb = new StringBuilder();
 
-            foreach (var item in data)
+            // 1. Obtener todas las columnas dinámicas (union de keys de todos los items)
+            var allItemKeys = data.SelectMany(d => d.Items.Keys).Distinct().OrderBy(k => k).ToList();
+
+            // 2. Cabecera
+            sb.Append("Id;Nombre;");
+            sb.AppendLine(string.Join(";", allItemKeys));
+
+            // 3. Filas
+            foreach (var student in data)
             {
-                csv.AppendLine($"{item.SectionName},{item.TotalSessions},{item.TotalPresent},{item.TotalAbsences},{item.AttendancePercentage:0.00}%");
+                var row = new List<string>
+                {
+                    student.Id,
+                    $"\"{student.Nombre}\""
+                };
+
+                foreach (var key in allItemKeys)
+                {
+                    row.Add(student.Items.ContainsKey(key) ? student.Items[key].ToString() : "0");
+                }
+
+                sb.AppendLine(string.Join(";", row));
             }
 
-            return csv.ToString();
-        }
-
-        public static string ExportGrades(List<GradeReportDto> data)
-        {
-            var csv = new StringBuilder();
-            csv.AppendLine("Estudiante,Grupo,Materia,Promedio");
-
-            foreach (var item in data)
-            {
-                csv.AppendLine($"{item.StudentName},{item.GroupName},{item.Subject},{item.Average}");
-            }
-
-            return csv.ToString();
+            return Encoding.UTF8.GetBytes(sb.ToString());
         }
     }
 }

@@ -4,12 +4,9 @@ namespace ctp_docente_portal.Server.Services.Interfaces
 {
     public interface IReportService
     {
-        Task<List<SectionAttendanceStatsDto>> GetAttendanceStatsBySectionAsync();
-        Task<List<GradeReportDto>> GetGradesByGroupOrSubjectAsync(int? groupId = null, string? subject = null);
-        Task<List<GradeDetailRowDto>> GetGradesBySectionAndDateAsync(int? sectionId, DateOnly? date);
-
-        Task<StudentConsolidatedReportDto> GetStudentConsolidatedReportAsync(int studentId);
-        
-
-    }
+        Task<List<GradeDto>> GetGradesAsync(ReportFilterDto filter);
+        Task<List<AttendanceDto>> GetAttendanceAsync(ReportFilterDto filter);
+        Task<List<GroupReportDto>> GetGroupReportAsync(ReportFilterDto filter);
+        Task<GeneralStatsDto> GetGeneralStatsAsync(ReportFilterDto filter);
+    }
 }

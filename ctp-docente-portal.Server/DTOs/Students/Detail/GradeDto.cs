@@ -5,5 +5,6 @@
         public string Evaluation { get; set; }
         public decimal Score { get; set; }
         public string Date { get; set; }
+        public decimal? Average { get; set; }
     }
 }

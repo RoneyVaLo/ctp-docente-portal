@@ -1,6 +1,13 @@
 import { NavLink, useParams } from "react-router-dom";
 import Button from "../components/ui/Button";
-import { ArrowLeft, Calendar, CirclePlus, Mail, Phone } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  CirclePlus,
+  Download,
+  Mail,
+  Phone,
+} from "lucide-react";
 import {
   Card,
   CardContent,
@@ -33,10 +40,13 @@ import {
 import Avatar from "../components/ui/Avatar";
 import axios from "axios";
 import Loader1 from "../components/loaders/Loader1";
+import { useDownloadPdf } from "../hooks/useDownloadPdf";
 
 const StudentDetail = () => {
   const params = useParams();
   const id = params.id;
+
+  const { downloadPdf } = useDownloadPdf();
 
   const [activeTab, setActiveTab] = useState("calificaciones");
   const [activeTabSubject, setActiveTabSubject] = useState("");
@@ -52,11 +62,19 @@ const StudentDetail = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        const reportFilter = {
+          academicPeriodId: parseInt(sessionStorage.getItem("periodStudents")),
+          sectionId: parseInt(sessionStorage.getItem("groupStudents")),
+        };
         const token = sessionStorage.getItem("token");
-        const response = await axios.get(`/api/students/student/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        console.log(response.data);
+        const response = await axios.post(
+          `/api/students/student/${id}`,
+          reportFilter,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        // console.log(response.data);
         setStudent(response.data);
       } catch (error) {
         console.error(error);
@@ -69,31 +87,30 @@ const StudentDetail = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const calcularPromedios = (grades) => {
+  const calculateAverages = (grades) => {
     if (grades) {
-      const promedios = {};
+      const averages = {};
 
-      Object.entries(grades).forEach(([materia, evaluaciones]) => {
-        const total = evaluaciones.reduce((sum, item) => sum + item.score, 0);
-        const promedio =
-          evaluaciones.length > 0 ? total / evaluaciones.length : 0;
-        promedios[materia] = promedio;
+      Object.entries(grades).forEach(([subject, evaluations]) => {
+        const total = evaluations.reduce((sum, item) => sum + item.score, 0);
+        const average = evaluations.length > 0 ? total / evaluations.length : 0;
+        averages[subject] = average;
       });
 
-      return promedios;
+      return averages;
     }
   };
 
-  const calcularPromedioGeneral = (promedios) => {
-    if (promedios) {
-      const valores = Object.values(promedios);
-      const total = valores.reduce((sum, val) => sum + val, 0);
-      return valores.length > 0 ? total / valores.length : 0;
+  const calculateGeneralAverage = (averages) => {
+    if (averages) {
+      const values = Object.values(averages);
+      const total = values.reduce((sum, val) => sum + val, 0);
+      return values.length > 0 ? total / values.length : 0;
     }
   };
 
-  const promedios = calcularPromedios(student.grades);
-  const promedioGeneral = calcularPromedioGeneral(promedios);
+  const averages = calculateAverages(student.grades);
+  const generalAverage = calculateGeneralAverage(averages);
 
   const getAverage = (evaluations) => {
     const average =
@@ -103,43 +120,43 @@ const StudentDetail = () => {
   };
 
   // Función para obtener color según la nota
-  const getNotaColor = (nota) => {
-    if (nota >= 90) return "text-green-600";
-    if (nota >= 80) return "text-blue-600";
-    if (nota >= 70) return "text-amber-600";
+  const getColorScore = (score) => {
+    if (Number(score) >= 90) return "text-green-600";
+    if (Number(score) >= 80) return "text-blue-600";
+    if (Number(score) >= 70) return "text-amber-600";
     return "text-red-600";
   };
 
   // Función para obtener el estado general del estudiante
-  const getEstadoEstudiante = () => {
-    if (promedioGeneral >= 85 && student.attendance.percentage >= 90) {
+  const getStudentStatus = () => {
+    if (generalAverage >= 85 && student.attendance.percentage >= 90) {
       return {
-        texto: "Excelente",
+        text: "Excelente",
         color: "bg-green-100 text-green-800",
-        descripcion: "Rendimiento sobresaliente",
+        description: "Rendimiento sobresaliente",
       };
-    } else if (promedioGeneral >= 75 && student.attendance.percentage >= 85) {
+    } else if (generalAverage >= 75 && student.attendance.percentage >= 85) {
       return {
-        texto: "Bueno",
+        text: "Bueno",
         color: "bg-blue-100 text-blue-800",
-        descripcion: "Buen rendimiento general",
+        description: "Buen rendimiento general",
       };
-    } else if (promedioGeneral >= 70 && student.attendance.percentage >= 80) {
+    } else if (generalAverage >= 70 && student.attendance.percentage >= 80) {
       return {
-        texto: "Regular",
+        text: "Regular",
         color: "bg-amber-100 text-amber-800",
-        descripcion: "Rendimiento aceptable",
+        description: "Rendimiento aceptable",
       };
     } else {
       return {
-        texto: "Necesita apoyo",
+        text: "Necesita apoyo",
         color: "bg-red-100 text-red-800",
-        descripcion: "Requiere atención especial",
+        description: "Requiere atención especial",
       };
     }
   };
 
-  const estadoEstudiante = getEstadoEstudiante();
+  const studentStatus = getStudentStatus();
 
   // Obtener iniciales para el avatar
   const getInitials = (name) => {
@@ -154,6 +171,29 @@ const StudentDetail = () => {
   };
 
   const subjects = student.grades && Object.entries(student.grades);
+
+  const studentPerformanceReport = async () => {
+    try {
+      setLoading(true);
+
+      const reportFilter = {
+        academicPeriodId: parseInt(sessionStorage.getItem("periodStudents")),
+        sectionId: parseInt(sessionStorage.getItem("groupStudents")),
+        // subjectId: parseInt(selectedSubject),
+      };
+
+      await downloadPdf(
+        `/api/pdfreport/rendimiento-estudiante/${id}`,
+        reportFilter,
+        `${student.fullName.replace(" ", "_")}.pdf`
+      );
+    } catch (error) {
+      console.log(error);
+      console.log(error?.response?.data?.Message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (loading) return <Loader1 />;
 
@@ -183,10 +223,10 @@ const StudentDetail = () => {
                 </Avatar>
                 <h2 className="text-xl font-bold">{student.fullName}</h2>
                 <p className="">{student.group}</p>
-                <Badge className={`mt-2 ${estadoEstudiante.color}`}>
-                  {estadoEstudiante.texto}
+                <Badge className={`mt-2 ${studentStatus.color}`}>
+                  {studentStatus.text}
                 </Badge>
-                <p className="text-sm  mt-1">{estadoEstudiante.descripcion}</p>
+                <p className="text-sm  mt-1">{studentStatus.description}</p>
 
                 <div className="w-full mt-6 space-y-2">
                   <div className="flex items-center gap-2 text-sm">
@@ -202,6 +242,17 @@ const StudentDetail = () => {
                     <Badge variant="outline" className="ml-auto rounded-full">
                       {student.gender}
                     </Badge>
+                  </div>
+                  <div className="w-full mt-6 pt-6 border-t">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Button
+                        className="w-full"
+                        onClick={studentPerformanceReport}
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Descargar PDF
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -260,11 +311,11 @@ const StudentDetail = () => {
               </CardHeader>
               <CardContent>
                 <div
-                  className={`text-3xl font-bold ${getNotaColor(
-                    promedioGeneral
+                  className={`text-3xl font-bold ${getColorScore(
+                    student.generalAverage
                   )}`}
                 >
-                  {Math.round(promedioGeneral)}
+                  {Math.round(student.generalAverage) || 0}
                 </div>
                 <p className="text-xs ">Promedio de todas las asignaturas</p>
               </CardContent>
@@ -337,13 +388,13 @@ const StudentDetail = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {subjects?.map(([materia, evaluaciones]) => (
-                    <div key={materia} className="space-y-2">
-                      {/* Encabezado con nombre de la materia */}
+                  {subjects?.map(([subject, evaluations]) => (
+                    <div key={subject} className="space-y-2">
+                      {/* Encabezado con nombre de la subject */}
                       <div className="flex justify-between items-center">
                         <div className="flex gap-2">
                           <span className="capitalize">
-                            {materia.replace("_", " ")}
+                            {subject.replace("_", " ")}
                           </span>
 
                           <div className="relative group inline-block">
@@ -351,7 +402,7 @@ const StudentDetail = () => {
                               className="hover:text-green-600 hover:dark:text-green-400"
                               onClick={() => {
                                 setIsDialogOpen(true);
-                                setActiveTabSubject(materia);
+                                setActiveTabSubject(subject);
                               }}
                             >
                               <CirclePlus className="h-4 w-4" />
@@ -364,11 +415,11 @@ const StudentDetail = () => {
                         </div>
 
                         <span
-                          className={`font-medium ${getNotaColor(
-                            getAverage(evaluaciones)
+                          className={`font-medium ${getColorScore(
+                            Math.round(evaluations[0].average)
                           )}`}
                         >
-                          {Math.round(getAverage(evaluaciones))}
+                          {Math.round(evaluations[0].average)}
                         </span>
                       </div>
 
@@ -376,15 +427,15 @@ const StudentDetail = () => {
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
                           className={`h-2 rounded-full ${
-                            getAverage(evaluaciones) >= 90
+                            getAverage(evaluations) >= 90
                               ? "bg-green-500"
-                              : getAverage(evaluaciones) >= 80
+                              : getAverage(evaluations) >= 80
                               ? "bg-blue-500"
-                              : getAverage(evaluaciones) >= 70
+                              : getAverage(evaluations) >= 70
                               ? "bg-amber-500"
                               : "bg-red-500"
                           }`}
-                          style={{ width: `${getAverage(evaluaciones)}%` }}
+                          style={{ width: `${getAverage(evaluations)}%` }}
                         ></div>
                       </div>
                     </div>
@@ -407,7 +458,7 @@ const StudentDetail = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Evaluación</TableHead>
-                      <TableHead>Fecha</TableHead>
+                      <TableHead className="text-center">Fecha</TableHead>
                       <TableHead className="text-right">Calificación</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -418,9 +469,11 @@ const StudentDetail = () => {
                           <TableCell className="font-medium">
                             {item.evaluation}
                           </TableCell>
-                          <TableCell>{item.date}</TableCell>
+                          <TableCell className="text-center">
+                            {item.date}
+                          </TableCell>
                           <TableCell
-                            className={`text-right font-bold ${getNotaColor(
+                            className={`text-right font-bold ${getColorScore(
                               item.score
                             )}`}
                           >
@@ -443,35 +496,39 @@ const StudentDetail = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Fecha</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead>Observaciones</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {student?.attendance?.details.map((item, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{item.date}</TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className={
-                              item.status === "Presente"
-                                ? "bg-green-200 dark:bg-green-600 text-green-800"
-                                : "bg-red-200 dark:bg-red-600 text-red-800"
-                            }
-                          >
-                            {item.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{item.observations || "-"}</TableCell>
+                <div className="overflow-x-auto w-48 sm:w-56 lg:w-full mx-auto lg:mx-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Fecha</TableHead>
+                        <TableHead>Materia</TableHead>
+                        <TableHead>Estado</TableHead>
+                        <TableHead>Observaciones</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {student?.attendance?.details.map((item, index) => (
+                        <TableRow key={index}>
+                          <TableCell>{item.date}</TableCell>
+                          <TableCell>{item.subject}</TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={
+                                item.status === "Presente"
+                                  ? "bg-green-200 dark:bg-green-600 text-green-800"
+                                  : "bg-red-200 dark:bg-red-600 text-red-800"
+                              }
+                            >
+                              {item.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{item.observations || "-"}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

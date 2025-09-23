@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Button from "../components/ui/Button";
-import { Download, Filter, Search } from "lucide-react";
+import { Download, FileText, Filter, Search, Sheet } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -21,20 +21,37 @@ import { NavLink } from "react-router-dom";
 import FilterSelect from "../components/evaluations/FilterSelect";
 import Loader1 from "../components/loaders/Loader1";
 import axios from "axios";
+import toast from "react-hot-toast";
+import { useDownloadPdf } from "../hooks/useDownloadPdf";
+import DropdownMenu from "../components/ui/DropdownMenu";
+import { useDownloadCsv } from "../hooks/useDownloadCsv";
 
-const states = [
-  { id: 0, name: "Todos" },
-  { id: 1, name: "Excelente" },
-  { id: 2, name: "Bueno" },
-  { id: 3, name: "Regular" },
-  { id: 4, name: "Necesita apoyo" },
-];
+// const states = [
+//   { id: 0, name: "Todos" },
+//   { id: 1, name: "Excelente" },
+//   { id: 2, name: "Bueno" },
+//   { id: 3, name: "Regular" },
+//   { id: 4, name: "Necesita apoyo" },
+// ];
 
 const Students = () => {
-  const [groups, setGroups] = useState([]);
-  const [selectedGroup, setSelectedGroup] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("");
-  const [sectionStudents, setSectionStudents] = useState([]);
+  const { downloadPdf } = useDownloadPdf();
+  const { downloadCsv } = useDownloadCsv();
+
+  const [periods, setPeriods] = useState([]);
+  const [selectedPeriod, setSelectedPeriod] = useState(
+    sessionStorage.getItem("periodStudents") || ""
+  );
+  const [sections, setSections] = useState([]);
+  const [selectedSection, setSelectedSection] = useState(
+    sessionStorage.getItem("groupStudents") || ""
+  );
+
+  const [subjects, setSubjects] = useState([]);
+  const [selectedSubject, setSelectedSubject] = useState(
+    sessionStorage.getItem("subjectStudents") || ""
+  );
+
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -43,10 +60,25 @@ const Students = () => {
       try {
         setLoading(true);
         const token = sessionStorage.getItem("token");
-        const response = await axios.get("api/section", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setGroups(response.data);
+        const [periodsResponse, sectionsResponse, subjectsResponse] =
+          await Promise.all([
+            axios.get("api/academicperiods", {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+            axios.get("api/section", {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+            axios.get("api/subject", {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+          ]);
+        setPeriods(periodsResponse.data);
+        setSections(sectionsResponse.data);
+        setSubjects(subjectsResponse.data);
+
+        if (selectedPeriod !== "") {
+          applyFilters();
+        }
       } catch (error) {
         console.error(error);
       } finally {
@@ -55,41 +87,34 @@ const Students = () => {
     };
 
     fetchGroups();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const getStateByAverage = (average) => {
-    if (average >= 90) return { id: 1, name: "Excelente" };
-    if (average >= 80) return { id: 2, name: "Bueno" };
-    if (average >= 70) return { id: 3, name: "Regular" };
-    return { id: 4, name: "Necesita apoyo" };
-  };
-
   const applyFilters = async () => {
-    let result = [];
-
     try {
-      setLoading(true);
-      const token = sessionStorage.getItem("token");
-      const response = await axios.get(`/api/students/${selectedGroup}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      if (selectedPeriod !== "") {
+        if (selectedSection !== "") {
+          if (selectedSubject !== "") {
+            setLoading(true);
+            const reportFilter = {
+              academicPeriodId: parseInt(selectedPeriod),
+              sectionId: parseInt(selectedSection),
+              subjectId: parseInt(selectedSubject),
+            };
 
-      const studentsWithState = response.data.map((student) => ({
-        ...student,
-        status: getStateByAverage(student.average),
-      }));
+            const token = sessionStorage.getItem("token");
+            const response = await axios.post("api/students", reportFilter, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
 
-      setSectionStudents(studentsWithState);
-      result = studentsWithState;
+            sessionStorage.setItem("periodStudents", selectedPeriod);
+            sessionStorage.setItem("groupStudents", selectedSection);
+            sessionStorage.setItem("subjectStudents", selectedSubject);
 
-      // Filtrar por estado
-      if (selectedStatus !== "" && selectedStatus !== "0") {
-        result = sectionStudents.filter(
-          (est) => Number(est.status.id) === Number(selectedStatus)
-        );
+            setFilteredStudents(response.data);
+          }
+        }
       }
-
-      setFilteredStudents(result);
     } catch (error) {
       console.error(error);
     } finally {
@@ -116,6 +141,76 @@ const Students = () => {
     filteredStudents.filter((est) => est.status?.name === "Necesita apoyo")
       .length || 0;
 
+  const studentsBySubjectReport = async () => {
+    try {
+      if (
+        selectedPeriod !== "" &&
+        selectedSection !== "" &&
+        selectedSubject !== ""
+      ) {
+        setLoading(true);
+        const reportFilter = {
+          academicPeriodId: parseInt(selectedPeriod),
+          sectionId: parseInt(selectedSection),
+          subjectId: parseInt(selectedSubject),
+        };
+        const section = [...sections].filter(
+          (sec) => sec.id === parseInt(selectedSection)
+        );
+
+        await downloadPdf(
+          "/api/pdfreport/estudiantes-por-materia",
+          reportFilter,
+          `EstudiantesPorMateria_${section[0].name}.pdf`
+        );
+      } else {
+        toast.error(
+          "Primero debe seleccionar un Periodo Académico, una Sección y una  Materia."
+        );
+      }
+    } catch (error) {
+      console.log(error);
+      console.log(error?.response?.data?.Message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const studentsCsvReport = async () => {
+    try {
+      if (
+        selectedPeriod !== "" &&
+        selectedSection !== "" &&
+        selectedSubject !== ""
+      ) {
+        setLoading(true);
+        const reportFilter = {
+          academicPeriodId: parseInt(selectedPeriod),
+          sectionId: parseInt(selectedSection),
+          subjectId: parseInt(selectedSubject),
+        };
+        const section = [...sections].filter(
+          (sec) => sec.id === parseInt(selectedSection)
+        );
+
+        await downloadCsv(
+          "/api/csvreport/students",
+          reportFilter,
+          `${section[0].name}.csv`
+        );
+      } else {
+        toast.error(
+          "Primero debe seleccionar un Periodo Académico, una Sección y una  Materia."
+        );
+      }
+    } catch (error) {
+      console.log(error);
+      console.log(error?.response?.data?.Message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) return <Loader1 />;
 
   return (
@@ -132,33 +227,67 @@ const Students = () => {
           </CardHeader>
 
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 my-4">
               <FilterSelect
-                label="Grupo"
-                value={selectedGroup}
-                onChange={setSelectedGroup}
-                options={groups}
-                placeholder="Seleccione un Grupo"
+                label="Periodo Académico"
+                value={selectedPeriod}
+                onChange={setSelectedPeriod}
+                options={periods}
+                placeholder="Seleccionar periodo"
               />
 
               <FilterSelect
-                label="Estado"
-                value={selectedStatus}
-                onChange={setSelectedStatus}
-                options={states}
-                placeholder="Seleccione un Estado"
+                label="Sección"
+                value={selectedSection}
+                onChange={setSelectedSection}
+                options={sections}
+                placeholder="Seleccionar sección"
+              />
+
+              <FilterSelect
+                label="Materia"
+                value={selectedSubject}
+                onChange={setSelectedSubject}
+                options={subjects}
+                placeholder="Seleccionar materia"
               />
             </div>
 
-            <div className="flex justify-between mt-4">
+            <div className="flex flex-col md:flex-row gap-4 justify-between mt-4">
               <Button variant="outline" size="sm" onClick={applyFilters}>
                 <Filter className="mr-2 h-4 w-4" />
                 Aplicar filtros
               </Button>
-              {/* <Button variant="outline" size="sm">
-                <Download className="mr-2 h-4 w-4" />
-                Exportar lista
-              </Button> */}
+              <Button>
+                <Filter className="mr-2 h-4 w-4" />
+                Restablecer Filtros
+              </Button>
+
+              <DropdownMenu>
+                <DropdownMenu.Trigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Download className="mr-2 h-4 w-4" />
+                    Descargar Datos
+                  </Button>
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Content>
+                  <DropdownMenu.Item
+                    onClick={studentsBySubjectReport}
+                    className="font-bold"
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Exportar PDF
+                  </DropdownMenu.Item>
+                  <DropdownMenu.Separator />
+                  <DropdownMenu.Item
+                    onClick={studentsCsvReport}
+                    className="font-bold"
+                  >
+                    <Sheet className="mr-2 h-4 w-4" />
+                    Exportar CSV
+                  </DropdownMenu.Item>
+                </DropdownMenu.Content>
+              </DropdownMenu>
             </div>
           </CardContent>
         </Card>
@@ -242,85 +371,89 @@ const Students = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Identificación</TableHead>
-                  <TableHead>Grupo</TableHead>
-                  <TableHead>Promedio</TableHead>
-                  <TableHead>Asistencia</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredStudents.map((student) => (
-                  <TableRow key={student.id}>
-                    <TableCell className="font-medium">
-                      {student.name}
-                    </TableCell>
-                    <TableCell>{student.identification}</TableCell>
-                    <TableCell>{student.group.name}</TableCell>
-                    <TableCell className="text-center">
-                      <span
-                        className={
-                          student.average >= 90
-                            ? "text-green-600 dark:text-green-400"
-                            : student.average >= 80
-                            ? "text-blue-600 dark:text-blue-400"
-                            : student.average >= 70
-                            ? "text-amber-600 dark:text-amber-400"
-                            : "text-red-600 dark:text-red-400"
-                        }
-                      >
-                        {student.average}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="w-16 bg-gray-200 rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full ${
-                              student.attendance >= 90
-                                ? "bg-green-500"
-                                : student.attendance >= 80
-                                ? "bg-amber-500"
-                                : "bg-red-500"
-                            }`}
-                            style={{ width: `${student.attendance}%` }}
-                          ></div>
-                        </div>
-                        <span className="text-xs">{student.attendance}%</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={
-                          student.status.name === "Excelente"
-                            ? "bg-green-300 dark:bg-green-500 text-green-800 text-center"
-                            : student.status.name === "Bueno"
-                            ? "bg-blue-300 dark:bg-blue-500 text-blue-800 text-center"
-                            : student.status.name === "Regular"
-                            ? "bg-amber-300 dark:bg-amber-500 text-amber-800 text-center"
-                            : "bg-red-300 dark:bg-red-500 text-red-800 text-center"
-                        }
-                      >
-                        {student.status.name}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <NavLink to={`/estudiantes/${student.id}`}>
-                        <Button size="sm" variant="outline">
-                          Detalles
-                        </Button>
-                      </NavLink>
-                    </TableCell>
+            <div className="overflow-x-auto w-48 sm:w-56 lg:w-full mx-auto lg:mx-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>Identificación</TableHead>
+                    {/* <TableHead>Grupo</TableHead> */}
+                    <TableHead>Promedio</TableHead>
+                    <TableHead className="text-center">Asistencia</TableHead>
+                    <TableHead className="text-center">Estado</TableHead>
+                    <TableHead className="text-center">Acciones</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredStudents.map((student) => (
+                    <TableRow key={student.id}>
+                      <TableCell className="font-medium">
+                        {student.name}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {student.identification}
+                      </TableCell>
+                      {/* <TableCell>{student.group.name}</TableCell> */}
+                      <TableCell className="text-center">
+                        <span
+                          className={`font-bold ${
+                            student.average >= 90
+                              ? "text-green-600 dark:text-green-400"
+                              : student.average >= 80
+                              ? "text-blue-600 dark:text-blue-400"
+                              : student.average >= 70
+                              ? "text-amber-600 dark:text-amber-400"
+                              : "text-red-600 dark:text-red-400"
+                          }`}
+                        >
+                          {Math.round(student.average) || 0}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 bg-gray-200 rounded-full h-2">
+                            <div
+                              className={`h-2 rounded-full ${
+                                student.attendance >= 90
+                                  ? "bg-green-500"
+                                  : student.attendance >= 80
+                                  ? "bg-amber-500"
+                                  : "bg-red-500"
+                              }`}
+                              style={{ width: `${student.attendance}%` }}
+                            ></div>
+                          </div>
+                          <span className="text-xs">{student.attendance}%</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={
+                            student?.status?.name === "Excelente"
+                              ? "bg-green-300 dark:bg-green-500 text-green-800 text-center"
+                              : student?.status?.name === "Bueno"
+                              ? "bg-blue-300 dark:bg-blue-500 text-blue-800 text-center"
+                              : student?.status?.name === "Regular"
+                              ? "bg-amber-300 dark:bg-amber-500 text-amber-800 text-center"
+                              : "bg-red-300 dark:bg-red-500 text-red-800 text-center"
+                          }
+                        >
+                          {student?.status?.name || "-"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <NavLink to={`/estudiantes/${student.id}`}>
+                          <Button size="sm" variant="outline">
+                            Detalles
+                          </Button>
+                        </NavLink>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       </div>

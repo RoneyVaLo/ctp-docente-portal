@@ -12,5 +12,6 @@
         public List<ParentDto> Parents { get; set; }
         public Dictionary<string, List<GradeDto>> Grades { get; set; }
         public AttendanceDto Attendance { get; set; }
+        public decimal GeneralAverage { get; set; }
     }
 }
