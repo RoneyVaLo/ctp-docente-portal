@@ -19,8 +19,10 @@ import axios from "axios";
 import Loader1 from "../loaders/Loader1";
 import toast from "react-hot-toast";
 import Tooltip from "../Tooltip";
+import { useDownloadCsv } from "../../hooks/useDownloadCsv";
 
 const GradingInterface = () => {
+  const { downloadCsv } = useDownloadCsv();
   const [searchTerm, setSearchTerm] = useState("");
 
   // <"idle" | "saving" | "saved" | "error">
@@ -111,6 +113,24 @@ const GradingInterface = () => {
     student.studentName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const studentsCsvReport = async () => {
+    try {
+      setLoading(true);
+      const reportFilter = {
+        academicPeriodId: parseInt(sessionStorage.getItem("selectedPeriod")),
+        sectionId: parseInt(sessionStorage.getItem("selectedGroup")),
+        subjectId: parseInt(sessionStorage.getItem("selectedSubject")),
+      };
+
+      await downloadCsv("/api/csvreport/students", reportFilter, `_.csv`);
+    } catch (error) {
+      console.log(error);
+      toast.error("Error descargando el Reporte");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) return <Loader1 />;
 
   return (
@@ -178,6 +198,7 @@ const GradingInterface = () => {
                   size="sm"
                   variant="outline"
                   disabled={!evaluationItems.length > 0}
+                  onClick={studentsCsvReport}
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Descargar Reporte

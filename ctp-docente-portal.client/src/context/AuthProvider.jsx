@@ -69,11 +69,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     setLoading(true);
-    sessionStorage.removeItem("token");
-    sessionStorage.removeItem("username");
-    sessionStorage.removeItem("selectedPeriod");
-    sessionStorage.removeItem("selectedSubject");
-    sessionStorage.removeItem("selectedGroup");
+    sessionStorage.clear();
     setUser(null);
     setRoles([]);
     await new Promise((resolve) => setTimeout(resolve, 1000));

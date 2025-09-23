@@ -5,5 +5,6 @@
         public string Date { get; set; }
         public string Status { get; set; }
         public string Observations { get; set; }
+        public string? Subject { get; set; }
     }
 }

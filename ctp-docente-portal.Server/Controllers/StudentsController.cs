@@ -1,4 +1,5 @@
-﻿using ctp_docente_portal.Server.DTOs.Students;
+﻿using ctp_docente_portal.Server.DTOs.Reports;
+using ctp_docente_portal.Server.DTOs.Students;
 using ctp_docente_portal.Server.Services.Implementations;
 using ctp_docente_portal.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -29,17 +30,17 @@ namespace ctp_docente_portal.Server.Controllers
             return Ok(students);
         }
 
-        [HttpGet("{sectionId}")]
-        public async Task<IActionResult> GetReporteEstudiantes(int sectionId)
+        [HttpPost]
+        public async Task<IActionResult> GetReporteEstudiantes([FromBody] ReportFilterDto filter)
         {
-            var reporte = await _studentService.GetStudentReportsAsync(sectionId);
+            var reporte = await _studentService.GetStudentReportsAsync(filter);
             return Ok(reporte);
         }
 
-        [HttpGet("student/{id}")]
-        public async Task<IActionResult> GetStudentDetail(int id)
+        [HttpPost("student/{id}")]
+        public async Task<IActionResult> GetStudentDetail(int id, [FromBody] ReportFilterDto filter)
         {
-            var student = await _studentService.GetStudentDetailAsync(id);
+            var student = await _studentService.GetStudentDetailAsync(id, filter);
             if (student == null)
                 return NotFound();
 
