@@ -14,8 +14,6 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
-/* TODO: Buscar como añadir la animación con TailwindCSS */
-
 .loader {
   animation: rotation 1.4s linear infinite;
 }
@@ -26,5 +24,40 @@ input[type="number"] {
   }
   100% {
     transform: rotate(360deg);
+  }
+}
+
+.wave {
+  display: inline-block;
+  transform-origin: 70% 70%; /* "muñeca" de la mano */
+  /* animation: waveAnim 2s infinite; */
+  animation: waveAnim 2s ease-in-out 1;
+  animation-delay: 2s;
+}
+
+@keyframes waveAnim {
+  0% {
+    transform: rotate(0deg);
+  }
+  10% {
+    transform: rotate(20deg);
+  }
+  20% {
+    transform: rotate(-10deg);
+  }
+  30% {
+    transform: rotate(20deg);
+  }
+  40% {
+    transform: rotate(-5deg);
+  }
+  50% {
+    transform: rotate(10deg);
+  }
+  60% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(0deg);
   }
 }

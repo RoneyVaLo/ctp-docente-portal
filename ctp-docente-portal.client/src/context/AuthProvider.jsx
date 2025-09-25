@@ -48,10 +48,19 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (credentials) => {
+    // Marcar inicio de tiempo
+    const startTime = Date.now();
+    const MIN_LOADING_TIME = 3000; // 3 segundos mínimo
     try {
       const response = await axios.post("/api/auth/login", credentials);
 
       const { token, user } = response.data;
+
+      // Calcular tiempo transcurrido y forzar mínimo
+      const elapsed = Date.now() - startTime;
+      if (elapsed < MIN_LOADING_TIME) {
+        await new Promise((res) => setTimeout(res, MIN_LOADING_TIME - elapsed));
+      }
 
       sessionStorage.setItem("token", token);
       sessionStorage.setItem("userId", user.id);
@@ -63,6 +72,10 @@ export const AuthProvider = ({ children }) => {
 
       return response.data;
     } catch (error) {
+      const elapsed = Date.now() - startTime;
+      if (elapsed < MIN_LOADING_TIME) {
+        await new Promise((res) => setTimeout(res, MIN_LOADING_TIME - elapsed));
+      }
       throw error.response?.data;
     }
   };

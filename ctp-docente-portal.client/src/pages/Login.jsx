@@ -15,11 +15,14 @@ import { Alert, AlertDescription } from "../components/ui/Alert";
 import { Label } from "../components/ui/Label";
 import Input from "../components/ui/Input";
 import DarkModeToggle from "../components/DarkModeToggle";
+import LoaderFunFact from "../components/loaders/LoaderFunFact";
+import funFacts from "../assets/funFacts.json";
 
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
+  const [funFact, setFunFact] = useState(null);
   const [loginRequest, setLoginRequest] = useState({ email: "", password: "" });
   const [fieldErrors, setFieldErrors] = useState([]);
   const [showPassword, setShowPassword] = useState("");
@@ -84,6 +87,9 @@ const Login = () => {
     setError("");
     setIsLoading(true);
 
+    const randomIndex = Math.floor(Math.random() * funFacts.length);
+    setFunFact(funFacts[randomIndex]);
+
     try {
       const emailError = validateEmail(loginRequest.email);
       const passwordError = validatePassword(loginRequest.password);
@@ -99,6 +105,8 @@ const Login = () => {
       setIsLoading(false);
     }
   };
+
+  if (isLoading) return <LoaderFunFact funFact={funFact} />;
 
   return (
     <section className="relative min-h-screen flex items-center justify-center p-4 bg-background dark:bg-background-dark bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))] text-foreground dark:text-foreground-dark">

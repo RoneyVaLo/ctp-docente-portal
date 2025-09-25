@@ -3,6 +3,7 @@ import { useAuth } from "@/context/AuthContext";
 import Loader1 from "@/components/loaders/Loader1";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent } from "../components/ui/Card";
 
 const API_ENDPOINTS = {
   teacher: (staffId, periodoId) =>
@@ -56,7 +57,7 @@ const Dashboard = () => {
     import("../components/dashboard/TeacherDashboard")
   );
 
-  const { roles } = useAuth();
+  const { roles, user } = useAuth();
   const [isAdmin, setIsAdmin] = useState(null);
 
   useEffect(() => {
@@ -89,6 +90,13 @@ const Dashboard = () => {
     cacheTime: 10 * 60 * 1000,
   });
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Buenos días";
+    if (hour < 19) return "Buenas tardes";
+    return "Buenas noches";
+  };
+
   if (isAdmin === null) return null;
 
   if ((isAdmin && loadingAdmin) || (!isAdmin && loadingTeacher)) {
@@ -101,6 +109,16 @@ const Dashboard = () => {
 
   return (
     <>
+      <Card className="mb-4 py-8 pb-6">
+        <CardContent className="p-4 text-2xl font-bold">
+          <div className="flex flex-col md:flex-row w-full justify-center items-center">
+            <span>{getGreeting()},</span>
+            <span className="ml-2">{user.username}</span>
+            <span className="ml-1 wave text-3xl">👋</span>
+          </div>
+        </CardContent>
+      </Card>
+
       <Suspense fallback={<Loader1 />}>
         {isAdmin ? (
           <AdminDashboard adminStats={adminStats} />
