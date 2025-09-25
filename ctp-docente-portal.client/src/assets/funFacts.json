@@ -1,0 +1,347 @@
+[
+  { "icon": "🦐", "fact": "El corazón de un camarón está en su cabeza." },
+  { "icon": "🐊", "fact": "Los cocodrilos no pueden sacar la lengua." },
+  {
+    "icon": "🍯",
+    "fact": "La miel nunca caduca; se han encontrado frascos comestibles en tumbas egipcias."
+  },
+  { "icon": "🐙", "fact": "Los pulpos tienen tres corazones y sangre azul." },
+  {
+    "icon": "♟️",
+    "fact": "El ajedrez tiene más combinaciones posibles que átomos en el universo observable."
+  },
+  { "icon": "🦋", "fact": "Las mariposas saborean con sus patas." },
+  { "icon": "🦈", "fact": "Los tiburones aparecieron antes que los árboles." },
+  { "icon": "🐨", "fact": "El Koala duerme hasta 22 horas al día." },
+  {
+    "icon": "🐧",
+    "fact": "El pingüino emperador puede aguantar la respiración por más de 20 minutos."
+  },
+  {
+    "icon": "🦆",
+    "fact": "El sonido que hacen los patos no produce eco, y aún no se sabe por qué."
+  },
+  {
+    "icon": "🐌",
+    "fact": "Los caracoles pueden dormir durante tres años seguidos."
+  },
+  {
+    "icon": "🐦",
+    "fact": "El colibrí es el único ave que puede volar hacia atrás."
+  },
+  {
+    "icon": "🦩",
+    "fact": "Los flamencos son rosados por los camarones que comen."
+  },
+  {
+    "icon": "🦒",
+    "fact": "Las jirafas duermen solo unos 30 minutos al día en intervalos muy cortos."
+  },
+  { "icon": "🐬", "fact": "Los delfines se ponen nombres entre sí." },
+  { "icon": "🍌", "fact": "El ADN humano es un 50% similar al de un plátano." },
+  {
+    "icon": "⚡",
+    "fact": "El cerebro humano genera más impulsos eléctricos que todos los teléfonos del mundo."
+  },
+  {
+    "icon": "☀️",
+    "fact": "El sol representa el 99,8% de la masa total del sistema solar."
+  },
+  {
+    "icon": "🐕",
+    "fact": "Los perros pueden oler enfermedades como cáncer o diabetes."
+  },
+  { "icon": "💎", "fact": "En Júpiter y Saturno llueven diamantes." },
+  {
+    "icon": "🐦‍⬛",
+    "fact": "Los cuervos recuerdan rostros humanos y pueden guardar rencor."
+  },
+  {
+    "icon": "🦴",
+    "fact": "El cuerpo humano tiene 206 huesos, pero al nacer tenemos más de 300."
+  },
+  {
+    "icon": "⏰",
+    "fact": "La primera alarma despertador solo podía sonar a las 4 de la mañana."
+  },
+  { "icon": "🪐", "fact": "Un día en Venus dura más que un año en Venus." },
+  {
+    "icon": "⭐",
+    "fact": "Las estrellas de mar pueden regenerar sus brazos, y a veces un brazo puede regenerar una estrella completa."
+  },
+  {
+    "icon": "🐨",
+    "fact": "Los koalas tienen huellas dactilares casi idénticas a las humanas."
+  },
+  {
+    "icon": "👃",
+    "fact": "La nariz humana puede recordar más de 50,000 olores."
+  },
+  {
+    "icon": "🐫",
+    "fact": "Los camellos tienen tres párpados para protegerse de las tormentas de arena."
+  },
+  {
+    "icon": "🦈",
+    "fact": "El tiburón de Groenlandia puede vivir más de 400 años."
+  },
+  {
+    "icon": "♟️",
+    "fact": "El ajedrez fue prohibido en Persia en el siglo VI por considerarse un vicio."
+  },
+  {
+    "icon": "🐢",
+    "fact": "Las tortugas pueden respirar a través de su trasero durante la hibernación."
+  },
+  {
+    "icon": "🧬",
+    "fact": "El ser humano comparte un 60% de su ADN con las moscas de la fruta."
+  },
+  {
+    "icon": "⛰️",
+    "fact": "El Monte Everest crece aproximadamente 4 milímetros cada año."
+  },
+  {
+    "icon": "🐘",
+    "fact": "Los elefantes son los únicos animales que no pueden saltar."
+  },
+  {
+    "icon": "✏️",
+    "fact": "La mayoría de los lápices pueden dibujar una línea de 56 km de largo."
+  },
+  {
+    "icon": "🦎",
+    "fact": "El camaleón no cambia de color para camuflarse, sino para comunicarse y regular su temperatura."
+  },
+  {
+    "icon": "🦟",
+    "fact": "Los mosquitos son atraídos más por algunas personas debido a su tipo de sangre y sudor."
+  },
+  {
+    "icon": "🥝",
+    "fact": "El kiwi (ave) es ciego en muchos casos, pero se orienta con su olfato."
+  },
+  {
+    "icon": "👨‍🚀",
+    "fact": "Los astronautas crecen hasta 5 cm en el espacio porque la columna se estira."
+  },
+  {
+    "icon": "🐔",
+    "fact": "El récord mundial de vuelo más largo de un pollo es de 13 segundos."
+  },
+  {
+    "icon": "❄️",
+    "fact": "El agua caliente se congela más rápido que el agua fría, fenómeno conocido como efecto Mpemba."
+  },
+  {
+    "icon": "🐜",
+    "fact": "Las hormigas no duermen; tienen ciclos de descanso cortos."
+  },
+  {
+    "icon": "⚡",
+    "fact": "Un rayo puede ser cinco veces más caliente que la superficie del sol."
+  },
+  { "icon": "🎋", "fact": "El bambú puede crecer hasta 91 cm en un solo día." },
+  { "icon": "🍍", "fact": "La pizza hawaiana fue inventada en Canadá." },
+  {
+    "icon": "🦇",
+    "fact": "Los murciélagos son los únicos mamíferos capaces de volar."
+  },
+  {
+    "icon": "🐄",
+    "fact": "Las vacas tienen mejores amigas y se estresan cuando se separan."
+  },
+  {
+    "icon": "🌊",
+    "fact": "El 70% del oxígeno del planeta proviene de algas marinas."
+  },
+  {
+    "icon": "🧬",
+    "fact": "Los humanos comparten un 98,8% de ADN con los chimpancés."
+  },
+  {
+    "icon": "👁️",
+    "fact": "El ojo humano puede distinguir alrededor de 10 millones de colores."
+  },
+  {
+    "icon": "🦭",
+    "fact": "Los manatíes usan pedos para controlar su flotabilidad."
+  },
+  { "icon": "🌊", "fact": "El 80% de los océanos sigue sin explorarse." },
+  { "icon": "🍌", "fact": "Los plátanos son bayas, pero las fresas no." },
+  {
+    "icon": "🦓",
+    "fact": "Las cebras tienen rayas únicas como las huellas dactilares humanas."
+  },
+  { "icon": "🐅", "fact": "El tigre tiene la piel rayada, no solo el pelaje." },
+  { "icon": "🐝", "fact": "Las abejas pueden reconocer rostros humanos." },
+  {
+    "icon": "🦦",
+    "fact": "Las nutrias marinas duermen tomadas de la mano para no separarse."
+  },
+  {
+    "icon": "🦎",
+    "fact": "El ajolote mexicano puede regenerar partes de su cerebro."
+  },
+  { "icon": "🪐", "fact": "Un día en Mercurio dura 59 días terrestres." },
+  {
+    "icon": "🐈",
+    "fact": "Los gatos domésticos ronronean en una frecuencia que puede ayudar a sanar huesos."
+  },
+  { "icon": "🦞", "fact": "Las langostas orinan por sus antenas." },
+  {
+    "icon": "🦉",
+    "fact": "Los búhos pueden girar su cabeza hasta 270 grados."
+  },
+  { "icon": "🐠", "fact": "Los peces payaso pueden cambiar de sexo." },
+  {
+    "icon": "☀️",
+    "fact": "El Sol tardaría un millón de años en quemar todo su hidrógeno disponible."
+  },
+  {
+    "icon": "🦒",
+    "fact": "Las jirafas no tienen cuerdas vocales; producen sonidos con vibraciones internas."
+  },
+  { "icon": "🗻", "fact": "El Monte Fuji en Japón es un volcán activo." },
+  {
+    "icon": "🦎",
+    "fact": "La lengua de un camaleón puede ser dos veces más larga que su cuerpo."
+  },
+  {
+    "icon": "😢",
+    "fact": "Los humanos somos los únicos animales que lloramos por razones emocionales."
+  },
+  {
+    "icon": "♟️",
+    "fact": "El ajedrez se originó en la India hace más de 1500 años."
+  },
+  { "icon": "🪐", "fact": "El planeta Urano gira de lado, casi acostado." },
+  {
+    "icon": "👶",
+    "fact": "Los bebés no tienen rótulas al nacer; se desarrollan con el tiempo."
+  },
+  {
+    "icon": "🦈",
+    "fact": "El tiburón ballena tiene más de 3000 dientes pequeños."
+  },
+  {
+    "icon": "🍫",
+    "fact": "El chocolate blanco no es realmente chocolate porque no contiene cacao."
+  },
+  {
+    "icon": "🐸",
+    "fact": "Las ranas pueden congelarse y revivir al descongelarse."
+  },
+  {
+    "icon": "🌌",
+    "fact": "El planeta Neptuno tiene vientos que superan los 2000 km/h."
+  },
+  {
+    "icon": "☄️",
+    "fact": "Las estrellas fugaces en realidad son meteoros entrando a la atmósfera."
+  },
+  {
+    "icon": "🦇",
+    "fact": "El murciélago vampiro puede caminar y correr, algo raro en su especie."
+  },
+  {
+    "icon": "🐻‍❄️",
+    "fact": "La lengua azul del oso polar le ayuda a absorber calor."
+  },
+  {
+    "icon": "🌍",
+    "fact": "La Tierra es el único planeta del sistema solar que no tiene el nombre de un dios romano o griego."
+  },
+  {
+    "icon": "🐌",
+    "fact": "Los caracoles tienen alrededor de 14,000 dientes microscópicos."
+  },
+  {
+    "icon": "🪐",
+    "fact": "El planeta Saturno podría flotar en agua debido a su baja densidad."
+  },
+  {
+    "icon": "🐴",
+    "fact": "Los caballitos de mar machos son los que quedan embarazados."
+  },
+  {
+    "icon": "🪐",
+    "fact": "El planeta Marte tiene el volcán más grande del sistema solar: el Monte Olimpo."
+  },
+  {
+    "icon": "🐄",
+    "fact": "Las vacas producen más leche cuando escuchan música relajante."
+  },
+  {
+    "icon": "🔊",
+    "fact": "El sonido viaja cuatro veces más rápido en el agua que en el aire."
+  },
+  {
+    "icon": "🐘",
+    "fact": "Los elefantes pueden comunicarse mediante sonidos de baja frecuencia que no oímos."
+  },
+  {
+    "icon": "🪶",
+    "fact": "Los ojos de un avestruz son más grandes que su cerebro."
+  },
+  { "icon": "🐦", "fact": "El colibrí aletea hasta 80 veces por segundo." },
+  { "icon": "🦛", "fact": "La leche de hipopótamo es de color rosado." },
+  {
+    "icon": "🐟",
+    "fact": "Los peces dorados pierden su color si no reciben suficiente luz solar."
+  },
+  {
+    "icon": "♟️",
+    "fact": "El ajedrez fue una de las primeras cosas jugadas por computadora en los años 50."
+  },
+  { "icon": "📧", "fact": "El primer correo electrónico se envió en 1971." },
+  {
+    "icon": "🤧",
+    "fact": "El aire de un estornudo puede viajar a más de 150 km/h."
+  },
+  {
+    "icon": "🧬",
+    "fact": "El ADN humano tiene unos 3 mil millones de pares de bases."
+  },
+  {
+    "icon": "🐟",
+    "fact": "El pez más rápido es el pez vela, con velocidades de hasta 110 km/h."
+  },
+  {
+    "icon": "🏯",
+    "fact": "La muralla china mide más de 21,000 km de longitud."
+  },
+  {
+    "icon": "🧠",
+    "fact": "El cerebro usa aproximadamente un 20% del oxígeno del cuerpo."
+  },
+  {
+    "icon": "🪐",
+    "fact": "Los planetas gigantes como Júpiter ayudan a proteger la Tierra desviando asteroides."
+  },
+  {
+    "icon": "👨‍👩‍👧‍👦",
+    "fact": "El récord de mayor número de hijos en una sola familia es de 69."
+  },
+  {
+    "icon": "🌳",
+    "fact": "Los árboles pueden comunicarse entre sí mediante redes de hongos subterráneos."
+  },
+  {
+    "icon": "🧊",
+    "fact": "El hielo seco no se derrite, pasa directamente de sólido a gas."
+  },
+  {
+    "icon": "☀️",
+    "fact": "El Sol cabría 1,3 millones de veces dentro de la Tierra en volumen."
+  },
+  { "icon": "🐊", "fact": "Los cocodrilos pueden vivir más de 100 años." },
+  {
+    "icon": "⚡",
+    "fact": "Los rayos ocurren unas 8 millones de veces al día en el mundo."
+  },
+  {
+    "icon": "🦇",
+    "fact": "El murciélago más pequeño del mundo pesa menos que una moneda de un centavo."
+  }
+]
