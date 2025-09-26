@@ -14,7 +14,7 @@ import { useEvaluation } from "../context/EvaluationContext";
 import { getResponsiveGridCols } from "../utils/gradeUtils";
 import { Plus } from "lucide-react";
 import { NavLink } from "react-router-dom";
-
+import SchoolIcon from "@mui/icons-material/School";
 const Evaluations = () => {
   const [activeTab, setActiveTab] = useState("grading");
   const {
@@ -43,8 +43,9 @@ const Evaluations = () => {
     <div className="min-h-screen">
       <div className="container mx-auto relative">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-slate-800 dark:text-slate-100 mb-2">
-            Sistema de Calificaciones
+          <h1 className="text-4xl font-bold text-slate-800 dark:text-slate-100 mb-2 flex items-center gap-2">
+             <SchoolIcon fontSize="large" className="text-blue-600" />
+              Sistema de Calificaciones
           </h1>
           <p className="text-slate-600 dark:text-slate-400">
             Gestión integral de evaluaciones y calificaciones estudiantiles

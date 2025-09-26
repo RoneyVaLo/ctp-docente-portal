@@ -54,10 +54,10 @@ export const attendanceApi = {
     /** Guardar asistencia grupal */
     async createGroup({ date, sectionId, subjectId, takenAt, students }) {
         const payload = {
-            Date: date,                      
+            Date: date,
             SectionId: Number(sectionId),
             SubjectId: Number(subjectId),
-            TakenAt: takenAt,                    
+            TakenAt: takenAt,
             Students: (students ?? []).map(normalizeStudentRow),
         };
         const token = localStorage.getItem("token");
@@ -66,7 +66,6 @@ export const attendanceApi = {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
-                
             },
             body: JSON.stringify(payload),
         });
@@ -83,8 +82,6 @@ export const attendanceApi = {
         const body = {
             Id: attendanceId,
             StatusTypeId: Number(finalStatus),
-            // opcional: MinutesLate si tu UpdateAttendanceDto lo acepta
-            // MinutesLate: Number(minutesLate ?? 0),
             Observations: buildObservation({
                 statusTypeId: finalStatus,
                 minutesLate: minutesLate ?? 0,
@@ -111,7 +108,6 @@ export const attendanceApi = {
 
     /** Roster de estudiantes por sección (nuevo endpoint con fallback al viejo) */
     async roster({ sectionId, subjectId }) {
-        // Nuevo
         let url = buildUrl("/attendance/studentsList", { sectionId, subjectId });
         let res = await fetch(url);
 
@@ -124,7 +120,6 @@ export const attendanceApi = {
         if (!res.ok) throw new Error(await res.text());
         const data = await res.json();
 
-
         return (data ?? []).map((s) => ({
             id: s.id,
             name: (s.fullName ?? s.name ?? "").trim().replace(/\s+/g, " "),
@@ -135,9 +130,9 @@ export const attendanceApi = {
             genderId: s.genderId ?? null,
         }));
     },
+
     async getSubjects() {
         const token = sessionStorage.getItem("token");
-
         const res = await fetch(`${API_BASE}/subject/all`, {
             method: 'GET',
             headers: {
@@ -146,10 +141,10 @@ export const attendanceApi = {
             },
         });
         if (!res.ok) throw new Error(await res.text());
-        return await res.json();  
+        return await res.json();
     },
-    async newList({ date, sectionId, subjectId, fromDate, toDate, studentId, statusTypeId }) {
 
+    async newList({ date, sectionId, subjectId, fromDate, toDate, studentId, statusTypeId }) {
         const FromDate = (fromDate ?? date) || undefined;
         const ToDate = (toDate ?? date) || undefined;
 
@@ -170,10 +165,11 @@ export const attendanceApi = {
         if (!res.ok) throw new Error(await res.text());
         return await res.json();
     },
+
     async listReport({ date, sectionId, subjectId }) {
         const url = buildUrl("/attendance", {
-            fromDate: date,  
-            toDate: date, 
+            fromDate: date,
+            toDate: date,
             sectionId,
             subjectId,
         });
