@@ -9,7 +9,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
     public class WhatsAppApiSettings
     {
         public string PhoneNumberId { get; set; } = "810734075452083";
-        public string AccessToken { get; set; } = "EAAUffqjDPB0BPsv7ZCVsiozpvhnT8KKGE8liHEF0RntinvZBvuB43VUCMphVFsXb6jYDdnF2q3mCE9M8898aLzSsKyTu4U4a6bIm3fGfeMmuOGxF34ZBHqnP4p5QgAw45QySIPYu5COZBHweZA013PJy4Lq3BeJyYyd4UNeGL45uu8NqvbFuOC7vRvN5E3Hqdswe3fRDp8rWgcAyVffvZAIWpOrHATL58GSQq5q04q95UZD"; // poner en appsettings.json
+        public string AccessToken { get; set; } = "EAAUffqjDPB0BPm3lJikFQVIis5VN7ia0W5oL1xU4Ubq9P318GgZANds1obxRE5zM2iD74zQhb79fcalIXjc0NG1BQhGYmu6If9bCmZAwUx9DynBZAO7jLSz4KPd7BNkXfEf778weIZC5ZAxpeDGjm5OJKlxD7rJdgr43riXrCsiEWZAN5ZAgR1T3ORU0CSKTgZDZD";
         public string ApiVersion { get; set; } = "v22.0";
         public string? DefaultTemplateName { get; set; } = "notificacion_ausencia";
         public string? DefaultLanguageCode { get; set; } = "es_MX";
