@@ -4,7 +4,6 @@ import { sectionsApi } from "@/services/sectionsService";
 import { ls } from "@/utils/localStore";
 import {
     FormControl,
-    InputLabel,
     Select,
     MenuItem,
     CircularProgress,
@@ -16,9 +15,15 @@ import {
     TableRow,
     Paper,
     Button,
-    Chip,
+    Snackbar,
+    ToggleButton,
+    ToggleButtonGroup,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
 } from "@mui/material";
-
+import { Save, CheckCircle, Cancel } from "@mui/icons-material";
 
 function nowHHmm() {
     const d = new Date();
@@ -62,7 +67,25 @@ export default function AttendancePage() {
     const [toast, setToast] = useState("");
 
 
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [pendingPayload, setPendingPayload] = useState(null);
 
+
+    const currentKey = useMemo(
+        () =>
+            JSON.stringify({
+                date,
+                sectionId,
+                subjectId,
+                rows: rows.map((r) => ({
+                    id: r.studentId,
+                    p: r.isPresent,
+                    n: (r.notes || "").trim(),
+                })),
+            }),
+        [date, sectionId, subjectId, rows]
+    );
+    const [lastSavedKey, setLastSavedKey] = useState("");
 
     useEffect(() => {
         const fetchSubjects = async () => {
@@ -86,7 +109,6 @@ export default function AttendancePage() {
             console.warn("No se pudo persistir filtros en localStorage", err);
         }
     }, [date, time, subject, subjectId]);
-
 
     useEffect(() => {
         (async () => {
@@ -114,13 +136,10 @@ export default function AttendancePage() {
             setRows(
                 (roster ?? []).map((s) => ({
                     studentId: s.id,
-                    studentName: (s.fullName ?? s.name ?? "").trim().replace(/\s+/g, " "),
                     fullName: (s.fullName ?? s.name ?? "").trim().replace(/\s+/g, " "),
                     idNumber: s.identificationNumber ?? s.idNumber ?? "",
-                    phone: s.phone ?? "",
                     subsection: s.subsection ?? null,
                     birthDate: s.birthDate ?? null,
-                    genderId: s.genderId ?? null,
                     isPresent: true,
                     notes: "",
                 }))
@@ -140,34 +159,27 @@ export default function AttendancePage() {
     const updateRow = (id, patch) =>
         setRows((prev) => prev.map((r) => (r.studentId === id ? { ...r, ...patch } : r)));
 
-    const markPresent = (id, present) => updateRow(id, { isPresent: present });
+    const markAll = (present) =>
+        setRows((prev) => prev.map((r) => ({ ...r, isPresent: present })));
 
-    const markAll = (present) => setRows((prev) => prev.map((r) => ({ ...r, isPresent: present })));
-
-    const resetAll = useCallback(() => {
-        setRows([]);
-        setSectionId(0);
-        setSubject("");
-        setSubjectId(0);
-        setDate(today);
-        setTime(nowHHmm());
-        try {
-            ls.set("ui.attendance.filters", {
-                date: today,
-                time: nowHHmm(),
-                subject: "",
-                subjectId: 0,
-            });
-        } catch (err) {
-            console.warn("No se pudo limpiar filtros en localStorage", err);
-        }
-    }, [today]);
+    async function doSave(payload) {
+        await attendanceApi.createGroup(payload);
+        setLastSavedKey(currentKey);
+        setToast("Asistencia guardada");
+        setTimeout(() => setToast(""), 3000);
+    }
 
     const saveGroup = async () => {
         if (!sectionId) return alert("Seleccioná una sección.");
         if (!subjectId) return alert("Seleccioná una asignatura.");
         if (!rows.length) return alert("No hay estudiantes cargados.");
         if (!/^\d{2}:\d{2}$/.test(time)) return alert("Ingresá una hora válida (HH:MM).");
+
+        if (currentKey === lastSavedKey) {
+            setToast("Esta asistencia ya ha sido registrada.");
+            setTimeout(() => setToast(""), 2500);
+            return;
+        }
 
         setLoading(true);
         try {
@@ -184,12 +196,16 @@ export default function AttendancePage() {
                 })),
             };
 
-            await attendanceApi.createGroup(payload);
+            // Pre-chequeo 
+            const existing = await attendanceApi.newList({ date, sectionId, subjectId });
+            if (Array.isArray(existing) && existing.length > 0) {
+                setPendingPayload(payload);
+                setConfirmOpen(true);
+                setLoading(false);
+                return;
+            }
 
-            setToast("✅ Asistencia guardada");
-            setTimeout(() => setToast(""), 3000);
-
-            resetAll();
+            await doSave(payload);
         } catch (e) {
             console.error("Error al guardar asistencia:", e);
             alert(e?.message ?? "Error al guardar");
@@ -199,122 +215,118 @@ export default function AttendancePage() {
     };
 
     return (
-        <div className="p-6">
-            <h1 className="text-2xl font-semibold mb-4">Registro de asistencia diaria</h1>
+        <div className="p-6 space-y-6">
+            <h1 className="text-4xl font-bold text-slate-800 dark:text-slate-100 mb-2">
+                📝 Registro de asistencia diaria
+            </h1>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div>
-                    <label className="text-xs text-slate-500">Fecha</label>
-                    <input
-                        type="date"
-                        value={date}
-                        onChange={(e) => setDate(e.target.value)}
-                        className="w-full border rounded px-2 py-1"
-                    />
-                </div>
-
-                <div className="w-40 sm:w-48 md:w-56">
-                    <label className="text-xs text-slate-500">Hora</label>
-                    <input
-                        type="time"
-                        value={time}
-                        onChange={(e) => setTime(e.target.value)}
-                        step={60}
-                        className="w-full border rounded px-2 py-1"
-                        aria-label="Hora de toma (editable)"
-                    />
-                </div>
-
-                <div>
-                    <label className="text-xs text-slate-500 block mb-1">Sección</label>
-                    <FormControl fullWidth size="small">
-
-                        <Select
-                            labelId="section-label"
-                            label="Sección"
-                            value={sectionId || ""}
-                            onChange={(e) => setSectionId(Number(e.target.value) || 0)}
-                            displayEmpty
-                            renderValue={(selected) => {
-                                if (!selected) return "Seleccioná una sección";
-                                const item = sections.find((s) => s.id === selected);
-                                return item ? item.name : selected;
-                            }}
-                        >
-                            <MenuItem value="">
-                                <em>Seleccioná una sección</em>
-                            </MenuItem>
-                            {loadingSections && (
-                                <MenuItem disabled>
-                                    <div className="flex items-center gap-2">
+            <Paper className="p-4 shadow-sm rounded-lg border border-slate-200">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label className="text-xs text-slate-500">Fecha</label>
+                        <input
+                            type="date"
+                            value={date}
+                            onChange={(e) => setDate(e.target.value)}
+                            className="w-full border rounded px-2 py-1"
+                        />
+                    </div>
+                    <div>
+                        <label className="text-xs text-slate-500">Hora</label>
+                        <input
+                            type="time"
+                            value={time}
+                            onChange={(e) => setTime(e.target.value)}
+                            step={60}
+                            className="w-full border rounded px-2 py-1"
+                        />
+                    </div>
+                    <div>
+                        <label className="text-xs text-slate-500">Sección</label>
+                        <FormControl fullWidth size="small">
+                            <Select
+                                value={sectionId || ""}
+                                onChange={(e) => setSectionId(Number(e.target.value) || 0)}
+                                displayEmpty
+                            >
+                                <MenuItem value="">
+                                    <em>Seleccioná una sección</em>
+                                </MenuItem>
+                                {loadingSections && (
+                                    <MenuItem disabled>
                                         <CircularProgress size={16} /> Cargando…
-                                    </div>
+                                    </MenuItem>
+                                )}
+                                {sections.map((s) => (
+                                    <MenuItem key={s.id} value={s.id}>
+                                        {s.name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </div>
+                    <div>
+                        <label className="text-xs text-slate-500">Asignatura</label>
+                        <FormControl fullWidth size="small">
+                            <Select
+                                value={subjectId || ""}
+                                onChange={(e) => {
+                                    const val = Number(e.target.value) || 0;
+                                    setSubjectId(val);
+                                    const found = subjects.find((s) => s.id === val);
+                                    setSubject(found?.name ?? "");
+                                }}
+                                displayEmpty
+                            >
+                                <MenuItem value="">
+                                    <em>Seleccioná una asignatura</em>
                                 </MenuItem>
-                            )}
-                            {sections.map((s) => (
-                                <MenuItem key={s.id} value={s.id}>
-                                    {s.name}
-                                </MenuItem>
-                            ))}
-                            {!loadingSections && sections.length === 0 && (
-                                <MenuItem disabled>(Sin secciones activas)</MenuItem>
-                            )}
-                        </Select>
-                    </FormControl>
+                                {subjects.map((s) => (
+                                    <MenuItem key={s.id} value={s.id}>
+                                        {s.name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </div>
                 </div>
+            </Paper>
 
-                <div className="w-50 sm:w-50 md:w-70">
-                    <label className="text-xs text-slate-500 block mb-1">Asignatura</label>
-                    <FormControl fullWidth size="small">
 
-                        <Select
-                            labelId="subject-label"
-                            label="Asignatura"
-                            value={subjectId || ""}
-                            onChange={(e) => {
-                                const val = Number(e.target.value) || 0;
-                                setSubjectId(val);
-                                const found = subjects.find((s) => s.id === val);
-                                setSubject(found?.name ?? "");
-                            }}
-                            displayEmpty
-                            renderValue={(selected) => {
-                                if (!selected) return "Seleccioná una asignatura";
-                                const item = subjects.find((s) => s.id === selected);
-                                return item ? item.name : selected;
-                            }}
-                        >
-                            <MenuItem value="">
-                                <em>Seleccioná una asignatura</em>
-                            </MenuItem>
-                            {subjects.map((s) => (
-                                <MenuItem key={s.id} value={s.id}>
-                                    {s.name}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                </div>
-            </div>
-
-            <div className="mb-3 flex items-center justify-between">
-                <div className="text-sm text-slate-500">
+            <div className="flex items-center justify-between">
+                <div className="text-sm text-slate-600">
                     {sectionId
                         ? loading
                             ? "Cargando estudiantes…"
-                            : `Estudiantes: ${rows.length}`
+                            : `Estudiantes: ${rows.length} | Presentes: ${rows.filter((r) => r.isPresent).length
+                            } | Ausentes: ${rows.filter((r) => !r.isPresent).length}`
                         : "Seleccioná sección para cargar estudiantes"}
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outlined" size="small" onClick={() => markAll(true)} disabled={!rows.length}>
+                    <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<CheckCircle />}
+                        onClick={() => markAll(true)}
+                        disabled={!rows.length}
+                    >
                         Todos Presente
                     </Button>
-                    <Button variant="outlined" size="small" onClick={() => markAll(false)} disabled={!rows.length}>
+                    <Button
+                        variant="outlined"
+                        size="small"
+                        color="warning"
+                        startIcon={<Cancel />}
+                        onClick={() => markAll(false)}
+                        disabled={!rows.length}
+                    >
                         Todos Ausente
                     </Button>
                     <Button
                         variant="contained"
                         size="small"
+                        color="primary"
+                        startIcon={<Save />}
                         onClick={saveGroup}
                         disabled={loading || !sectionId || !subjectId || !rows.length}
                     >
@@ -323,31 +335,25 @@ export default function AttendancePage() {
                 </div>
             </div>
 
-            {toast && (
-                <div className="mb-3 text-sm bg-green-50 border border-green-200 text-green-700 rounded px-3 py-2">
-                    {toast}
-                </div>
-            )}
 
-            <TableContainer component={Paper} elevation={0} className="border">
+            <TableContainer component={Paper} className="shadow-sm rounded-lg border">
                 <Table size="small">
-                    <TableHead className="bg-slate-50">
+                    <TableHead className="bg-slate-100">
                         <TableRow>
                             <TableCell>Nombre</TableCell>
                             <TableCell>Cédula</TableCell>
-                            <TableCell>Subsec.</TableCell>
-                            <TableCell>Nacimiento</TableCell>
                             <TableCell>Notas</TableCell>
-                            <TableCell align="right">Asistencia</TableCell>
+                            <TableCell align="center">Asistencia</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {rows.map((r) => (
-                            <TableRow key={r.studentId}>
+                        {rows.map((r, idx) => (
+                            <TableRow
+                                key={r.studentId}
+                                className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}
+                            >
                                 <TableCell className="font-medium">{r.fullName}</TableCell>
                                 <TableCell>{r.idNumber || "-"}</TableCell>
-                                <TableCell>{r.subsection ?? "-"}</TableCell>
-                                <TableCell>{formatBirth(r.birthDate)}</TableCell>
                                 <TableCell>
                                     <input
                                         className="text-sm w-full border rounded px-2 py-1"
@@ -356,29 +362,25 @@ export default function AttendancePage() {
                                         onChange={(e) => updateRow(r.studentId, { notes: e.target.value })}
                                     />
                                 </TableCell>
-                                <TableCell align="right">
-                                    <div className="flex items-center gap-2 justify-end">
-                                        <Button
-                                            variant={r.isPresent ? "contained" : "outlined"}
-                                            size="small"
-                                            onClick={() => markPresent(r.studentId, true)}
-                                        >
+                                <TableCell align="center">
+                                    <ToggleButtonGroup
+                                        value={r.isPresent ? "present" : "absent"}
+                                        exclusive
+                                        onChange={(_, val) =>
+                                            updateRow(r.studentId, { isPresent: val === "present" })
+                                        }
+                                        size="small"
+                                    >
+                                        <ToggleButton value="present" color="success">
                                             Presente
-                                        </Button>
-                                        <Button
-                                            variant={!r.isPresent ? "contained" : "outlined"}
-                                            color="warning"
-                                            size="small"
-                                            onClick={() => markPresent(r.studentId, false)}
-                                        >
+                                        </ToggleButton>
+                                        <ToggleButton value="absent" color="error">
                                             Ausente
-                                        </Button>
-                                        <Chip label={r.isPresent ? "✔" : "✖"} size="small" color={r.isPresent ? "success" : "default"} />
-                                    </div>
+                                        </ToggleButton>
+                                    </ToggleButtonGroup>
                                 </TableCell>
                             </TableRow>
                         ))}
-
                         {!loading && sectionId > 0 && rows.length === 0 && (
                             <TableRow>
                                 <TableCell colSpan={6}>No hay estudiantes para esta sección.</TableCell>
@@ -388,6 +390,43 @@ export default function AttendancePage() {
                 </Table>
             </TableContainer>
 
+
+            <Snackbar
+                open={!!toast}
+                autoHideDuration={3000}
+                onClose={() => setToast("")}
+                message={toast}
+                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            />
+
+            {/* Diálogo de confirmación */}
+            <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
+                <DialogTitle>Asistencia ya registrada</DialogTitle>
+                <DialogContent>
+                    Ya existe asistencia para esta sección y asignatura el{" "}
+                    {new Date(date).toLocaleDateString("es-CR")}. ¿Deseás <b>actualizarla</b>?
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setConfirmOpen(false)}>Cancelar</Button>
+                    <Button
+                        variant="contained"
+                        onClick={async () => {
+                            setConfirmOpen(false);
+                            setLoading(true);
+                            try {
+                                await doSave(pendingPayload);
+                                setToast("Asistencia actualizada");
+                            } catch (e) {
+                                alert(e?.message ?? "Error al guardar");
+                            } finally {
+                                setLoading(false);
+                            }
+                        }}
+                    >
+                        Actualizar
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </div>
     );
 }
