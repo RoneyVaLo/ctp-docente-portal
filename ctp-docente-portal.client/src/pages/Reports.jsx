@@ -1,361 +1,580 @@
-import React, { useMemo, useState, useEffect, useCallback } from "react";
-import { attendanceApi } from "@/services/attendanceService";
-import { sectionsApi } from "@/services/sectionsService";
-import { gradesApi } from "@/services/gradesService";
-import { ls } from "@/utils/localStore";
+import { useEffect, useState } from "react";
+import Button from "../components/ui/Button";
 import {
-    FormControl,
-    Select,
-    MenuItem,
-    CircularProgress,
-    Paper,
-    Button,
-    TextField,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Chip,
-} from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
-import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
-import AssessmentIcon from "@mui/icons-material/Assessment";
-import * as XLSX from "xlsx";
+  AlertTriangle,
+  Award,
+  BarChartIcon,
+  BookOpen,
+  Calendar,
+  Download,
+  FileText,
+  GraduationCap,
+  LineChartIcon,
+  PieChartIcon,
+  Search,
+  SquareKanban,
+  TrendingUp,
+} from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/Card";
+import { Label } from "../components/ui/Label";
+import Input from "../components/ui/Input";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { Badge } from "../components/ui/Badge";
+import { useTheme } from "../context/ThemeContext";
+import Loader1 from "../components/loaders/Loader1";
+import axios from "axios";
+import FilterSelect from "../components/evaluations/FilterSelect";
+import toast from "react-hot-toast";
+import { useDownloadPdf } from "../hooks/useDownloadPdf";
 
-export default function Reports() {
-    const today = useMemo(() => new Date().toLocaleDateString("en-CA"), []);
-    const saved = ls.get("ui.reports.filters", {}) || {};
+// Datos de ejemplo
+// const statusData = [
+//   { name: "Excelente", value: 35, color: "#22c55e" },
+//   { name: "Bueno", value: 40, color: "#3b82f6" },
+//   { name: "Regular", value: 20, color: "#f59e0b" },
+//   { name: "Necesita apoyo", value: 5, color: "#ef4444" },
+// ];
 
-    const [date, setDate] = useState(saved.date ?? today);
-    const [sectionId, setSectionId] = useState(saved.sectionId ?? 0);
-    const [subjectId, setSubjectId] = useState(saved.subjectId ?? 0);
-    const [subject, setSubject] = useState(saved.subject ?? "");
-    const [reportType, setReportType] = useState(saved.reportType ?? "attendance");
+const Reports = () => {
+  const { darkMode } = useTheme();
+  const { downloadPdf } = useDownloadPdf();
 
-    const [sections, setSections] = useState([]);
-    const [loadingSections, setLoadingSections] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-    const [subjects, setSubjects] = useState([]);
-    const [loadingSubjects, setLoadingSubjects] = useState(false);
+  const [gradesData, setGradesData] = useState([]);
+  const [attendanceData, setAttendanceData] = useState([]);
+  const [groupReportData, setGroupReportData] = useState([]);
+  const [stats, setStats] = useState(null);
 
-    const [rows, setRows] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [err, setErr] = useState("");
+  const [periods, setPeriods] = useState([]);
+  const [selectedPeriod, setSelectedPeriod] = useState(
+    sessionStorage.getItem("periodReports") || ""
+  );
+  const [sections, setSections] = useState([]);
+  const [selectedSection, setSelectedSection] = useState(
+    sessionStorage.getItem("groupReports") || ""
+  );
 
-    const [hasSearched, setHasSearched] = useState(false);
-    const [lastQuery, setLastQuery] = useState(null);
+  const axisColor = darkMode ? "#ffffff" : "#000000";
+  const gridColor = darkMode ? "#ffffff" : "#000000";
 
-    const canSearch = sectionId > 0;
-
-    useEffect(() => {
-        try {
-            ls.set("ui.reports.filters", { date, sectionId, subjectId, subject, reportType });
-        } catch { }
-    }, [date, sectionId, subjectId, subject, reportType]);
-
-
-    useEffect(() => {
-        setRows([]);
-        setRoster([]);
-        setHasSearched(false);
-        setLastQuery(null);
-        setErr("");
-    }, [reportType]);
-
-    useEffect(() => {
-        const fetchSubjects = async () => {
-            setLoadingSubjects(true);
-            try {
-                const data = await attendanceApi.getSubjects();
-                setSubjects(Array.isArray(data) ? data : []);
-            } finally {
-                setLoadingSubjects(false);
-            }
-        };
-        fetchSubjects();
-    }, []);
-
-    useEffect(() => {
-        (async () => {
-            setLoadingSections(true);
-            try {
-                const data = await sectionsApi.active();
-                setSections(Array.isArray(data) ? data : []);
-            } finally {
-                setLoadingSections(false);
-            }
-        })();
-    }, []);
-
-    const normalizeAttendanceRow = (r) => ({
-        studentId: r.studentId ?? r.StudentId ?? null,
-        sectionId: r.sectionId ?? r.SectionId ?? null,
-        subjectId: r.subjectId ?? r.SubjectId ?? null,
-        statusTypeId: r.statusTypeId ?? r.StatusTypeId ?? null,
-    });
-
-    const normalizeGradeRow = (r) => ({
-        studentId: r.studentId ?? r.StudentId ?? null,
-        studentName: r.studentName ?? r.StudentName ?? "",
-        sectionId: r.sectionId ?? r.SectionId ?? null,
-        sectionName: r.sectionName ?? r.SectionName ?? "",
-        evaluationItemId: r.evaluationItemId ?? r.EvaluationItemId ?? null,
-        itemName: r.evaluationItemName ?? r.EvaluationItemName ?? "",
-        score: Number(r.score ?? r.Score ?? 0),
-        percentage: Number(r.percentage ?? r.Percentage ?? 0),
-    });
-
-    const onSearch = useCallback(async () => {
-        if (!canSearch) return;
-        setHasSearched(true);
-        setLastQuery({ date, sectionId, subjectId, reportType });
-        setErr("");
+  useEffect(() => {
+    const fetchFiltersData = async () => {
+      try {
         setLoading(true);
-        try {
-            if (reportType === "attendance") {
-                const data = await attendanceApi.listReport({ date, sectionId, subjectId });
-                setRows((Array.isArray(data) ? data : []).map(normalizeAttendanceRow));
-            } else {
-                const data = await gradesApi.listReport({ date, sectionId });
-                setRows((Array.isArray(data) ? data : []).map(normalizeGradeRow));
-            }
-        } catch (e) {
-            setErr(e?.message ?? "Error al buscar.");
-            setRows([]);
-        } finally {
-            setLoading(false);
+        const token = sessionStorage.getItem("token");
+        const [periodsResponse, sectionsResponse] = await Promise.all([
+          axios.get("api/academicperiods", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get("api/section", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
+        setPeriods(periodsResponse.data);
+        setSections(sectionsResponse.data);
+
+        if (selectedPeriod !== "") {
+          applyFilters();
         }
-    }, [date, sectionId, subjectId, canSearch, reportType]);
-
-    const [roster, setRoster] = useState([]);
-    const [loadingRoster, setLoadingRoster] = useState(false);
-
-    useEffect(() => {
-        const loadRoster = async () => {
-            if (!hasSearched || !lastQuery?.sectionId) {
-                setRoster([]);
-                return;
-            }
-            setLoadingRoster(true);
-            try {
-                const data = await attendanceApi.roster({
-                    sectionId: lastQuery.sectionId,
-                    subjectId: lastQuery.subjectId,
-                });
-                setRoster(Array.isArray(data) ? data : []);
-            } finally {
-                setLoadingRoster(false);
-            }
-        };
-        loadRoster();
-    }, [hasSearched, lastQuery?.sectionId, lastQuery?.subjectId]);
-
-    const studentNameById = useMemo(() => {
-        const m = {};
-        for (const s of roster) m[s.id] = (s.fullName ?? s.name ?? "").trim();
-        return m;
-    }, [roster]);
-
-    const sectionNameById = useMemo(() => {
-        const m = {};
-        for (const s of sections) m[s.id] = s.name;
-        return m;
-    }, [sections]);
-
-    const subjectNameById = useMemo(() => {
-        const m = {};
-        for (const s of subjects) m[s.id] = s.name;
-        return m;
-    }, [subjects]);
-
-    const statusChip = (st) => {
-        const id = Number(st);
-        const map = {
-            1: { color: "success", label: "Presente" },
-            2: { color: "error", label: "Ausente" },
-            3: { color: "info", label: "Justificado" },
-            4: { color: "warning", label: "Tarde" },
-        };
-        const cfg = map[id] ?? { color: "default", label: String(st ?? "-") };
-        return <Chip label={cfg.label} size="small" color={cfg.color} />;
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    const totalCols = reportType === "attendance" ? 4 : 5;
+    fetchFiltersData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    return (
-        <div className="p-6 space-y-6">
+  const resetFilters = async () => {
+    setLoading(true);
+    setSelectedPeriod("");
+    setSelectedSection("");
+    setGradesData([]);
+    setAttendanceData([]);
+    setGroupReportData([]);
+    setStats(null);
+    sessionStorage.removeItem("periodReports");
+    sessionStorage.removeItem("groupReports");
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    setLoading(false);
+  };
 
-            <h1 className="text-4xl font-bold text-slate-800 dark:text-slate-100 mb-2">
-                <AssessmentIcon fontSize="large" /> Reportes
+  const applyFilters = async () => {
+    try {
+      if (selectedPeriod !== "") {
+        if (selectedSection !== "") {
+          setLoading(true);
+
+          const reportFilter = {
+            academicPeriodId: parseInt(selectedPeriod),
+            sectionId: parseInt(selectedSection),
+          };
+
+          const token = sessionStorage.getItem("token");
+          const [grades, attendance, groupReport, generalStats] =
+            await Promise.all([
+              axios.post("api/report/grades", reportFilter, {
+                headers: { Authorization: `Bearer ${token}` },
+              }),
+              axios.post("api/report/attendance", reportFilter, {
+                headers: { Authorization: `Bearer ${token}` },
+              }),
+              axios.post("api/report/group-report", reportFilter, {
+                headers: { Authorization: `Bearer ${token}` },
+              }),
+              axios.post("api/report/general-stats", reportFilter, {
+                headers: { Authorization: `Bearer ${token}` },
+              }),
+            ]);
+
+          sessionStorage.setItem("periodReports", selectedPeriod);
+          sessionStorage.setItem("groupReports", selectedSection);
+
+          setGradesData(grades.data);
+          setAttendanceData(attendance.data);
+          setGroupReportData(groupReport.data);
+          setStats(generalStats.data);
+        } else {
+          toast.error("Debe seleccionar una Sección.");
+        }
+      } else {
+        toast.error("Debe seleccionar un Periodo Académico.");
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const downloadGeneralReport = async () => {
+    try {
+      if (selectedPeriod !== "" && selectedSection !== "") {
+        setLoading(true);
+        const reportFilter = {
+          academicPeriodId: parseInt(selectedPeriod),
+          sectionId: parseInt(selectedSection),
+        };
+        const section = [...sections].filter(
+          (sec) => sec.id === parseInt(selectedSection)
+        );
+
+        await downloadPdf(
+          "/api/pdfreport/rendimiento-general",
+          reportFilter,
+          `RendimientoGeneral_${section[0].name}.pdf`
+        );
+      } else {
+        toast.error(
+          "Primero debe seleccionar un Periodo Académico y una Sección."
+        );
+      }
+    } catch (error) {
+      console.log(error);
+      console.log(error?.response?.data?.Message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const downloadAttendanceReport = async () => {
+    try {
+      if (selectedPeriod !== "" && selectedSection !== "") {
+        setLoading(true);
+        const reportFilter = {
+          academicPeriodId: parseInt(selectedPeriod),
+          sectionId: parseInt(selectedSection),
+        };
+        const section = [...sections].filter(
+          (sec) => sec.id === parseInt(selectedSection)
+        );
+
+        await downloadPdf(
+          "/api/pdfreport/asistencia-por-mes",
+          reportFilter,
+          `ReporteGeneralAsistencia_${section[0].name}.pdf`
+        );
+      } else {
+        toast.error(
+          "Primero debe seleccionar un Periodo Académico y una Sección."
+        );
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return <Loader1 />;
+
+  return (
+    <div className="min-h-screen bg-background dark:bg-background-dark p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-surface-dark dark:text-surface inline-flex gap-2">
+              <SquareKanban className="w-10  h-10 rotate-180" />
+              <span>Reportes Académicos</span>
             </h1>
-
-
-            <Paper className="p-4 shadow-sm rounded-lg border border-slate-200">
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
-                    <div>
-                        <label className="text-xs text-slate-600 mb-1 block">Tipo de reporte</label>
-                        <FormControl fullWidth size="small">
-                            <Select
-                                value={reportType}
-                                onChange={(e) => setReportType(e.target.value)}
-                            >
-                                <MenuItem value="attendance">Asistencias</MenuItem>
-                                <MenuItem value="grades">Calificaciones</MenuItem>
-                            </Select>
-                        </FormControl>
-                    </div>
-
-                    <div>
-                        <label className="text-xs text-slate-600 mb-1 block">Fecha</label>
-                        <TextField
-                            type="date"
-                            size="small"
-                            fullWidth
-                            value={date}
-                            onChange={(e) => setDate(e.target.value)}
-                        />
-                    </div>
-
-                    <div>
-                        <label className="text-xs text-slate-600 mb-1 block">Sección</label>
-                        <FormControl fullWidth size="small">
-                            <Select
-                                value={sectionId || ""}
-                                displayEmpty
-                                onChange={(e) => setSectionId(Number(e.target.value) || 0)}
-                            >
-                                <MenuItem value="">
-                                    <em>Seleccioná una sección</em>
-                                </MenuItem>
-                                {loadingSections && (
-                                    <MenuItem disabled>
-                                        <CircularProgress size={16} /> Cargando…
-                                    </MenuItem>
-                                )}
-                                {sections.map((s) => (
-                                    <MenuItem key={s.id} value={s.id}>
-                                        {s.name}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                    </div>
-
-                    <div>
-                        <label className="text-xs text-slate-600 mb-1 block">Asignatura</label>
-                        <FormControl fullWidth size="small">
-                            <Select
-                                value={subjectId || ""}
-                                displayEmpty
-                                disabled={reportType === "grades"}
-                                onChange={(e) => {
-                                    const val = Number(e.target.value) || 0;
-                                    setSubjectId(val);
-                                    const found = subjects.find((s) => s.id === val);
-                                    setSubject(found?.name ?? "");
-                                }}
-                            >
-                                <MenuItem value="">
-                                    <em>Seleccioná una asignatura</em>
-                                </MenuItem>
-                                {subjects.map((s) => (
-                                    <MenuItem key={s.id} value={s.id}>
-                                        {s.name}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                    </div>
-
-                    <div className="flex gap-2">
-                        <Button
-                            size="small"
-                            variant="contained"
-                            startIcon={<SearchIcon />}
-                            onClick={onSearch}
-                            disabled={!canSearch || loading}
-                        >
-                            Buscar
-                        </Button>
-                        <Button
-                            size="small"
-                            variant="outlined"
-                            startIcon={<FileDownloadOutlinedIcon />}
-                            onClick={onSearch}
-                            disabled={loading || rows.length === 0}
-                        >
-                            Exportar datos
-                        </Button>
-                    </div>
-                </div>
-            </Paper>
-
-
-            <TableContainer component={Paper} className="shadow-sm rounded-lg border">
-                <Table size="small">
-                    <TableHead className="bg-slate-100">
-                        <TableRow>
-                            <TableCell>Estudiante</TableCell>
-                            <TableCell>Sección</TableCell>
-                            {reportType === "attendance" ? (
-                                <>
-                                    <TableCell>Asignatura</TableCell>
-                                    <TableCell>Estado</TableCell>
-                                </>
-                            ) : (
-                                <>
-                                    <TableCell>Ítem</TableCell>
-                                    <TableCell align="right">Calificación</TableCell>
-                                    <TableCell align="right">% Ponderación</TableCell>
-                                </>
-                            )}
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {!hasSearched && (
-                            <TableRow>
-                                <TableCell colSpan={totalCols} className="text-center text-slate-500 py-3">
-                                    Usa los filtros y presioná <b>Buscar</b>.
-                                </TableCell>
-                            </TableRow>
-                        )}
-                        {hasSearched &&
-                            rows.map((r, i) => (
-                                <TableRow
-                                    key={`${r.studentId ?? "s"}-${r.evaluationItemId ?? i}`}
-                                    className={i % 2 === 0 ? "bg-white" : "bg-slate-50"}
-                                >
-                                    <TableCell>{studentNameById[r.studentId] || r.studentName || "-"}</TableCell>
-                                    <TableCell>{sectionNameById[r.sectionId] || r.sectionName || "-"}</TableCell>
-                                    {reportType === "attendance" ? (
-                                        <>
-                                            <TableCell>{subjectNameById[r.subjectId] || "-"}</TableCell>
-                                            <TableCell>{statusChip(r.statusTypeId)}</TableCell>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <TableCell>{r.itemName || "-"}</TableCell>
-                                            <TableCell align="right">
-                                                {Number.isFinite(r.score) ? r.score.toFixed(2) : "-"}
-                                            </TableCell>
-                                            <TableCell align="right">
-                                                {Number.isFinite(r.percentage) ? `${r.percentage}%` : "-"}
-                                            </TableCell>
-                                        </>
-                                    )}
-                                </TableRow>
-                            ))}
-                    </TableBody>
-                </Table>
-            </TableContainer>
-
-            {err && (
-                <div className="mt-3 text-sm bg-red-50 border border-red-200 text-red-700 rounded px-3 py-2">
-                    {err}
-                </div>
-            )}
+            <p className="text-surface-dark dark:text-surface mt-1">
+              Análisis completo del rendimiento académico y asistencia
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={downloadGeneralReport}>
+              <FileText className="w-4 h-4 mr-2" />
+              Exportar PDF
+            </Button>
+          </div>
         </div>
-    );
-}
+
+        {/* Filtros globales */}
+        <Card className="relative z-10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Search className="w-5 h-5" />
+              Filtros de Control
+            </CardTitle>
+            <CardDescription>
+              Configura los parámetros para generar reportes específicos
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FilterSelect
+                label="Periodo Académico"
+                value={selectedPeriod}
+                onChange={setSelectedPeriod}
+                options={periods}
+                placeholder="Seleccionar periodo"
+              />
+
+              <FilterSelect
+                label="Sección"
+                value={selectedSection}
+                onChange={setSelectedSection}
+                options={sections}
+                placeholder="Seleccionar sección"
+              />
+            </div>
+
+            <div className="flex gap-2 mt-4">
+              <Button onClick={applyFilters}>Aplicar Filtros</Button>
+              <Button variant="outline" onClick={resetFilters}>
+                Restablecer Filtros
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Estadísticas generales */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card>
+            <CardContent>
+              <div className="flex items-center justify-between py-4">
+                <div>
+                  <p className="text-sm font-medium text-surface-dark dark:text-surface">
+                    Promedio General
+                  </p>
+                  <p className="text-2xl font-bold text-surface-dark dark:text-surface">
+                    {stats?.generalAverage
+                      ? Number(stats?.generalAverage).toFixed(2)
+                      : 0}
+                  </p>
+                </div>
+                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                  <TrendingUp className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                </div>
+              </div>
+              <p className="text-xs text-surface-dark dark:text-surface mt-2">
+                Rendimiento global en el periodo actual
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent>
+              <div className="flex items-center justify-between py-4">
+                <div>
+                  <p className="text-sm font-medium text-surface-dark dark:text-surface">
+                    Asistencia Promedio
+                  </p>
+                  <p className="text-2xl font-bold text-surface-dark dark:text-surface">
+                    {stats?.averageAttendance
+                      ? Number(stats?.averageAttendance).toFixed(1)
+                      : 0}
+                    %
+                  </p>
+                </div>
+                <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                  <Calendar className="w-6 h-6 text-green-600 dark:text-green-400" />
+                </div>
+              </div>
+              <p className="text-xs text-surface-dark dark:text-surface mt-2">
+                Nivel de compromiso y constancia
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent>
+              <div className="flex items-center justify-between py-4">
+                <div>
+                  <p className="text-sm font-medium text-surface-dark dark:text-surface">
+                    Estudiantes Destacados
+                  </p>
+                  <p className="text-2xl font-bold text-surface-dark dark:text-surface">
+                    {stats?.topStudentsCount || 0}
+                  </p>
+                </div>
+                <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
+                  <Award className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+                </div>
+              </div>
+              <p className="text-xs text-surface-dark dark:text-surface mt-2">
+                ≥90 puntos
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent>
+              <div className="flex items-center justify-between py-4">
+                <div>
+                  <p className="text-sm font-medium text-surface-dark dark:text-surface">
+                    Estudiantes en Riesgo
+                  </p>
+                  <p className="text-2xl font-bold text-surface-dark dark:text-surface">
+                    {stats?.atRiskStudentsCount || 0}
+                  </p>
+                </div>
+                <div className="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
+                  <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+                </div>
+              </div>
+              <p className="text-xs text-surface-dark dark:text-surface mt-2">
+                &lt;70 puntos o baja asistencia
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Gráficos interactivos */}
+        <div className="grid grid-cols-1 gap-6">
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="inline-flex gap-2 items-center">
+                <BarChartIcon className="w-8 h-8" />
+                <span>Promedio de Calificaciones por Materia</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="w-full h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={gradesData}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke={gridColor}
+                      className="opacity-30"
+                    />
+                    <XAxis
+                      dataKey="subject"
+                      tick={{ fill: axisColor, fontSize: 12 }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                    />
+                    <YAxis tick={{ fill: axisColor, fontSize: 12 }} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: darkMode ? "#0f172a" : "#f8fafc",
+                        border: `1px solid ${darkMode ? "#f8fafc" : "#0f172a"}`,
+                        borderRadius: "6px",
+                        color: darkMode ? "#ffffff" : "#000000",
+                      }}
+                      formatter={(value) => [
+                        Number.isInteger(value) ? value : value.toFixed(2),
+                        "Promedio",
+                      ]}
+                    />
+                    <Bar
+                      dataKey="average"
+                      fill="#3b82f6"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="inline-flex gap-2 items-center justify-center">
+              <LineChartIcon className="w-6 h-6" />
+              <span>Evolución de la Asistencia</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="w-full h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={attendanceData}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    className="opacity-30"
+                    stroke={gridColor}
+                  />
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fill: axisColor, fontSize: 12 }}
+                  />
+                  <YAxis
+                    tick={{ fill: axisColor, fontSize: 12 }}
+                    domain={[80, 100]}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "6px",
+                    }}
+                    formatter={(value) => [
+                      `${Number.isInteger(value) ? value : value.toFixed(2)}%`,
+                      "Asistencia",
+                    ]}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="attendance"
+                    stroke="#22c55e"
+                    strokeWidth={3}
+                    dot={{ fill: "#22c55e", strokeWidth: 2, r: 6 }}
+                    activeDot={{ r: 8, stroke: "#22c55e", strokeWidth: 2 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Tabla consolidada */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-2">
+            <div>
+              <CardTitle>Reporte Consolidado por Grupo y Materia</CardTitle>
+              <CardDescription>
+                Análisis detallado del rendimiento por grupo académico
+              </CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={downloadGeneralReport}
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                PDF
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto w-48 sm:w-56 lg:w-full mx-auto lg:mx-0">
+              {/* TODO: Refactorizar, usar el componente Table */}
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-3 font-medium">Sección</th>
+                    <th className="text-center p-3 font-medium">Asignatura</th>
+                    <th className="text-left p-3 font-medium">Promedio</th>
+                    <th className="text-center p-3 font-medium">
+                      Asistencia Promedio
+                    </th>
+                    <th className="text-left p-3 font-medium">
+                      Estudiantes en Riesgo
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {groupReportData.map((row, index) => (
+                    <tr key={index} className="border-b hover:bg-muted/50">
+                      <td className="p-3 text-center">{row.group}</td>
+                      <td className="p-3 text-center">{row.subject}</td>
+                      <td className="p-3 font-medium text-center">
+                        {Math.round(row.average)}
+                      </td>
+                      <td className="p-3 text-center">
+                        {Number(row.attendance).toFixed(2)}%
+                      </td>
+                      <td className="p-3 text-center">
+                        <Badge
+                          variant={row.atRisk > 2 ? "destructive" : "secondary"}
+                        >
+                          {row.atRisk}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Exportaciones globales */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Download className="w-5 h-5" />
+              Exportaciones
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap justify-center gap-4">
+              <Button variant="outline" onClick={downloadGeneralReport}>
+                <FileText className="w-4 h-4 mr-2" />
+                Exportar Todo
+              </Button>
+              <Button variant="outline" onClick={downloadAttendanceReport}>
+                <Calendar className="w-4 h-4 mr-2" />
+                Solo Asistencia
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default Reports;
