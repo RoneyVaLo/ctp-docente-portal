@@ -23,11 +23,11 @@ import {
     XCircle,
     Users,
     AlertTriangle,
-    Loader2, // spinner para cargas locales
+    Loader2,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
-/* ----------------------- helpers ----------------------- */
+
 function nowHHmm() {
     const d = new Date();
     const hh = String(d.getHours()).padStart(2, "0");
@@ -39,9 +39,8 @@ function combineDateTimeLocal(date, time) {
     return `${date}T${safeTime}:00`;
 }
 
-/* ===================== COMPONENT ===================== */
 export default function AttendancePage() {
-    /* estado filtros */
+   
     const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
     const initialTime = useMemo(() => nowHHmm(), []);
     const saved = ls.get("ui.attendance.filters", {}) || {};
@@ -53,18 +52,15 @@ export default function AttendancePage() {
     const [subjects, setSubjects] = useState([]);
     const [sectionId, setSectionId] = useState(0);
     const [subjectId, setSubjectId] = useState(saved.subjectId ?? 0);
-
-    /* estado datos */
     const [rows, setRows] = useState([]);
 
-    /* estados de carga separados */
-    const [loadingInit, setLoadingInit] = useState(true);     // solo catálogos
-    const [loadingRoster, setLoadingRoster] = useState(false); // solo tabla
-    const [saving, setSaving] = useState(false);               // botón Guardar
+    const [loadingInit, setLoadingInit] = useState(true);    
+    const [loadingRoster, setLoadingRoster] = useState(false); 
+    const [saving, setSaving] = useState(false);              
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [pendingPayload, setPendingPayload] = useState(null);
 
-    /* persisted key para evitar doble envío */
+
     const currentKey = useMemo(
         () =>
             JSON.stringify({
@@ -81,7 +77,7 @@ export default function AttendancePage() {
     );
     const [lastSavedKey, setLastSavedKey] = useState("");
 
-    /* ---------- cargar catálogos ---------- */
+
     useEffect(() => {
         (async () => {
             try {
@@ -103,7 +99,6 @@ export default function AttendancePage() {
         })();
     }, []);
 
-    /* persistir filtros útiles */
     useEffect(() => {
         try {
             ls.set("ui.attendance.filters", { date, time, subjectId });
@@ -112,7 +107,6 @@ export default function AttendancePage() {
         }
     }, [date, time, subjectId]);
 
-    /* ---------- cargar lista de estudiantes (solo tabla) ---------- */
     const loadRoster = useCallback(async () => {
         if (!sectionId) {
             setRows([]);
@@ -143,13 +137,13 @@ export default function AttendancePage() {
         loadRoster();
     }, [loadRoster]);
 
-    /* helpers de edición */
+
     const updateRow = (id, patch) =>
         setRows((prev) => prev.map((r) => (r.studentId === id ? { ...r, ...patch } : r)));
     const markAll = (present) =>
         setRows((prev) => prev.map((r) => ({ ...r, isPresent: present })));
 
-    /* ---------- guardar asistencia ---------- */
+
     async function doSave(payload) {
         await attendanceApi.createGroup(payload);
         setLastSavedKey(currentKey);
@@ -181,8 +175,6 @@ export default function AttendancePage() {
                     notes: r.notes,
                 })),
             };
-
-            // ¿ya existe asistencia hoy para la combinación?
             const existing = await attendanceApi.newList({ date, sectionId, subjectId });
             if (Array.isArray(existing) && existing.length > 0) {
                 setPendingPayload(payload);
@@ -199,18 +191,18 @@ export default function AttendancePage() {
         }
     };
 
-    /* métricas rápidas */
+
     const total = rows.length;
     const presentCount = rows.filter((r) => r.isPresent).length;
     const absentCount = total - presentCount;
 
-    /* loader SOLO para la carga inicial de catálogos */
+
     if (loadingInit) return <Loader1 />;
 
     return (
         <div className="min-h-screen bg-background dark:bg-background-dark p-6">
             <div className="max-w-7xl mx-auto space-y-6">
-                {/* Header */}
+        
                 <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-bold text-surface-dark dark:text-surface inline-flex gap-2">
@@ -237,8 +229,6 @@ export default function AttendancePage() {
                         </Button>
                     </div>
                 </div>
-
-                {/* Filtros */}
                 <Card className="relative z-20 overflow-visible">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
@@ -261,7 +251,7 @@ export default function AttendancePage() {
                                 <Input type="time" step={60} value={time} onChange={(e) => setTime(e.target.value)} />
                             </div>
 
-                            {/* Evitar solapamiento en mobile y elevar z-index al abrir */}
+                         
                             <div className="relative z-10 focus-within:z-50 focus-within:mb-64 md:focus-within:mb-0">
                                 <FilterSelect
                                     label="Sección"
@@ -308,7 +298,6 @@ export default function AttendancePage() {
                     </CardContent>
                 </Card>
 
-                {/* Métricas pequeñas */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <Card>
                         <CardContent className="py-4 flex items-center justify-between">
@@ -345,7 +334,7 @@ export default function AttendancePage() {
                     </Card>
                 </div>
 
-                {/* Tabla */}
+             
                 <Card>
                     <CardHeader>
                         <CardTitle>Lista de alumnos</CardTitle>
@@ -353,7 +342,7 @@ export default function AttendancePage() {
                     </CardHeader>
                     <CardContent>
                         <div className="relative">
-                            {/* overlay de carga SOLO de la tabla */}
+                       
                             {loadingRoster && (
                                 <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/60 dark:bg-background-dark/60 backdrop-blur-sm rounded-lg">
                                     <Loader2 className="w-6 h-6 animate-spin mr-2" />
@@ -439,8 +428,7 @@ export default function AttendancePage() {
                     </CardContent>
                 </Card>
             </div>
-
-            {/* Modal de confirmación */}
+}
             {confirmOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center">
                     <div

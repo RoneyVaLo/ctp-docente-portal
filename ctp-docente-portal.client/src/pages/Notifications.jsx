@@ -42,7 +42,7 @@ export default function NotificationsPage() {
     const [date, setDate] = useState(saved.date ?? today);
     const [sectionId, setSectionId] = useState(saved.sectionId ?? 0);
     const [subjectId, setSubjectId] = useState(saved.subjectId ?? 0);
-    const [status, setStatus] = useState(saved.status ?? ""); // "", SENT, FAILED, QUEUED
+    const [status, setStatus] = useState(saved.status ?? "");
     const canQuery = sectionId > 0;
 
     /* catálogos */
@@ -53,18 +53,18 @@ export default function NotificationsPage() {
     const [rows, setRows] = useState([]);
 
     /* cargas */
-    const [loadingInit, setLoadingInit] = useState(true);     // catálogos
-    const [loadingTable, setLoadingTable] = useState(false);  // solo tabla
-    const [resendingId, setResendingId] = useState(null);     // spinner por fila
+    const [loadingInit, setLoadingInit] = useState(true);    
+    const [loadingTable, setLoadingTable] = useState(false); 
+    const [resendingId, setResendingId] = useState(null);
 
-    /* persistir filtros mientras estás en la vista */
+   
     useEffect(() => {
         try {
             ls.set("ui.notifications.filters", { date, sectionId, subjectId, status });
         } catch { }
     }, [date, sectionId, subjectId, status]);
 
-    /* limpiar filtros y datos al salir de la vista */
+
     useEffect(() => {
         return () => {
             try {
@@ -75,7 +75,7 @@ export default function NotificationsPage() {
         };
     }, []);
 
-    /* cargar catálogos */
+    
     useEffect(() => {
         (async () => {
             try {
@@ -95,7 +95,7 @@ export default function NotificationsPage() {
         })();
     }, []);
 
-    /* consultar tabla */
+   
     const load = useCallback(async () => {
         if (!canQuery) {
             setRows([]);
@@ -114,12 +114,12 @@ export default function NotificationsPage() {
         }
     }, [canQuery, date, sectionId, status, subjectId]);
 
-    /* auto-load al cambiar filtros (debounced) */
+   
     useEffect(() => {
         if (loadingInit) return;
         const t = setTimeout(() => load(), 250);
         return () => clearTimeout(t);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+    
     }, [sectionId, subjectId, status, date, loadingInit]);
 
     const resend = useCallback(
@@ -139,7 +139,7 @@ export default function NotificationsPage() {
         [load]
     );
 
-    /* métricas */
+
     const stats = useMemo(() => {
         let sent = 0,
             failed = 0,
@@ -152,7 +152,7 @@ export default function NotificationsPage() {
         return { sent, failed, queued, total: rows.length };
     }, [rows]);
 
-    /* opciones estado (segmented control) */
+
     const statusTabs = [
         { id: "", label: "Todos" },
         { id: "SENT", label: "Enviados" },
@@ -165,7 +165,7 @@ export default function NotificationsPage() {
     return (
         <div className="min-h-screen bg-background dark:bg-background-dark p-6">
             <div className="mx-auto max-w-7xl space-y-6">
-                {/* Header */}
+              
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-3xl font-bold text-surface-dark dark:text-surface inline-flex items-center gap-2">
@@ -178,7 +178,7 @@ export default function NotificationsPage() {
                     </div>
                 </div>
 
-                {/* Toolbar de filtros (sticky) */}
+            
                 <Card className="relative z-20 sticky top-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 dark:supports-[backdrop-filter]:bg-background-dark/80 overflow-visible">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-base flex items-center gap-2">
@@ -216,7 +216,7 @@ export default function NotificationsPage() {
                                 />
                             </div>
 
-                            {/* Segmented control para Estado */}
+                        
                             <div className="lg:col-span-4">
                                 <label className="text-xs text-surface-dark/70 dark:text-surface/70 mb-1 block">
                                     Estado
@@ -238,7 +238,7 @@ export default function NotificationsPage() {
                     </CardContent>
                 </Card>
 
-                {/* KPIs */}
+          
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <Card>
                         <CardContent className="py-4 flex items-center justify-between">
@@ -277,7 +277,7 @@ export default function NotificationsPage() {
                     </Card>
                 </div>
 
-                {/* Resultados (SIN cabecera “Resultados / Total” y SIN botón de reintentos) */}
+              
                 <Card>
                     <CardContent>
                         <div className="relative">
