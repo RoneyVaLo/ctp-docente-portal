@@ -9,7 +9,9 @@ namespace ctp_docente_portal.Server.Services.Implementations
     public class WhatsAppApiSettings
     {
         public string PhoneNumberId { get; set; } = "810734075452083";
-        public string AccessToken { get; set; } = "EAAUffqjDPB0BPm3lJikFQVIis5VN7ia0W5oL1xU4Ubq9P318GgZANds1obxRE5zM2iD74zQhb79fcalIXjc0NG1BQhGYmu6If9bCmZAwUx9DynBZAO7jLSz4KPd7BNkXfEf778weIZC5ZAxpeDGjm5OJKlxD7rJdgr43riXrCsiEWZAN5ZAgR1T3ORU0CSKTgZDZD";
+
+        public string AccessToken { get; set; } =
+            "EAAUffqjDPB0BPm3lJikFQVIis5VN7ia0W5oL1xU4Ubq9P318GgZANds1obxRE5zM2iD74zQhb79fcalIXjc0NG1BQhGYmu6If9bCmZAwUx9DynBZAO7jLSz4KPd7BNkXfEf778weIZC5ZAxpeDGjm5OJKlxD7rJdgr43riXrCsiEWZAN5ZAgR1T3ORU0CSKTgZDZD";
         public string ApiVersion { get; set; } = "v22.0";
         public string? DefaultTemplateName { get; set; } = "notificacion_ausencia";
         public string? DefaultLanguageCode { get; set; } = "es_MX";
@@ -26,23 +28,33 @@ namespace ctp_docente_portal.Server.Services.Implementations
             _cfg = cfg.Value;
         }
 
-        public async Task<WhatsAppSendResult> SendTextAsync(string phoneE164, string message, CancellationToken ct = default)
+        public async Task<WhatsAppSendResult> SendTextAsync(
+            string phoneE164,
+            string message,
+            CancellationToken ct = default)
         {
             try
             {
                 var url = BuildMessagesUrl();
                 using var req = new HttpRequestMessage(HttpMethod.Post, url);
-                req.Headers.Add("Authorization", $"Bearer {_cfg.AccessToken?.Trim()}");
+                AddAuth(req);
 
                 phoneE164 = NormalizePhone(phoneE164);
 
-                req.Content = JsonContent.Create(new
+                var payload = new
                 {
                     messaging_product = "whatsapp",
                     to = phoneE164,
                     type = "text",
                     text = new { body = message }
+                };
+
+                var jsonBody = JsonSerializer.Serialize(payload, new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = null
                 });
+
+                req.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
 
                 var res = await _http.SendAsync(req, ct);
                 var json = await res.Content.ReadAsStringAsync(ct);
@@ -50,7 +62,12 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 if (!res.IsSuccessStatusCode)
                 {
                     var error = TryGetError(json);
-                    return new WhatsAppSendResult { Success = false, Error = error ?? json, RawResponse = json };
+                    return new WhatsAppSendResult
+                    {
+                        Success = false,
+                        Error = error ?? $"{(int)res.StatusCode} {res.ReasonPhrase}",
+                        RawResponse = json
+                    };
                 }
 
                 var providerId = TryGetMessageId(json);
@@ -73,7 +90,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
             {
                 var url = BuildMessagesUrl();
                 using var req = new HttpRequestMessage(HttpMethod.Post, url);
-                req.Headers.Add("Authorization", $"Bearer {_cfg.AccessToken?.Trim()}");
+                AddAuth(req);
 
                 phoneE164 = NormalizePhone(phoneE164);
 
@@ -114,7 +131,12 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 if (!res.IsSuccessStatusCode)
                 {
                     var error = TryGetError(json);
-                    return new WhatsAppSendResult { Success = false, Error = error ?? json, RawResponse = json };
+                    return new WhatsAppSendResult
+                    {
+                        Success = false,
+                        Error = error ?? $"{(int)res.StatusCode} {res.ReasonPhrase}",
+                        RawResponse = json
+                    };
                 }
 
                 var providerId = TryGetMessageId(json);
@@ -152,6 +174,19 @@ namespace ctp_docente_portal.Server.Services.Implementations
             );
         }
 
+        /* ----------------------- helpers ----------------------- */
+
+        private void AddAuth(HttpRequestMessage req)
+        {
+            // Sanea el token: sin "Bearer " duplicado, sin comillas ni espacios
+            var token = (_cfg.AccessToken ?? string.Empty).Trim().Trim('"');
+            if (token.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                token = token[7..].Trim();
+
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            req.Headers.Accept.Clear();
+            req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        }
 
         private string BuildMessagesUrl() =>
             $"https://graph.facebook.com/{_cfg.ApiVersion}/{_cfg.PhoneNumberId}/messages";
@@ -182,7 +217,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 using var doc = JsonDocument.Parse(json);
                 if (doc.RootElement.TryGetProperty("error", out var err))
                 {
-                    if (err.TryGetProperty("message", out var msg))
+                    if (err.TryGetProperty("message", out var msg) && msg.ValueKind == JsonValueKind.String)
                         return msg.GetString();
                 }
             }
@@ -192,8 +227,10 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
         private string NormalizePhone(string phone)
         {
-            if (phone.StartsWith("506")) return phone;
-            return "506" + phone.Trim();
+            // Quita espacios/símbolos y garantiza prefijo 506 (CR)
+            var digits = new string(phone.Where(char.IsDigit).ToArray());
+            if (digits.StartsWith("506")) return digits;
+            return "506" + digits;
         }
     }
 }

@@ -2,29 +2,31 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { notificationsApi } from "@/services/notificationsService";
 import { sectionsApi } from "@/services/sectionsService";
 import { ls } from "@/utils/localStore";
-import {
-    FormControl,
-    Select,
-    MenuItem,
-    CircularProgress,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Paper,
-    Button,
-    Chip,
-    TextField,
-    Tooltip,
-    IconButton,
-    Snackbar,
-} from "@mui/material";
-import Alert from "@mui/material/Alert";
-import ReplayIcon from "@mui/icons-material/Replay";
-import SearchIcon from "@mui/icons-material/Search";
 
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import FilterSelect from "@/components/evaluations/FilterSelect";
+import Loader1 from "@/components/loaders/Loader1";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/Card";
+
+import {
+    Bell,
+    Loader2,
+    RotateCcw,
+    MailCheck,
+    MailX,
+    Clock4,
+    Calendar,
+} from "lucide-react";
+import toast from "react-hot-toast";
+
+/* utils */
 function formatDate(iso) {
     if (!iso) return "-";
     const d = new Date(iso);
@@ -36,319 +38,335 @@ export default function NotificationsPage() {
     const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
     const saved = ls.get("ui.notifications.filters", {}) || {};
 
+    /* filtros */
     const [date, setDate] = useState(saved.date ?? today);
     const [sectionId, setSectionId] = useState(saved.sectionId ?? 0);
-    const [status, setStatus] = useState(saved.status ?? "");
-    const [subject, setSubject] = useState(saved.subject ?? "");
     const [subjectId, setSubjectId] = useState(saved.subjectId ?? 0);
+    const [status, setStatus] = useState(saved.status ?? ""); // "", SENT, FAILED, QUEUED
+    const canQuery = sectionId > 0;
 
+    /* catálogos */
     const [sections, setSections] = useState([]);
-    const [loadingSections, setLoadingSections] = useState(false);
-
-    const [rows, setRows] = useState([]);
-    const [loading, setLoading] = useState(false);
-
-    const canQuery = sectionId > 0; 
     const [subjects, setSubjects] = useState([]);
-    const [loadingSubjects, setLoadingSubjects] = useState(false);
 
+    /* datos */
+    const [rows, setRows] = useState([]);
 
-    const [snack, setSnack] = useState({ open: false, message: "", severity: "success" });
+    /* cargas */
+    const [loadingInit, setLoadingInit] = useState(true);     // catálogos
+    const [loadingTable, setLoadingTable] = useState(false);  // solo tabla
+    const [resendingId, setResendingId] = useState(null);     // spinner por fila
 
-    const handleSnackClose = (_, reason) => {
-        if (reason === "clickaway") return;
-        setSnack((s) => ({ ...s, open: false }));
-    };
-
-    // Persistir filtros
+    /* persistir filtros mientras estás en la vista */
     useEffect(() => {
         try {
-            ls.set("ui.notifications.filters", {
-                date,
-                sectionId,
-                status,
-                subject,
-                subjectId,
-            });
-        } catch (err) {
-            console.warn("No se pudo persistir filtros en localStorage:", err);
-        }
-    }, [date, sectionId, status, subject, subjectId]);
+            ls.set("ui.notifications.filters", { date, sectionId, subjectId, status });
+        } catch { }
+    }, [date, sectionId, subjectId, status]);
 
+    /* limpiar filtros y datos al salir de la vista */
     useEffect(() => {
-        const fetchSubjects = async () => {
-            setLoadingSubjects(true);
+        return () => {
             try {
-                const data = await notificationsApi.getSubjects();
-                setSubjects(data);
-            } catch (err) {
-                console.error("Error cargando las materias:", err);
-            } finally {
-                setLoadingSubjects(false);
-            }
+                if (ls.remove) ls.remove("ui.notifications.filters");
+                else localStorage.removeItem("ui.notifications.filters");
+            } catch { }
+            setRows([]);
         };
-        fetchSubjects();
     }, []);
 
+    /* cargar catálogos */
     useEffect(() => {
         (async () => {
-            setLoadingSections(true);
             try {
-                const data = await sectionsApi.active();
-                setSections(Array.isArray(data) ? data : []);
+                setLoadingInit(true);
+                const [sects, subs] = await Promise.all([
+                    sectionsApi.active(),
+                    notificationsApi.getSubjects(),
+                ]);
+                setSections(Array.isArray(sects) ? sects : []);
+                setSubjects(Array.isArray(subs) ? subs : []);
             } catch (e) {
-                console.error("Error cargando secciones", e);
-                setSections([]);
+                console.error(e);
+                toast.error("No se pudieron cargar los catálogos.");
             } finally {
-                setLoadingSections(false);
+                setLoadingInit(false);
             }
         })();
     }, []);
 
+    /* consultar tabla */
     const load = useCallback(async () => {
-        if (!canQuery) return;
-        setLoading(true);
+        if (!canQuery) {
+            setRows([]);
+            return;
+        }
+        setLoadingTable(true);
         try {
             const data = await notificationsApi.list({ date, sectionId, status, subjectId });
             setRows(Array.isArray(data) ? data : []);
         } catch (e) {
             console.error("Error al cargar notificaciones:", e);
             setRows([]);
+            toast.error("No se pudieron cargar las notificaciones.");
         } finally {
-            setLoading(false);
+            setLoadingTable(false);
         }
     }, [canQuery, date, sectionId, status, subjectId]);
 
+    /* auto-load al cambiar filtros (debounced) */
     useEffect(() => {
-        if (saved && saved.sectionId > 0) {
-            load();
-        }
-    }, []);
+        if (loadingInit) return;
+        const t = setTimeout(() => load(), 250);
+        return () => clearTimeout(t);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [sectionId, subjectId, status, date, loadingInit]);
 
     const resend = useCallback(
         async (id) => {
-            setLoading(true);
             try {
+                setResendingId(id);
                 await notificationsApi.resend(id);
                 await load();
-                setSnack({ open: true, message: "Mensaje reenviado", severity: "success" });
+                toast.success("Mensaje reenviado");
             } catch (e) {
                 console.error("Error al reintentar envío:", e);
-                setSnack({ open: true, message: "No se pudo reenviar el mensaje.", severity: "error" });
+                toast.error("No se pudo reenviar el mensaje.");
             } finally {
-                setLoading(false);
+                setResendingId(null);
             }
         },
         [load]
     );
 
-    const statusChip = (st) => {
-        const map = {
-            SENT: { color: "success", label: "Enviado" },
-            FAILED: { color: "error", label: "Fallido" },
-            QUEUED: { color: "warning", label: "En cola" },
-        };
-        const cfg = map[st] ?? { color: "default", label: st || "-" };
-        return (
-            <Chip
-                label={cfg.label}
-                size="small"
-                color={cfg.color}
-                variant={cfg.color === "default" ? "outlined" : undefined}
-            />
-        );
-    };
+    /* métricas */
+    const stats = useMemo(() => {
+        let sent = 0,
+            failed = 0,
+            queued = 0;
+        for (const r of rows) {
+            if (r.status === "SENT") sent++;
+            else if (r.status === "FAILED") failed++;
+            else if (r.status === "QUEUED") queued++;
+        }
+        return { sent, failed, queued, total: rows.length };
+    }, [rows]);
+
+    /* opciones estado (segmented control) */
+    const statusTabs = [
+        { id: "", label: "Todos" },
+        { id: "SENT", label: "Enviados" },
+        { id: "FAILED", label: "Fallidos" },
+        { id: "QUEUED", label: "En cola" },
+    ];
+
+    if (loadingInit) return <Loader1 />;
 
     return (
-        <div className="p-6">
-            <h1 className="text-2xl font-semibold mb-4">Notificaciones</h1>
-
-            <Paper elevation={0} className="p-4 mb-4 border">
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+        <div className="min-h-screen bg-background dark:bg-background-dark p-6">
+            <div className="mx-auto max-w-7xl space-y-6">
+                {/* Header */}
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <div>
-                        <label className="text-xs text-slate-600 mb-1 block">Fecha</label>
-                        <TextField
-                            type="date"
-                            size="small"
-                            fullWidth
-                            value={date}
-                            onChange={(e) => setDate(e.target.value)}
-                            inputProps={{ "aria-label": "Fecha" }}
-                        />
-                    </div>
-
-                    <div>
-                        <label className="text-xs text-slate-600 mb-1 block">Sección</label>
-                        <FormControl fullWidth size="small">
-                            <Select
-                                value={sectionId || ""}
-                                displayEmpty
-                                onChange={(e) => setSectionId(Number(e.target.value) || 0)}
-                                renderValue={(selected) => {
-                                    if (!selected) return "Seleccioná una sección";
-                                    const item = sections.find((s) => s.id === selected);
-                                    return item ? item.name : selected;
-                                }}
-                            >
-                                <MenuItem value="">
-                                    <em>Seleccioná una sección</em>
-                                </MenuItem>
-                                {loadingSections && (
-                                    <MenuItem disabled>
-                                        <div className="flex items-center gap-2">
-                                            <CircularProgress size={16} /> Cargando…
-                                        </div>
-                                    </MenuItem>
-                                )}
-                                {sections.map((s) => (
-                                    <MenuItem key={s.id} value={s.id}>
-                                        {s.name}
-                                    </MenuItem>
-                                ))}
-                                {!loadingSections && sections.length === 0 && (
-                                    <MenuItem disabled>(Sin secciones activas)</MenuItem>
-                                )}
-                            </Select>
-                        </FormControl>
-                    </div>
-
-                    <div>
-                        <label className="text-xs text-slate-600 mb-1 block">Asignatura</label>
-                        <FormControl fullWidth size="small">
-                            <Select
-                                labelId="subject-label"
-                                label="Asignatura"
-                                value={subjectId || ""}
-                                onChange={(e) => {
-                                    const val = Number(e.target.value) || 0;
-                                    setSubjectId(val);
-                                    const found = subjects.find((s) => s.id === val);
-                                    setSubject(found?.name ?? "");
-                                }}
-                                displayEmpty
-                                renderValue={(selected) => {
-                                    if (!selected) return "Seleccioná una asignatura";
-                                    const item = subjects.find((s) => s.id === selected);
-                                    return item ? item.name : selected;
-                                }}
-                            >
-                                <MenuItem value="">
-                                    <em>Seleccioná una asignatura</em>
-                                </MenuItem>
-                                {subjects.map((s) => (
-                                    <MenuItem key={s.id} value={s.id}>
-                                        {s.name}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                    </div>
-
-                    <div>
-                        <label className="text-xs text-slate-600 mb-1 block">Estado</label>
-                        <FormControl fullWidth size="small">
-                            <Select value={status} onChange={(e) => setStatus(e.target.value)} displayEmpty>
-                                <MenuItem value="">
-                                    <em>Todos</em>
-                                </MenuItem>
-                                <MenuItem value="SENT">Enviados</MenuItem>
-                                <MenuItem value="FAILED">Fallidos</MenuItem>
-                                <MenuItem value="QUEUED">En cola</MenuItem>
-                            </Select>
-                        </FormControl>
-                    </div>
-
-                    <div className="flex gap-2">
-                        <Button
-                            size="small"
-                            variant="contained"
-                            startIcon={<SearchIcon />}
-                            onClick={load}
-                            disabled={!canQuery || loading}
-                            fullWidth
-                            sx={{
-                                height: 36,
-                                borderRadius: 2,
-                                px: 2,
-                                textTransform: "none",
-                                fontWeight: 600,
-                            }}
-                        >
-                            Buscar
-                        </Button>
+                        <h1 className="text-3xl font-bold text-surface-dark dark:text-surface inline-flex items-center gap-2">
+                            <Bell className="w-9 h-9" />
+                            Notificaciones
+                        </h1>
+                        <p className="text-surface-dark/80 dark:text-surface/80 mt-1">
+                            Consulta, filtra y reintenta el envío de avisos.
+                        </p>
                     </div>
                 </div>
-            </Paper>
 
-            <TableContainer component={Paper} elevation={0} className="border">
-                <Table size="small">
-                    <TableHead className="bg-slate-50">
-                        <TableRow>
-                            <TableCell>Estudiante</TableCell>
-                            <TableCell>Teléfono</TableCell>
-                            <TableCell>Mensaje</TableCell>
-                            <TableCell>Fecha</TableCell>
-                            <TableCell>Sección</TableCell>
-                            <TableCell>Estado</TableCell>
-                            <TableCell align="right">Acción</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {loading && (
-                            <TableRow>
-                                <TableCell colSpan={7}>
-                                    <div className="flex items-center gap-2 text-sm p-2">
-                                        <CircularProgress size={18} /> Cargando…
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        )}
+                {/* Toolbar de filtros (sticky) */}
+                <Card className="relative z-20 sticky top-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 dark:supports-[backdrop-filter]:bg-background-dark/80 overflow-visible">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                            <Calendar className="w-4 h-4" />
+                            Filtros
+                        </CardTitle>
+                      
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+                            <div className="lg:col-span-2">
+                                <label className="text-xs text-surface-dark/70 dark:text-surface/70 mb-1 block">
+                                    Fecha
+                                </label>
+                                <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+                            </div>
 
-                        {!loading && canQuery && rows.length === 0 && (
-                            <TableRow>
-                                <TableCell colSpan={7}>
-                                    <div className="text-center text-slate-500 p-3">Sin notificaciones.</div>
-                                </TableCell>
-                            </TableRow>
-                        )}
+                            <div className="lg:col-span-3 relative z-10 focus-within:z-50 focus-within:mb-64 lg:focus-within:mb-0">
+                                <FilterSelect
+                                    label="Sección"
+                                    value={sectionId || ""}
+                                    onChange={(val) => setSectionId(Number(val) || 0)}
+                                    options={sections}
+                                    placeholder="Seleccionar sección"
+                                />
+                            </div>
 
-                        {rows.map((n) => (
-                            <TableRow key={n.id} hover>
-                                <TableCell className="font-medium">{n.studentName}</TableCell>
-                                <TableCell>{n.phone}</TableCell>
-                                <TableCell className="max-w-[28rem] truncate" title={n.message}>
-                                    {n.message}
-                                </TableCell>
-                                <TableCell>{formatDate(n.date)}</TableCell>
-                                <TableCell>{n.sectionName ?? n.sectionId}</TableCell>
-                                <TableCell>{statusChip(n.status)}</TableCell>
-                                <TableCell align="right">
-                                    {n.status === "FAILED" && (
-                                        <Tooltip title="Reintentar">
-                                            <span>
-                                                <IconButton size="small" onClick={() => resend(n.id)} disabled={loading}>
-                                                    <ReplayIcon fontSize="small" />
-                                                </IconButton>
-                                            </span>
-                                        </Tooltip>
-                                    )}
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </TableContainer>
+                            <div className="lg:col-span-3 relative z-10 focus-within:z-50 focus-within:mb-64 lg:focus-within:mb-0">
+                                <FilterSelect
+                                    label="Asignatura"
+                                    value={subjectId || ""}
+                                    onChange={(val) => setSubjectId(Number(val) || 0)}
+                                    options={subjects}
+                                    placeholder="Seleccionar asignatura"
+                                />
+                            </div>
 
-            <Snackbar
-                open={snack.open}
-                autoHideDuration={3000}
-                onClose={handleSnackClose}
-                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-            >
-                <Alert onClose={handleSnackClose} severity={snack.severity} variant="filled" sx={{ width: "100%" }}>
-                    {snack.message}
-                </Alert>
-            </Snackbar>
+                            {/* Segmented control para Estado */}
+                            <div className="lg:col-span-4">
+                                <label className="text-xs text-surface-dark/70 dark:text-surface/70 mb-1 block">
+                                    Estado
+                                </label>
+                                <div className="flex flex-wrap gap-2">
+                                    {statusTabs.map((t) => (
+                                        <Button
+                                            key={t.id || "all"}
+                                            variant={status === t.id ? "default" : "outline"}
+                                            size="sm"
+                                            onClick={() => setStatus(t.id)}
+                                        >
+                                            {t.label}
+                                        </Button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* KPIs */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card>
+                        <CardContent className="py-4 flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-surface-dark dark:text-surface">Enviados</p>
+                                <p className="text-2xl font-bold text-surface-dark dark:text-surface">{stats.sent}</p>
+                            </div>
+                            <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900">
+                                <MailCheck className="w-6 h-6 text-green-600 dark:text-green-300" />
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardContent className="py-4 flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-surface-dark dark:text-surface">Fallidos</p>
+                                <p className="text-2xl font-bold text-surface-dark dark:text-surface">{stats.failed}</p>
+                            </div>
+                            <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900">
+                                <MailX className="w-6 h-6 text-red-600 dark:text-red-300" />
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardContent className="py-4 flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-surface-dark dark:text-surface">En cola</p>
+                                <p className="text-2xl font-bold text-surface-dark dark:text-surface">{stats.queued}</p>
+                            </div>
+                            <div className="p-2 rounded-lg bg-yellow-100 dark:bg-yellow-900">
+                                <Clock4 className="w-6 h-6 text-yellow-600 dark:text-yellow-300" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Resultados (SIN cabecera “Resultados / Total” y SIN botón de reintentos) */}
+                <Card>
+                    <CardContent>
+                        <div className="relative">
+                            {loadingTable && (
+                                <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/60 dark:bg-background-dark/60 backdrop-blur-sm rounded-lg">
+                                    <Loader2 className="w-6 h-6 mr-2 animate-spin" />
+                                    Cargando…
+                                </div>
+                            )}
+
+                            <div className="overflow-x-auto w-48 sm:w-56 lg:w-full mx-auto lg:mx-0">
+                                <table className="w-full border-collapse">
+                                    <thead>
+                                        <tr className="border-b">
+                                            <th className="text-left p-3 font-medium">Estudiante</th>
+                                            <th className="text-left p-3 font-medium">Teléfono</th>
+                                            <th className="text-left p-3 font-medium">Mensaje</th>
+                                            <th className="text-left p-3 font-medium">Fecha</th>
+                                            <th className="text-left p-3 font-medium">Sección</th>
+                                            <th className="text-left p-3 font-medium">Estado</th>
+                                            <th className="text-right p-3 font-medium">Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {!loadingTable && canQuery && rows.length === 0 && (
+                                            <tr>
+                                                <td className="p-6 text-center text-surface-dark dark:text-surface" colSpan={7}>
+                                                    No hay notificaciones para los filtros seleccionados.
+                                                </td>
+                                            </tr>
+                                        )}
+
+                                        {rows.map((n) => (
+                                            <tr key={n.id} className="border-b hover:bg-muted/40">
+                                                <td className="p-3 font-medium">{n.studentName}</td>
+                                                <td className="p-3">{n.phone}</td>
+                                                <td className="p-3 max-w-[34rem] truncate" title={n.message}>
+                                                    {n.message}
+                                                </td>
+                                                <td className="p-3">{formatDate(n.date)}</td>
+                                                <td className="p-3">{n.sectionName ?? n.sectionId}</td>
+                                                <td className="p-3">
+                                                    {n.status === "SENT" && (
+                                                        <span className="inline-flex items-center gap-1 rounded-full bg-green-100 dark:bg-green-900/50 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-300">
+                                                            <MailCheck className="w-3.5 h-3.5" /> Enviado
+                                                        </span>
+                                                    )}
+                                                    {n.status === "FAILED" && (
+                                                        <span className="inline-flex items-center gap-1 rounded-full bg-red-100 dark:bg-red-900/50 px-2 py-0.5 text-xs font-medium text-red-700 dark:text-red-300">
+                                                            <MailX className="w-3.5 h-3.5" /> Fallido
+                                                        </span>
+                                                    )}
+                                                    {n.status === "QUEUED" && (
+                                                        <span className="inline-flex items-center gap-1 rounded-full bg-yellow-100 dark:bg-yellow-900/50 px-2 py-0.5 text-xs font-medium text-yellow-700 dark:text-yellow-300">
+                                                            <Clock4 className="w-3.5 h-3.5" /> En cola
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="p-3 text-right">
+                                                    {n.status === "FAILED" && (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={() => resend(n.id)}
+                                                            disabled={resendingId === n.id || loadingTable}
+                                                        >
+                                                            {resendingId === n.id ? (
+                                                                <span className="inline-flex items-center">
+                                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                                    Reintentando…
+                                                                </span>
+                                                            ) : (
+                                                                <>
+                                                                    <RotateCcw className="w-4 h-4 mr-2" />
+                                                                    Reintentar
+                                                                </>
+                                                            )}
+                                                        </Button>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     );
 }
