@@ -22,7 +22,7 @@ namespace ctp_docente_portal.Server.Controllers
         }
 
         [HttpGet]
-        [Authorize(Policy = "AdministrativoOnly")]
+        //[Authorize(Policy = "AdministrativoOnly")]
         public async Task<IActionResult> GetAll()
         {
             var result = await _sectionService.GetAllAsync();

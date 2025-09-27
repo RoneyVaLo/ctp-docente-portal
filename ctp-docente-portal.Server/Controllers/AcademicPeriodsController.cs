@@ -31,7 +31,7 @@ namespace ctp_docente_portal.Server.Controllers
         }
 
         [HttpGet("pagination")]
-        [Authorize(Policy = "AdministrativoOnly")]
+        //[Authorize(Policy = "AdministrativoOnly")]
         public async Task<ActionResult<PagedResult<SubjectDto>>> GetAllSubjectsPaginated([FromQuery] PaginationParams paginationParams)
         {
             var result = await _service.GetAllWithPaginationAsync(paginationParams);
