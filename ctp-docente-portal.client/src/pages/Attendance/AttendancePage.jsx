@@ -2,22 +2,30 @@ import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { attendanceApi } from "@/services/attendanceService";
 import { sectionsApi } from "@/services/sectionsService";
 import { ls } from "@/utils/localStore";
+
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import FilterSelect from "@/components/evaluations/FilterSelect";
+import Loader1 from "@/components/loaders/Loader1";
 import {
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-    CircularProgress,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Paper,
-    Button,
-    Chip,
-} from "@mui/material";
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/Card";
+
+import {
+    Calendar,
+    Clock,
+    Save,
+    CheckCircle,
+    XCircle,
+    Users,
+    AlertTriangle,
+    Loader2,
+} from "lucide-react";
+import toast from "react-hot-toast";
 
 
 function nowHHmm() {
@@ -26,21 +34,13 @@ function nowHHmm() {
     const mm = String(d.getMinutes()).padStart(2, "0");
     return `${hh}:${mm}`;
 }
-
 function combineDateTimeLocal(date, time) {
     const safeTime = time && /^\d{2}:\d{2}$/.test(time) ? time : "00:00";
     return `${date}T${safeTime}:00`;
 }
 
-function formatBirth(iso) {
-    if (!iso) return "-";
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return "-";
-    if (d.getUTCFullYear() === 1970) return "-";
-    return d.toLocaleDateString("es-CR");
-}
-
 export default function AttendancePage() {
+   
     const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
     const initialTime = useMemo(() => nowHHmm(), []);
     const saved = ls.get("ui.attendance.filters", {}) || {};
@@ -48,79 +48,78 @@ export default function AttendancePage() {
     const [date, setDate] = useState(saved.date ?? today);
     const [time, setTime] = useState(saved.time ?? initialTime);
 
-    const [sectionId, setSectionId] = useState(0);
-    const [subject, setSubject] = useState(saved.subject ?? "");
-    const [subjectId, setSubjectId] = useState(saved.subjectId ?? 0);
-
     const [sections, setSections] = useState([]);
     const [subjects, setSubjects] = useState([]);
-    const [loadingSections, setLoadingSections] = useState(false);
-    const [loadingSubjects, setLoadingSubjects] = useState(false);
-
+    const [sectionId, setSectionId] = useState(0);
+    const [subjectId, setSubjectId] = useState(saved.subjectId ?? 0);
     const [rows, setRows] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [toast, setToast] = useState("");
+
+    const [loadingInit, setLoadingInit] = useState(true);    
+    const [loadingRoster, setLoadingRoster] = useState(false); 
+    const [saving, setSaving] = useState(false);              
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [pendingPayload, setPendingPayload] = useState(null);
 
 
-
-
-    useEffect(() => {
-        const fetchSubjects = async () => {
-            setLoadingSubjects(true);
-            try {
-                const data = await attendanceApi.getSubjects();
-                setSubjects(data);
-            } catch (err) {
-                console.error("Error cargando las materias:", err);
-            } finally {
-                setLoadingSubjects(false);
-            }
-        };
-        fetchSubjects();
-    }, []);
-
-    useEffect(() => {
-        try {
-            ls.set("ui.attendance.filters", { date, time, subject, subjectId });
-        } catch (err) {
-            console.warn("No se pudo persistir filtros en localStorage", err);
-        }
-    }, [date, time, subject, subjectId]);
+    const currentKey = useMemo(
+        () =>
+            JSON.stringify({
+                date,
+                sectionId,
+                subjectId,
+                rows: rows.map((r) => ({
+                    id: r.studentId,
+                    p: r.isPresent,
+                    n: (r.notes || "").trim(),
+                })),
+            }),
+        [date, sectionId, subjectId, rows]
+    );
+    const [lastSavedKey, setLastSavedKey] = useState("");
 
 
     useEffect(() => {
         (async () => {
-            setLoadingSections(true);
             try {
-                const list = await sectionsApi.active();
-                setSections(list);
+                setLoadingInit(true);
+                const [listSections, listSubjects] = await Promise.all([
+                    sectionsApi.active(),
+                    attendanceApi.getSubjects(),
+                ]);
+                setSections(listSections ?? []);
+                setSubjects(listSubjects ?? []);
             } catch (err) {
-                console.error("Error cargando secciones:", err);
+                console.error("Error cargando catálogos:", err);
                 setSections([]);
+                setSubjects([]);
+                toast.error("No se pudieron cargar los catálogos.");
             } finally {
-                setLoadingSections(false);
+                setLoadingInit(false);
             }
         })();
     }, []);
+
+    useEffect(() => {
+        try {
+            ls.set("ui.attendance.filters", { date, time, subjectId });
+        } catch {
+            /* no-op */
+        }
+    }, [date, time, subjectId]);
 
     const loadRoster = useCallback(async () => {
         if (!sectionId) {
             setRows([]);
             return;
         }
-        setLoading(true);
+        setLoadingRoster(true);
         try {
             const roster = await attendanceApi.roster({ sectionId, subjectId });
             setRows(
                 (roster ?? []).map((s) => ({
                     studentId: s.id,
-                    studentName: (s.fullName ?? s.name ?? "").trim().replace(/\s+/g, " "),
                     fullName: (s.fullName ?? s.name ?? "").trim().replace(/\s+/g, " "),
                     idNumber: s.identificationNumber ?? s.idNumber ?? "",
-                    phone: s.phone ?? "",
-                    subsection: s.subsection ?? null,
-                    birthDate: s.birthDate ?? null,
-                    genderId: s.genderId ?? null,
                     isPresent: true,
                     notes: "",
                 }))
@@ -128,8 +127,9 @@ export default function AttendancePage() {
         } catch (err) {
             console.error("Error cargando estudiantes:", err);
             setRows([]);
+            toast.error("No se pudo cargar el listado.");
         } finally {
-            setLoading(false);
+            setLoadingRoster(false);
         }
     }, [sectionId, subjectId]);
 
@@ -137,39 +137,31 @@ export default function AttendancePage() {
         loadRoster();
     }, [loadRoster]);
 
+
     const updateRow = (id, patch) =>
         setRows((prev) => prev.map((r) => (r.studentId === id ? { ...r, ...patch } : r)));
+    const markAll = (present) =>
+        setRows((prev) => prev.map((r) => ({ ...r, isPresent: present })));
 
-    const markPresent = (id, present) => updateRow(id, { isPresent: present });
 
-    const markAll = (present) => setRows((prev) => prev.map((r) => ({ ...r, isPresent: present })));
-
-    const resetAll = useCallback(() => {
-        setRows([]);
-        setSectionId(0);
-        setSubject("");
-        setSubjectId(0);
-        setDate(today);
-        setTime(nowHHmm());
-        try {
-            ls.set("ui.attendance.filters", {
-                date: today,
-                time: nowHHmm(),
-                subject: "",
-                subjectId: 0,
-            });
-        } catch (err) {
-            console.warn("No se pudo limpiar filtros en localStorage", err);
-        }
-    }, [today]);
+    async function doSave(payload) {
+        await attendanceApi.createGroup(payload);
+        setLastSavedKey(currentKey);
+        toast.success("Asistencia guardada");
+    }
 
     const saveGroup = async () => {
-        if (!sectionId) return alert("Seleccioná una sección.");
-        if (!subjectId) return alert("Seleccioná una asignatura.");
-        if (!rows.length) return alert("No hay estudiantes cargados.");
-        if (!/^\d{2}:\d{2}$/.test(time)) return alert("Ingresá una hora válida (HH:MM).");
+        if (!sectionId) return toast.error("Seleccioná una sección.");
+        if (!subjectId) return toast.error("Seleccioná una asignatura.");
+        if (!rows.length) return toast.error("No hay estudiantes cargados.");
+        if (!/^\d{2}:\d{2}$/.test(time)) return toast.error("Ingresá una hora válida (HH:MM).");
 
-        setLoading(true);
+        if (currentKey === lastSavedKey) {
+            toast("Esta asistencia ya fue registrada.");
+            return;
+        }
+
+        setSaving(true);
         try {
             const payload = {
                 date,
@@ -183,211 +175,299 @@ export default function AttendancePage() {
                     notes: r.notes,
                 })),
             };
+            const existing = await attendanceApi.newList({ date, sectionId, subjectId });
+            if (Array.isArray(existing) && existing.length > 0) {
+                setPendingPayload(payload);
+                setConfirmOpen(true);
+                return;
+            }
 
-            await attendanceApi.createGroup(payload);
-
-            setToast("✅ Asistencia guardada");
-            setTimeout(() => setToast(""), 3000);
-
-            resetAll();
+            await doSave(payload);
         } catch (e) {
             console.error("Error al guardar asistencia:", e);
-            alert(e?.message ?? "Error al guardar");
+            toast.error(e?.message ?? "Error al guardar");
         } finally {
-            setLoading(false);
+            setSaving(false);
         }
     };
 
+
+    const total = rows.length;
+    const presentCount = rows.filter((r) => r.isPresent).length;
+    const absentCount = total - presentCount;
+
+
+    if (loadingInit) return <Loader1 />;
+
     return (
-        <div className="p-6">
-            <h1 className="text-2xl font-semibold mb-4">Registro de asistencia diaria</h1>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div>
-                    <label className="text-xs text-slate-500">Fecha</label>
-                    <input
-                        type="date"
-                        value={date}
-                        onChange={(e) => setDate(e.target.value)}
-                        className="w-full border rounded px-2 py-1"
-                    />
-                </div>
-
-                <div className="w-40 sm:w-48 md:w-56">
-                    <label className="text-xs text-slate-500">Hora</label>
-                    <input
-                        type="time"
-                        value={time}
-                        onChange={(e) => setTime(e.target.value)}
-                        step={60}
-                        className="w-full border rounded px-2 py-1"
-                        aria-label="Hora de toma (editable)"
-                    />
-                </div>
-
-                <div>
-                    <label className="text-xs text-slate-500 block mb-1">Sección</label>
-                    <FormControl fullWidth size="small">
-
-                        <Select
-                            labelId="section-label"
-                            label="Sección"
-                            value={sectionId || ""}
-                            onChange={(e) => setSectionId(Number(e.target.value) || 0)}
-                            displayEmpty
-                            renderValue={(selected) => {
-                                if (!selected) return "Seleccioná una sección";
-                                const item = sections.find((s) => s.id === selected);
-                                return item ? item.name : selected;
-                            }}
-                        >
-                            <MenuItem value="">
-                                <em>Seleccioná una sección</em>
-                            </MenuItem>
-                            {loadingSections && (
-                                <MenuItem disabled>
-                                    <div className="flex items-center gap-2">
-                                        <CircularProgress size={16} /> Cargando…
-                                    </div>
-                                </MenuItem>
+        <div className="min-h-screen bg-background dark:bg-background-dark p-6">
+            <div className="max-w-7xl mx-auto space-y-6">
+        
+                <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold text-surface-dark dark:text-surface inline-flex gap-2">
+                            <Users className="w-9 h-9" />
+                            <span>Registro de asistencia diaria</span>
+                        </h1>
+                        <p className="text-surface-dark dark:text-surface mt-1">
+                            Marca asistencia, añade observaciones y guarda el registro del grupo.
+                        </p>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button onClick={saveGroup} disabled={saving || loadingRoster}>
+                            {saving ? (
+                                <span className="inline-flex items-center">
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Guardando…
+                                </span>
+                            ) : (
+                                <>
+                                    <Save className="w-4 h-4 mr-2" />
+                                    Guardar asistencia
+                                </>
                             )}
-                            {sections.map((s) => (
-                                <MenuItem key={s.id} value={s.id}>
-                                    {s.name}
-                                </MenuItem>
-                            ))}
-                            {!loadingSections && sections.length === 0 && (
-                                <MenuItem disabled>(Sin secciones activas)</MenuItem>
+                        </Button>
+                    </div>
+                </div>
+                <Card className="relative z-20 overflow-visible">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Calendar className="w-5 h-5" />
+                            Detalles de asistencia
+                        </CardTitle>
+                        <CardDescription>Seleccioná fecha, hora, sección y asignatura</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div className="flex flex-col">
+                                <label className="text-xs text-surface-dark/70 dark:text-surface/70 mb-1">Fecha</label>
+                                <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+                            </div>
+
+                            <div className="flex flex-col">
+                                <label className="text-xs text-surface-dark/70 dark:text-surface/70 mb-1 inline-flex items-center gap-1">
+                                    <Clock className="w-3.5 h-3.5" /> Hora
+                                </label>
+                                <Input type="time" step={60} value={time} onChange={(e) => setTime(e.target.value)} />
+                            </div>
+
+                         
+                            <div className="relative z-10 focus-within:z-50 focus-within:mb-64 md:focus-within:mb-0">
+                                <FilterSelect
+                                    label="Sección"
+                                    value={sectionId || ""}
+                                    onChange={(val) => setSectionId(Number(val) || 0)}
+                                    options={sections}
+                                    placeholder="Seleccionar sección"
+                                />
+                            </div>
+
+                            <div className="relative z-10 focus-within:z-50 focus-within:mb-64 md:focus-within:mb-0">
+                                <FilterSelect
+                                    label="Asignatura"
+                                    value={subjectId || ""}
+                                    onChange={(val) => setSubjectId(Number(val) || 0)}
+                                    options={subjects}
+                                    placeholder="Seleccionar asignatura"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
+                            <div className="text-sm text-surface-dark dark:text-surface">
+                                {sectionId ? (
+                                    <>
+                                        Estudiantes: <b>{total}</b> &nbsp;|&nbsp; Presentes: <b>{presentCount}</b> &nbsp;|&nbsp; Ausentes:{" "}
+                                        <b>{absentCount}</b>
+                                    </>
+                                ) : (
+                                    "Seleccioná una sección para cargar estudiantes"
+                                )}
+                            </div>
+                            <div className="flex gap-2">
+                                <Button variant="outline" onClick={() => markAll(true)} disabled={!rows.length || loadingRoster}>
+                                    <CheckCircle className="w-4 h-4 mr-2" />
+                                    Todos presente
+                                </Button>
+                                <Button variant="outline" onClick={() => markAll(false)} disabled={!rows.length || loadingRoster}>
+                                    <XCircle className="w-4 h-4 mr-2" />
+                                    Todos ausente
+                                </Button>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card>
+                        <CardContent className="py-4 flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-surface-dark dark:text-surface">Total estudiantes</p>
+                                <p className="text-2xl font-bold text-surface-dark dark:text-surface">{total}</p>
+                            </div>
+                            <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900">
+                                <Users className="w-6 h-6 text-blue-600 dark:text-blue-300" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardContent className="py-4 flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-surface-dark dark:text-surface">Presentes</p>
+                                <p className="text-2xl font-bold text-surface-dark dark:text-surface">{presentCount}</p>
+                            </div>
+                            <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900">
+                                <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-300" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardContent className="py-4 flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-surface-dark dark:text-surface">Ausentes</p>
+                                <p className="text-2xl font-bold text-surface-dark dark:text-surface">{absentCount}</p>
+                            </div>
+                            <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900">
+                                <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-300" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+             
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Lista de alumnos</CardTitle>
+                      
+                    </CardHeader>
+                    <CardContent>
+                        <div className="relative">
+                       
+                            {loadingRoster && (
+                                <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/60 dark:bg-background-dark/60 backdrop-blur-sm rounded-lg">
+                                    <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                                    Cargando estudiantes…
+                                </div>
                             )}
-                        </Select>
-                    </FormControl>
-                </div>
 
-                <div className="w-50 sm:w-50 md:w-70">
-                    <label className="text-xs text-slate-500 block mb-1">Asignatura</label>
-                    <FormControl fullWidth size="small">
+                            <div className="overflow-x-auto w-48 sm:w-56 lg:w-full mx-auto lg:mx-0">
+                                <table className="w-full border-collapse">
+                                    <thead>
+                                        <tr className="border-b">
+                                            <th className="text-left p-3 font-medium">Nombre</th>
+                                            <th className="text-left p-3 font-medium">Cédula</th>
+                                            <th className="text-left p-3 font-medium">Notas</th>
+                                            <th className="text-center p-3 font-medium">Asistencia</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody aria-busy={loadingRoster}>
+                                        {rows.map((r) => {
+                                            const on = r.isPresent;
+                                            return (
+                                                <tr key={r.studentId} className="border-b hover:bg-muted/40">
+                                                    <td className="p-3 font-medium">{r.fullName}</td>
+                                                    <td className="p-3">{r.idNumber || "-"}</td>
+                                                    <td className="p-3">
+                                                        <Input
+                                                            placeholder="Observaciones"
+                                                            value={r.notes}
+                                                            onChange={(e) => updateRow(r.studentId, { notes: e.target.value })}
+                                                            disabled={loadingRoster}
+                                                        />
+                                                    </td>
+                                                    <td className="p-3 text-center">
+                                                        <div className="inline-flex gap-2">
+                                                            <Button
+                                                                size="sm"
+                                                                variant={on ? "default" : "outline"}
+                                                                onClick={() => updateRow(r.studentId, { isPresent: true })}
+                                                                disabled={loadingRoster}
+                                                            >
+                                                                Presente
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                variant={!on ? "destructive" : "outline"}
+                                                                onClick={() => updateRow(r.studentId, { isPresent: false })}
+                                                                disabled={loadingRoster}
+                                                            >
+                                                                Ausente
+                                                            </Button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                        {sectionId > 0 && rows.length === 0 && !loadingRoster && (
+                                            <tr>
+                                                <td className="p-4 text-center text-surface-dark dark:text-surface" colSpan={4}>
+                                                    No hay estudiantes para esta sección.
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
 
-                        <Select
-                            labelId="subject-label"
-                            label="Asignatura"
-                            value={subjectId || ""}
-                            onChange={(e) => {
-                                const val = Number(e.target.value) || 0;
-                                setSubjectId(val);
-                                const found = subjects.find((s) => s.id === val);
-                                setSubject(found?.name ?? "");
-                            }}
-                            displayEmpty
-                            renderValue={(selected) => {
-                                if (!selected) return "Seleccioná una asignatura";
-                                const item = subjects.find((s) => s.id === selected);
-                                return item ? item.name : selected;
-                            }}
-                        >
-                            <MenuItem value="">
-                                <em>Seleccioná una asignatura</em>
-                            </MenuItem>
-                            {subjects.map((s) => (
-                                <MenuItem key={s.id} value={s.id}>
-                                    {s.name}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                </div>
+                        <div className="flex justify-end mt-6">
+                            <Button onClick={saveGroup} disabled={saving || loadingRoster}>
+                                {saving ? (
+                                    <span className="inline-flex items-center">
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        Guardando…
+                                    </span>
+                                ) : (
+                                    <>
+                                        <Save className="w-4 h-4 mr-2" />
+                                        Guardar asistencia
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
-
-            <div className="mb-3 flex items-center justify-between">
-                <div className="text-sm text-slate-500">
-                    {sectionId
-                        ? loading
-                            ? "Cargando estudiantes…"
-                            : `Estudiantes: ${rows.length}`
-                        : "Seleccioná sección para cargar estudiantes"}
-                </div>
-                <div className="flex gap-2">
-                    <Button variant="outlined" size="small" onClick={() => markAll(true)} disabled={!rows.length}>
-                        Todos Presente
-                    </Button>
-                    <Button variant="outlined" size="small" onClick={() => markAll(false)} disabled={!rows.length}>
-                        Todos Ausente
-                    </Button>
-                    <Button
-                        variant="contained"
-                        size="small"
-                        onClick={saveGroup}
-                        disabled={loading || !sectionId || !subjectId || !rows.length}
-                    >
-                        Guardar asistencia
-                    </Button>
-                </div>
-            </div>
-
-            {toast && (
-                <div className="mb-3 text-sm bg-green-50 border border-green-200 text-green-700 rounded px-3 py-2">
-                    {toast}
+}
+            {confirmOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center">
+                    <div
+                        className="absolute inset-0 bg-black/60"
+                        onClick={() => setConfirmOpen(false)}
+                        aria-hidden
+                    />
+                    <Card className="relative z-10 w-[95%] max-w-md overflow-visible">
+                        <CardHeader>
+                            <CardTitle>Asistencia ya registrada</CardTitle>
+                            <CardDescription>
+                                Ya existe asistencia para esta sección y asignatura el{" "}
+                                {new Date(date).toLocaleDateString("es-CR")}. ¿Deseás actualizarla?
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex justify-end gap-2">
+                            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+                                Cancelar
+                            </Button>
+                            <Button
+                                onClick={async () => {
+                                    try {
+                                        setConfirmOpen(false);
+                                        setSaving(true);
+                                        await doSave(pendingPayload);
+                                        toast.success("Asistencia actualizada");
+                                    } catch (e) {
+                                        toast.error(e?.message ?? "Error al guardar");
+                                    } finally {
+                                        setSaving(false);
+                                    }
+                                }}
+                            >
+                                Actualizar
+                            </Button>
+                        </CardContent>
+                    </Card>
                 </div>
             )}
-
-            <TableContainer component={Paper} elevation={0} className="border">
-                <Table size="small">
-                    <TableHead className="bg-slate-50">
-                        <TableRow>
-                            <TableCell>Nombre</TableCell>
-                            <TableCell>Cédula</TableCell>
-                            <TableCell>Subsec.</TableCell>
-                            <TableCell>Nacimiento</TableCell>
-                            <TableCell>Notas</TableCell>
-                            <TableCell align="right">Asistencia</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {rows.map((r) => (
-                            <TableRow key={r.studentId}>
-                                <TableCell className="font-medium">{r.fullName}</TableCell>
-                                <TableCell>{r.idNumber || "-"}</TableCell>
-                                <TableCell>{r.subsection ?? "-"}</TableCell>
-                                <TableCell>{formatBirth(r.birthDate)}</TableCell>
-                                <TableCell>
-                                    <input
-                                        className="text-sm w-full border rounded px-2 py-1"
-                                        placeholder="Observaciones"
-                                        value={r.notes}
-                                        onChange={(e) => updateRow(r.studentId, { notes: e.target.value })}
-                                    />
-                                </TableCell>
-                                <TableCell align="right">
-                                    <div className="flex items-center gap-2 justify-end">
-                                        <Button
-                                            variant={r.isPresent ? "contained" : "outlined"}
-                                            size="small"
-                                            onClick={() => markPresent(r.studentId, true)}
-                                        >
-                                            Presente
-                                        </Button>
-                                        <Button
-                                            variant={!r.isPresent ? "contained" : "outlined"}
-                                            color="warning"
-                                            size="small"
-                                            onClick={() => markPresent(r.studentId, false)}
-                                        >
-                                            Ausente
-                                        </Button>
-                                        <Chip label={r.isPresent ? "✔" : "✖"} size="small" color={r.isPresent ? "success" : "default"} />
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-
-                        {!loading && sectionId > 0 && rows.length === 0 && (
-                            <TableRow>
-                                <TableCell colSpan={6}>No hay estudiantes para esta sección.</TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </TableContainer>
-
         </div>
     );
 }

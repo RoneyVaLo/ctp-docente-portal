@@ -21,6 +21,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
         {
             var utcNow = DateTime.UtcNow;
             var userId = 1;
+
             DateTime takenAtUtc = dto.TakenAt.Kind switch
             {
                 DateTimeKind.Utc => dto.TakenAt,
@@ -28,23 +29,40 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 DateTimeKind.Unspecified => DateTime.SpecifyKind(dto.TakenAt, DateTimeKind.Local).ToUniversalTime()
             };
 
+            await using var tx = await _context.Database.BeginTransactionAsync();
+
+            // Estados previos (para notificar solo si cambian a ausente)
+            var prev = await _context.Attendances
+                .Where(a => a.SectionId == dto.SectionId
+                         && a.SubjectId == dto.SubjectId
+                         && a.Date == dto.Date)
+                .ToDictionaryAsync(a => a.StudentId, a => a.StatusTypeId);
+
             foreach (var st in dto.Students)
             {
-                await _context.Database.ExecuteSqlInterpolatedAsync($@"
-                INSERT INTO ""Attendances""
-                    (""StudentId"", ""SectionId"", ""SubjectId"", ""Date"", ""TakenAt"", ""StatusTypeId"", ""MinutesLate"", ""Observations"", ""CreatedAt"", ""CreatedBy"")
-                VALUES
-                    ({st.StudentId}, {dto.SectionId}, {dto.SubjectId}, {dto.Date}, {takenAtUtc}, {st.StatusTypeId}, {st.MinutesLate}, {st.Observations}, {utcNow}, {userId})
-                ON CONFLICT (""StudentId"", ""SectionId"", ""SubjectId"", ""Date"")
-                DO UPDATE SET
-                    ""StatusTypeId"" = EXCLUDED.""StatusTypeId"",
-                    ""MinutesLate""  = EXCLUDED.""MinutesLate"",
-                    ""Observations"" = EXCLUDED.""Observations"",
-                    ""TakenAt""      = EXCLUDED.""TakenAt"",
-                    ""UpdatedAt""    = {utcNow},
-                    ""UpdatedBy""    = {userId};");
+                var status = st.StatusTypeId;
+                var minutes = st.MinutesLate ?? 0;
+                var obs = st.Observations ?? string.Empty;
 
-                if (st.StatusTypeId == 2)
+                await _context.Database.ExecuteSqlInterpolatedAsync($@"
+                    INSERT INTO ""Attendances""
+                        (""StudentId"", ""SectionId"", ""SubjectId"", ""Date"", ""TakenAt"",
+                         ""StatusTypeId"", ""MinutesLate"", ""Observations"", ""CreatedAt"", ""CreatedBy"")
+                    VALUES
+                        ({st.StudentId}, {dto.SectionId}, {dto.SubjectId}, {dto.Date}, {takenAtUtc},
+                         {status}, {minutes}, {obs}, {utcNow}, {userId})
+                    ON CONFLICT (""StudentId"", ""SectionId"", ""SubjectId"", ""Date"")
+                    DO UPDATE SET
+                        ""StatusTypeId"" = EXCLUDED.""StatusTypeId"",
+                        ""MinutesLate""  = EXCLUDED.""MinutesLate"",
+                        ""Observations"" = EXCLUDED.""Observations"",
+                        ""TakenAt""      = EXCLUDED.""TakenAt"",
+                        ""UpdatedAt""    = {utcNow},
+                        ""UpdatedBy""    = {userId};");
+
+                var hadPrev = prev.TryGetValue(st.StudentId, out var beforeStatus);
+                var becameAbsent = (status == 2) && (!hadPrev || beforeStatus != 2);
+                if (becameAbsent)
                 {
                     await _notificationService.QueueAbsenceMessageAsync(
                         studentId: st.StudentId,
@@ -56,6 +74,8 @@ namespace ctp_docente_portal.Server.Services.Implementations
                     );
                 }
             }
+
+            await tx.CommitAsync();
         }
 
         public async Task UpdateAsync(UpdateAttendanceDto dto)
@@ -117,6 +137,6 @@ namespace ctp_docente_portal.Server.Services.Implementations
                     TotalLate = g.Count(a => a.StatusTypeId == 4),
                 })
                 .ToListAsync();
-        }
-    }
+        }
+    }
 }

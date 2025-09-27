@@ -41,7 +41,7 @@ namespace ctp_docente_portal.Server.Controllers
         }
 
         [HttpGet]
-        [Authorize(Policy = "AdministrativoOnly")]
+        //[Authorize(Policy = "AdministrativoOnly")]
         public async Task<ActionResult<List<SubjectDto>>> GetAllSubjectsAsync()
         {
             var subjects = await _subjectService.GetAllSubjectsAsync();

@@ -21,7 +21,7 @@ namespace ctp_docente_portal.Server.DTOs.Attendance
         public string? Phone { get; set; } = null;
 
         public int StatusTypeId { get; set; }
-        public int MinutesLate { get; set; } = 0;
+        public int? MinutesLate { get; set; } = 0;
         public string Observations { get; set; } = string.Empty;
     }
 }
