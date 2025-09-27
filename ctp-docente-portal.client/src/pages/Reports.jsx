@@ -78,20 +78,15 @@ const Reports = () => {
   const gridColor = darkMode ? "#ffffff" : "#000000";
 
   useEffect(() => {
-    const fetchFiltersData = async () => {
+    const fetchPeriodsData = async () => {
       try {
         setLoading(true);
         const token = sessionStorage.getItem("token");
-        const [periodsResponse, sectionsResponse] = await Promise.all([
-          axios.get("api/academicperiods", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          axios.get("api/section", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ]);
-        setPeriods(periodsResponse.data);
-        setSections(sectionsResponse.data);
+        const response = await axios.get("api/academicperiods", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        setPeriods(response.data);
 
         if (selectedPeriod !== "") {
           applyFilters();
@@ -103,9 +98,55 @@ const Reports = () => {
       }
     };
 
-    fetchFiltersData();
+    fetchPeriodsData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const fetchSectionsData = async () => {
+      if (selectedPeriod !== "") {
+        try {
+          setLoading(true);
+          setSections([]);
+
+          if (
+            !sessionStorage.getItem("groupReports") ||
+            selectedPeriod !== sessionStorage.getItem("periodReports")
+          ) {
+            setSelectedSection("");
+            sessionStorage.removeItem("groupReports");
+          }
+          const token = sessionStorage.getItem("token");
+          const response = await axios.get(
+            `api/section/period/${selectedPeriod}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+
+          setSections(response.data);
+        } catch (error) {
+          console.error(error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchSectionsData();
+  }, [selectedPeriod]);
+
+  useEffect(() => {
+    if (
+      selectedPeriod !== sessionStorage.getItem("periodStudents") ||
+      selectedSection !== sessionStorage.getItem("groupStudents")
+    ) {
+      setGradesData([]);
+      setAttendanceData([]);
+      setGroupReportData([]);
+      setStats(null);
+    }
+  }, [selectedPeriod, selectedSection]);
 
   const resetFilters = async () => {
     setLoading(true);
@@ -171,7 +212,10 @@ const Reports = () => {
 
   const downloadGeneralReport = async () => {
     try {
-      if (selectedPeriod !== "" && selectedSection !== "") {
+      if (
+        sessionStorage.getItem("periodReports") &&
+        sessionStorage.getItem("groupReports")
+      ) {
         setLoading(true);
         const reportFilter = {
           academicPeriodId: parseInt(selectedPeriod),
@@ -188,7 +232,7 @@ const Reports = () => {
         );
       } else {
         toast.error(
-          "Primero debe seleccionar un Periodo Académico y una Sección."
+          "Seleccione un Periodo Académico, una Sección y Aplique los Filtros."
         );
       }
     } catch (error) {
@@ -201,7 +245,10 @@ const Reports = () => {
 
   const downloadAttendanceReport = async () => {
     try {
-      if (selectedPeriod !== "" && selectedSection !== "") {
+      if (
+        sessionStorage.getItem("periodReports") &&
+        sessionStorage.getItem("groupReports")
+      ) {
         setLoading(true);
         const reportFilter = {
           academicPeriodId: parseInt(selectedPeriod),
@@ -218,7 +265,7 @@ const Reports = () => {
         );
       } else {
         toast.error(
-          "Primero debe seleccionar un Periodo Académico y una Sección."
+          "Seleccione un Periodo Académico, una Sección y Aplique los Filtros."
         );
       }
     } catch (error) {
@@ -302,7 +349,7 @@ const Reports = () => {
                   </p>
                   <p className="text-2xl font-bold text-surface-dark dark:text-surface">
                     {stats?.generalAverage
-                      ? Number(stats?.generalAverage).toFixed(2)
+                      ? Math.round(Number(stats?.generalAverage))
                       : 0}
                   </p>
                 </div>
@@ -325,7 +372,7 @@ const Reports = () => {
                   </p>
                   <p className="text-2xl font-bold text-surface-dark dark:text-surface">
                     {stats?.averageAttendance
-                      ? Number(stats?.averageAttendance).toFixed(1)
+                      ? Math.round(Number(stats?.averageAttendance))
                       : 0}
                     %
                   </p>
@@ -393,45 +440,53 @@ const Reports = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="w-full h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={gradesData}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                  >
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke={gridColor}
-                      className="opacity-30"
-                    />
-                    <XAxis
-                      dataKey="subject"
-                      tick={{ fill: axisColor, fontSize: 12 }}
-                      angle={-45}
-                      textAnchor="end"
-                      height={60}
-                    />
-                    <YAxis tick={{ fill: axisColor, fontSize: 12 }} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: darkMode ? "#0f172a" : "#f8fafc",
-                        border: `1px solid ${darkMode ? "#f8fafc" : "#0f172a"}`,
-                        borderRadius: "6px",
-                        color: darkMode ? "#ffffff" : "#000000",
-                      }}
-                      formatter={(value) => [
-                        Number.isInteger(value) ? value : value.toFixed(2),
-                        "Promedio",
-                      ]}
-                    />
-                    <Bar
-                      dataKey="average"
-                      fill="#3b82f6"
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              {gradesData.length > 0 ? (
+                <div className="w-full" style={{ height: 300 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={gradesData}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke={gridColor}
+                        className="opacity-30"
+                      />
+                      <XAxis
+                        dataKey="subject"
+                        tick={{ fill: axisColor, fontSize: 12 }}
+                        angle={-45}
+                        textAnchor="end"
+                        height={60}
+                      />
+                      <YAxis tick={{ fill: axisColor, fontSize: 12 }} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: darkMode ? "#0f172a" : "#f8fafc",
+                          border: `1px solid ${
+                            darkMode ? "#f8fafc" : "#0f172a"
+                          }`,
+                          borderRadius: "6px",
+                          color: darkMode ? "#ffffff" : "#000000",
+                        }}
+                        formatter={(value) => [
+                          Number.isInteger(value) ? value : value.toFixed(2),
+                          "Promedio",
+                        ]}
+                      />
+                      <Bar
+                        dataKey="average"
+                        fill="#3b82f6"
+                        radius={[4, 4, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="w-full h-[300px] flex items-center justify-center text-2xl text-center font-bold">
+                  No hay Datos que Mostrar
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -444,47 +499,55 @@ const Reports = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="w-full h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={attendanceData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    className="opacity-30"
-                    stroke={gridColor}
-                  />
-                  <XAxis
-                    dataKey="month"
-                    tick={{ fill: axisColor, fontSize: 12 }}
-                  />
-                  <YAxis
-                    tick={{ fill: axisColor, fontSize: 12 }}
-                    domain={[80, 100]}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "6px",
-                    }}
-                    formatter={(value) => [
-                      `${Number.isInteger(value) ? value : value.toFixed(2)}%`,
-                      "Asistencia",
-                    ]}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="attendance"
-                    stroke="#22c55e"
-                    strokeWidth={3}
-                    dot={{ fill: "#22c55e", strokeWidth: 2, r: 6 }}
-                    activeDot={{ r: 8, stroke: "#22c55e", strokeWidth: 2 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            {attendanceData.length > 0 ? (
+              <div className="w-full h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={attendanceData}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      className="opacity-30"
+                      stroke={gridColor}
+                    />
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fill: axisColor, fontSize: 12 }}
+                    />
+                    <YAxis
+                      tick={{ fill: axisColor, fontSize: 12 }}
+                      domain={[80, 100]}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "6px",
+                      }}
+                      formatter={(value) => [
+                        `${
+                          Number.isInteger(value) ? value : value.toFixed(2)
+                        }%`,
+                        "Asistencia",
+                      ]}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="attendance"
+                      stroke="#22c55e"
+                      strokeWidth={3}
+                      dot={{ fill: "#22c55e", strokeWidth: 2, r: 6 }}
+                      activeDot={{ r: 8, stroke: "#22c55e", strokeWidth: 2 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="w-full h-[300px] flex items-center justify-center text-2xl text-center font-bold">
+                No hay Datos que Mostrar
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -526,25 +589,37 @@ const Reports = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {groupReportData.map((row, index) => (
-                    <tr key={index} className="border-b hover:bg-muted/50">
-                      <td className="p-3 text-center">{row.group}</td>
-                      <td className="p-3 text-center">{row.subject}</td>
-                      <td className="p-3 font-medium text-center">
-                        {Math.round(row.average)}
-                      </td>
-                      <td className="p-3 text-center">
-                        {Number(row.attendance).toFixed(2)}%
-                      </td>
-                      <td className="p-3 text-center">
-                        <Badge
-                          variant={row.atRisk > 2 ? "destructive" : "secondary"}
-                        >
-                          {row.atRisk}
-                        </Badge>
+                  {groupReportData.length > 0 ? (
+                    groupReportData.map((row, index) => (
+                      <tr key={index} className="border-b hover:bg-muted/50">
+                        <td className="p-3 text-center">{row.group}</td>
+                        <td className="p-3 text-center">{row.subject}</td>
+                        <td className="p-3 font-medium text-center">
+                          {Math.round(row.average)}
+                        </td>
+                        <td className="p-3 text-center">
+                          {Number(row.attendance).toFixed(2)}%
+                        </td>
+                        <td className="p-3 text-center">
+                          <Badge
+                            variant={
+                              row.atRisk > 2 ? "destructive" : "secondary"
+                            }
+                          >
+                            {row.atRisk}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr className="w-full text-center">
+                      <td colSpan={5}>
+                        <div className="pt-4 w-full flex items-center justify-center text-lg text-center font-bold">
+                          No hay Datos que Mostrar
+                        </div>
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>

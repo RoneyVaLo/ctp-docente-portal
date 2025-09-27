@@ -4,6 +4,7 @@ using ctp_docente_portal.Server.Data;
 using ctp_docente_portal.Server.DTOs.Attendance;
 using ctp_docente_portal.Server.DTOs.Sections;
 using ctp_docente_portal.Server.DTOs.Users;
+using ctp_docente_portal.Server.Models;
 using ctp_docente_portal.Server.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,12 +21,55 @@ namespace ctp_docente_portal.Server.Services.Implementations
             _mapper = mapper;
         }
 
-        public async Task<List<SectionDto>> GetAllAsync()
+        public async Task<List<SectionDto>> GetAllAsync(int userId, int academicPeriodId)
         {
-            var sections = await _context.Sections
+            // Obtener StaffId asociado al usuario
+            var staffId = await _context.StaffUserLinks
+                .Where(x => x.UserId == userId)
+                .Select(x => x.StaffId)
+                .FirstOrDefaultAsync();
+
+            if (staffId == 0)
+                return new List<SectionDto>();
+
+            // Traer nombres de roles en una sola query
+            var roleNames = await (
+                from sr in _context.EvaluationStaffRoles
+                join r in _context.EvaluationRoles on sr.RoleId equals r.Id
+                where sr.StaffId == staffId
+                select r.Name
+            ).ToListAsync();
+
+            IQueryable<SectionsModel> query;
+
+            if (roleNames.Contains("Administrativo"))
+            {
+                // Administrativos ven todas las secciones
+                query =
+                    from s in _context.Sections
+                    join sa in _context.SectionAssignments on s.Id equals sa.SectionId
+                    where sa.AcademicPeriodId == academicPeriodId
+                    select s;
+            }
+            else if (roleNames.Contains("Docente"))
+            {
+                // Docentes ven solo secciones asignadas en el periodo
+                query =
+                    from s in _context.Sections
+                    join sa in _context.SectionAssignments on s.Id equals sa.SectionId
+                    where sa.StaffId == staffId && sa.AcademicPeriodId == academicPeriodId
+                    select s;
+            }
+            else
+            {
+                return new List<SectionDto>();
+            }
+
+            var sections = await query
                 .OrderBy(x => x.Id)
                 .ThenBy(x => x.Name)
                 .AsNoTracking()
+                .Distinct()
                 .ToListAsync();
 
             return _mapper.Map<List<SectionDto>>(sections);

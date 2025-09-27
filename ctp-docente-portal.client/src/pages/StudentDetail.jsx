@@ -41,6 +41,7 @@ import Avatar from "../components/ui/Avatar";
 import axios from "axios";
 import Loader1 from "../components/loaders/Loader1";
 import { useDownloadPdf } from "../hooks/useDownloadPdf";
+import toast from "react-hot-toast";
 
 const StudentDetail = () => {
   const params = useParams();
@@ -74,10 +75,10 @@ const StudentDetail = () => {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
-        // console.log(response.data);
+
         setStudent(response.data);
       } catch (error) {
-        console.error(error);
+        toast.error(error?.response?.data?.Message);
       } finally {
         setLoading(false);
       }
@@ -179,17 +180,18 @@ const StudentDetail = () => {
       const reportFilter = {
         academicPeriodId: parseInt(sessionStorage.getItem("periodStudents")),
         sectionId: parseInt(sessionStorage.getItem("groupStudents")),
-        // subjectId: parseInt(selectedSubject),
       };
+
+      // const filename = student.fullName.split(" ").join("_");
+      const filename = `${student.identification}_${student.group}`;
 
       await downloadPdf(
         `/api/pdfreport/rendimiento-estudiante/${id}`,
         reportFilter,
-        `${student.fullName.replace(" ", "_")}.pdf`
+        `${filename}.pdf`
       );
     } catch (error) {
-      console.log(error);
-      console.log(error?.response?.data?.Message);
+      toast.error(error?.response?.data?.Message);
     } finally {
       setLoading(false);
     }

@@ -5,7 +5,7 @@ namespace ctp_docente_portal.Server.Services.Interfaces
 {
     public interface ISectionService
     {
-        Task<List<SectionDto>> GetAllAsync();
+        Task<List<SectionDto>> GetAllAsync(int userId, int academicPeriodId);
         Task<List<SectionDto>> GetSectionsByPeriodAndSubjectAsync(int academicPeriodId, int subjectId, int userId);
         Task<SectionDto> GetByIdAsync(int id);
 

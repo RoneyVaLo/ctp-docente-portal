@@ -21,11 +21,11 @@ namespace ctp_docente_portal.Server.Controllers
             _sectionService = sectionService;
         }
 
-        [HttpGet]
-        //[Authorize(Policy = "AdministrativoOnly")]
-        public async Task<IActionResult> GetAll()
+        [HttpGet("period/{academicPeriodId}")]
+        public async Task<IActionResult> GetAll(int academicPeriodId)
         {
-            var result = await _sectionService.GetAllAsync();
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var result = await _sectionService.GetAllAsync(userId, academicPeriodId);
             return Ok(result);
         }
 

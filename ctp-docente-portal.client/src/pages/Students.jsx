@@ -26,14 +26,6 @@ import { useDownloadPdf } from "../hooks/useDownloadPdf";
 import DropdownMenu from "../components/ui/DropdownMenu";
 import { useDownloadCsv } from "../hooks/useDownloadCsv";
 
-// const states = [
-//   { id: 0, name: "Todos" },
-//   { id: 1, name: "Excelente" },
-//   { id: 2, name: "Bueno" },
-//   { id: 3, name: "Regular" },
-//   { id: 4, name: "Necesita apoyo" },
-// ];
-
 const Students = () => {
   const { downloadPdf } = useDownloadPdf();
   const { downloadCsv } = useDownloadCsv();
@@ -56,39 +48,124 @@ const Students = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const fetchGroups = async () => {
+    const fetchPeriods = async () => {
       try {
         setLoading(true);
         const token = sessionStorage.getItem("token");
-        const [periodsResponse, sectionsResponse, subjectsResponse] =
-          await Promise.all([
-            axios.get("api/academicperiods", {
-              headers: { Authorization: `Bearer ${token}` },
-            }),
-            axios.get("api/section", {
-              headers: { Authorization: `Bearer ${token}` },
-            }),
-            axios.get("api/subject", {
-              headers: { Authorization: `Bearer ${token}` },
-            }),
-          ]);
-        setPeriods(periodsResponse.data);
-        setSections(sectionsResponse.data);
-        setSubjects(subjectsResponse.data);
+        const response = await axios.get("api/academicperiods", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setPeriods(response.data);
 
         if (selectedPeriod !== "") {
           applyFilters();
         }
       } catch (error) {
-        console.error(error);
+        toast.error(error?.response?.data?.Message);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchGroups();
+    fetchPeriods();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const fetchSectionsData = async () => {
+      if (selectedPeriod !== "") {
+        try {
+          setLoading(true);
+          setSections([]);
+          if (
+            !sessionStorage.getItem("groupStudents") ||
+            selectedPeriod !== sessionStorage.getItem("periodStudents")
+          ) {
+            setSelectedSection("");
+            sessionStorage.removeItem("groupStudents");
+            setSelectedSubject("");
+            sessionStorage.removeItem("subjectStudents");
+            setFilteredStudents([]);
+          }
+          setSubjects([]);
+          const token = sessionStorage.getItem("token");
+          const response = await axios.get(
+            `api/section/period/${selectedPeriod}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+
+          const sortedSections = response.data.sort((a, b) => a.id - b.id);
+          setSections(sortedSections);
+        } catch (error) {
+          toast.error(error?.response?.data?.Message);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchSectionsData();
+  }, [selectedPeriod]);
+
+  useEffect(() => {
+    const fetchSubjectsData = async () => {
+      if (selectedSection !== "") {
+        try {
+          setLoading(true);
+
+          if (
+            !sessionStorage.getItem("subjectStudents") ||
+            selectedPeriod !== sessionStorage.getItem("periodStudents") ||
+            selectedSection !== sessionStorage.getItem("groupStudents")
+          ) {
+            setSelectedSubject("");
+            sessionStorage.removeItem("subjectStudents");
+            setFilteredStudents([]);
+          }
+          const token = sessionStorage.getItem("token");
+          const response = await axios.get(
+            `api/subject/period/${selectedPeriod}/section/${selectedSection}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+
+          setSubjects(response.data);
+        } catch (error) {
+          toast.error(error?.response?.data?.Message);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchSubjectsData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSection]);
+
+  useEffect(() => {
+    if (
+      selectedPeriod !== sessionStorage.getItem("periodStudents") ||
+      selectedSection !== sessionStorage.getItem("groupStudents") ||
+      selectedSubject !== sessionStorage.getItem("subjectStudents")
+    ) {
+      setFilteredStudents([]);
+    }
+  }, [selectedPeriod, selectedSection, selectedSubject]);
+
+  const resetFilters = async () => {
+    setLoading(true);
+    setSelectedPeriod("");
+    setSelectedSection("");
+    setSelectedSubject("");
+    sessionStorage.removeItem("periodStudents");
+    sessionStorage.removeItem("groupStudents");
+    sessionStorage.removeItem("subjectStudents");
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    setLoading(false);
+  };
 
   const applyFilters = async () => {
     try {
@@ -112,11 +189,17 @@ const Students = () => {
             sessionStorage.setItem("subjectStudents", selectedSubject);
 
             setFilteredStudents(response.data);
+          } else {
+            toast.error("Debe seleccionar una Materia.");
           }
+        } else {
+          toast.error("Debe seleccionar una Sección.");
         }
+      } else {
+        toast.error("Debe seleccionar un Periodo Académico.");
       }
     } catch (error) {
-      console.error(error);
+      toast.error(error?.response?.data?.Message);
     } finally {
       setLoading(false);
     }
@@ -144,9 +227,9 @@ const Students = () => {
   const studentsBySubjectReport = async () => {
     try {
       if (
-        selectedPeriod !== "" &&
-        selectedSection !== "" &&
-        selectedSubject !== ""
+        sessionStorage.getItem("periodStudents") &&
+        sessionStorage.getItem("groupStudents") &&
+        sessionStorage.getItem("subjectStudents")
       ) {
         setLoading(true);
         const reportFilter = {
@@ -165,12 +248,11 @@ const Students = () => {
         );
       } else {
         toast.error(
-          "Primero debe seleccionar un Periodo Académico, una Sección y una  Materia."
+          "Seleccione un Periodo Académico, Sección, Materia y Aplique los filtros."
         );
       }
     } catch (error) {
-      console.log(error);
-      console.log(error?.response?.data?.Message);
+      toast.error(error?.response?.data?.Message);
     } finally {
       setLoading(false);
     }
@@ -179,9 +261,9 @@ const Students = () => {
   const studentsCsvReport = async () => {
     try {
       if (
-        selectedPeriod !== "" &&
-        selectedSection !== "" &&
-        selectedSubject !== ""
+        sessionStorage.getItem("periodStudents") &&
+        sessionStorage.getItem("groupStudents") &&
+        sessionStorage.getItem("subjectStudents")
       ) {
         setLoading(true);
         const reportFilter = {
@@ -200,12 +282,11 @@ const Students = () => {
         );
       } else {
         toast.error(
-          "Primero debe seleccionar un Periodo Académico, una Sección y una  Materia."
+          "Seleccione un Periodo Académico, Sección, Materia y Aplique los filtros."
         );
       }
     } catch (error) {
-      console.log(error);
-      console.log(error?.response?.data?.Message);
+      toast.error(error?.response?.data?.Message);
     } finally {
       setLoading(false);
     }
@@ -258,7 +339,7 @@ const Students = () => {
                 <Filter className="mr-2 h-4 w-4" />
                 Aplicar filtros
               </Button>
-              <Button>
+              <Button onClick={resetFilters}>
                 <Filter className="mr-2 h-4 w-4" />
                 Restablecer Filtros
               </Button>
@@ -385,72 +466,84 @@ const Students = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredStudents.map((student) => (
-                    <TableRow key={student.id}>
-                      <TableCell className="font-medium">
-                        {student.name}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {student.identification}
-                      </TableCell>
-                      {/* <TableCell>{student.group.name}</TableCell> */}
-                      <TableCell className="text-center">
-                        <span
-                          className={`font-bold ${
-                            student.average >= 90
-                              ? "text-green-600 dark:text-green-400"
-                              : student.average >= 80
-                              ? "text-blue-600 dark:text-blue-400"
-                              : student.average >= 70
-                              ? "text-amber-600 dark:text-amber-400"
-                              : "text-red-600 dark:text-red-400"
-                          }`}
-                        >
-                          {Math.round(student.average) || 0}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 bg-gray-200 rounded-full h-2">
-                            <div
-                              className={`h-2 rounded-full ${
-                                student.attendance >= 90
-                                  ? "bg-green-500"
-                                  : student.attendance >= 80
-                                  ? "bg-amber-500"
-                                  : "bg-red-500"
-                              }`}
-                              style={{ width: `${student.attendance}%` }}
-                            ></div>
+                  {filteredStudents.length > 0 ? (
+                    filteredStudents.map((student) => (
+                      <TableRow key={student.id}>
+                        <TableCell className="font-medium">
+                          {student.name}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {student.identification}
+                        </TableCell>
+                        {/* <TableCell>{student.group.name}</TableCell> */}
+                        <TableCell className="text-center">
+                          <span
+                            className={`font-bold ${
+                              student.average >= 90
+                                ? "text-green-600 dark:text-green-400"
+                                : student.average >= 80
+                                ? "text-blue-600 dark:text-blue-400"
+                                : student.average >= 70
+                                ? "text-amber-600 dark:text-amber-400"
+                                : "text-red-600 dark:text-red-400"
+                            }`}
+                          >
+                            {Math.round(student.average) || 0}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 bg-gray-200 rounded-full h-2">
+                              <div
+                                className={`h-2 rounded-full ${
+                                  student.attendance >= 90
+                                    ? "bg-green-500"
+                                    : student.attendance >= 80
+                                    ? "bg-amber-500"
+                                    : "bg-red-500"
+                                }`}
+                                style={{ width: `${student.attendance}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-xs">
+                              {student.attendance}%
+                            </span>
                           </div>
-                          <span className="text-xs">{student.attendance}%</span>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={
+                              student?.status?.name === "Excelente"
+                                ? "bg-green-300 dark:bg-green-500 text-green-800 text-center"
+                                : student?.status?.name === "Bueno"
+                                ? "bg-blue-300 dark:bg-blue-500 text-blue-800 text-center"
+                                : student?.status?.name === "Regular"
+                                ? "bg-amber-300 dark:bg-amber-500 text-amber-800 text-center"
+                                : "bg-red-300 dark:bg-red-500 text-red-800 text-center"
+                            }
+                          >
+                            {student?.status?.name || "-"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <NavLink to={`/estudiantes/${student.id}`}>
+                            <Button size="sm" variant="outline">
+                              Detalles
+                            </Button>
+                          </NavLink>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell className="w-full" colSpan={6}>
+                        <div className="pt-4 w-full flex items-center justify-center text-lg text-center font-bold">
+                          No hay Datos que Mostrar
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={
-                            student?.status?.name === "Excelente"
-                              ? "bg-green-300 dark:bg-green-500 text-green-800 text-center"
-                              : student?.status?.name === "Bueno"
-                              ? "bg-blue-300 dark:bg-blue-500 text-blue-800 text-center"
-                              : student?.status?.name === "Regular"
-                              ? "bg-amber-300 dark:bg-amber-500 text-amber-800 text-center"
-                              : "bg-red-300 dark:bg-red-500 text-red-800 text-center"
-                          }
-                        >
-                          {student?.status?.name || "-"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <NavLink to={`/estudiantes/${student.id}`}>
-                          <Button size="sm" variant="outline">
-                            Detalles
-                          </Button>
-                        </NavLink>
-                      </TableCell>
                     </TableRow>
-                  ))}
+                  )}
                 </TableBody>
               </Table>
             </div>

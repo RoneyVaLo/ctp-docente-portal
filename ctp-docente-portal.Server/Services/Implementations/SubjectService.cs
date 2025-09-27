@@ -81,16 +81,68 @@ namespace ctp_docente_portal.Server.Services.Implementations
             return _mapper.Map<SubjectDto>(subject);
         }
 
+        public async Task<List<SubjectDto>> GetAllSubjectsAsync()
+        {
+            var subjects = await _context.Subjects
+                .AsNoTracking()
+                .ProjectTo<SubjectDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+
+            return subjects;
+        }
+
         public async Task<SubjectDto> GetByIdAsync(int id)
         {
             var subject = await _context.Subjects.FindAsync(id);
             return _mapper.Map<SubjectDto>(subject);
         }
 
-        public async Task<List<SubjectDto>> GetAllSubjectsAsync()
+        public async Task<List<SubjectDto>> GetAllSubjectsByUserIdAsync(int userId, int academicPeriodId, int sectionId)
         {
-            var subjects = await _context.Subjects
+            // Obtener StaffId asociado al usuario
+            var staffId = await _context.StaffUserLinks
+                .Where(x => x.UserId == userId)
+                .Select(x => x.StaffId)
+                .FirstOrDefaultAsync();
+
+            if (staffId == 0)
+                return new List<SubjectDto>();
+
+            // Traer nombres de roles en una sola query
+            var roleNames = await (
+                from sr in _context.EvaluationStaffRoles
+                join r in _context.EvaluationRoles on sr.RoleId equals r.Id
+                where sr.StaffId == staffId
+                select r.Name
+            ).ToListAsync();
+
+            IQueryable<SubjectsModel> query;
+
+            if (roleNames.Contains("Administrativo"))
+            {
+                // Administrativos ven todas las materias
+                query = _context.Subjects;
+            }
+            else if (roleNames.Contains("Docente"))
+            {
+                // Docentes ven solo las materias que imparten en esa sección y periodo
+                query =
+                    from subj in _context.Subjects
+                    join sa in _context.SectionAssignments on subj.Id equals sa.SubjectId
+                    where sa.StaffId == staffId
+                          && sa.AcademicPeriodId == academicPeriodId
+                          && sa.SectionId == sectionId
+                    select subj;
+            }
+            else
+            {
+                return new List<SubjectDto>();
+            }
+
+            var subjects = await query
                 .AsNoTracking()
+                .OrderBy(x => x.Id)
+                .ThenBy(x => x.Name)
                 .ProjectTo<SubjectDto>(_mapper.ConfigurationProvider)
                 .ToListAsync();
 
