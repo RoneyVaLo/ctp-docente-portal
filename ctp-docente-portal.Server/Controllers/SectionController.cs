@@ -59,5 +59,26 @@ namespace ctp_docente_portal.Server.Controllers
             var data = await _sectionService.GetOptionsAsync(year, enrollmentId, isActive, gradeId, ct);
             return Ok(data);
         }
+        [HttpGet("user/{userId:int}/sections")]
+        public async Task<ActionResult<List<SectionDto>>> GetSectionsByUser(
+            [FromRoute] int userId,
+            [FromQuery] int? academicPeriodId,
+            [FromQuery] int? subjectId,
+            CancellationToken ct)
+        {
+            var sections = await _sectionService.GetSectionsByUserAsync(userId, academicPeriodId, subjectId, ct);
+            return Ok(sections);
+        }
+        [HttpGet("me/sections")]
+        [Authorize(Policy = "DocenteOnly")]
+        public async Task<ActionResult<List<SectionDto>>> GetMySections(
+            [FromQuery] int? academicPeriodId,
+            [FromQuery] int? subjectId,
+            CancellationToken ct)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var sections = await _sectionService.GetSectionsByUserAsync(userId, academicPeriodId, subjectId, ct);
+            return Ok(sections);
+        }
     }
 }

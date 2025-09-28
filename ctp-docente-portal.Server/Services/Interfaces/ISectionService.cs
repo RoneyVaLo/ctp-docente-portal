@@ -10,5 +10,7 @@ namespace ctp_docente_portal.Server.Services.Interfaces
         Task<SectionDto> GetByIdAsync(int id);
 
         Task<List<SectionOptionDto>> GetOptionsAsync(int? year = null, int? enrollmentId = null, bool? isActive = null, int? gradeId = null, CancellationToken ct = default);
+        Task<List<SectionDto>> GetSectionsByUserAsync(int userId, int? academicPeriodId = null, int? subjectId = null, CancellationToken ct = default);
+
     }
 }

@@ -99,13 +99,15 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
             var sections = await _context.SectionAssignments
                 .Where(sa => sa.StaffId == staffId
-                  && sa.AcademicPeriodId == academicPeriodId
-                  && sa.SubjectId == subjectId)
+                           && sa.AcademicPeriodId == academicPeriodId
+                           && sa.SubjectId == subjectId)
                 .Join(_context.Sections,
-                sa => sa.SectionId,
-                sec => sec.Id,
-                (sa, sec) => sec)
+                      sa => sa.SectionId,
+                      sec => sec.Id,
+                      (sa, sec) => sec)
+                .AsNoTracking()
                 .Distinct()
+                .OrderBy(s => s.Name)
                 .ProjectTo<SectionDto>(_mapper.ConfigurationProvider)
                 .ToListAsync();
 
@@ -125,6 +127,44 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 select new SectionOptionDto { Id = s.Id, Name = s.Name };
 
             return await query.ToListAsync(ct);
+        }
+
+        /// <summary>
+        /// Obtiene las secciones asignadas a un usuario (opcionalmente filtradas por periodo y/o asignatura).
+        /// </summary>
+        public async Task<List<SectionDto>> GetSectionsByUserAsync(
+            int userId,
+            int? academicPeriodId = null,
+            int? subjectId = null,
+            CancellationToken ct = default)
+        {
+            int staffId = await _context.StaffUserLinks
+                .Where(x => x.UserId == userId)
+                .Select(x => x.StaffId)
+                .FirstOrDefaultAsync(ct);
+
+            if (staffId == 0)
+                throw new KeyNotFoundException($"Usuario con ID {userId} no encontrado");
+
+            var q = _context.SectionAssignments
+                .AsNoTracking()
+                .Where(sa => sa.StaffId == staffId);
+
+            if (academicPeriodId.HasValue && academicPeriodId.Value > 0)
+                q = q.Where(sa => sa.AcademicPeriodId == academicPeriodId.Value);
+
+            if (subjectId.HasValue && subjectId.Value > 0)
+                q = q.Where(sa => sa.SubjectId == subjectId.Value);
+
+            var sections = await (from sa in q
+                                  join s in _context.Sections.AsNoTracking() on sa.SectionId equals s.Id
+                                  select s)
+                                 .Distinct()
+                                 .OrderBy(s => s.Name)
+                                 .ProjectTo<SectionDto>(_mapper.ConfigurationProvider)
+                                 .ToListAsync(ct);
+
+            return sections;
         }
     }
 }

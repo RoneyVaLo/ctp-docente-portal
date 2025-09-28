@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { notificationsApi } from "@/services/notificationsService";
 import { sectionsApi } from "@/services/sectionsService";
 import { ls } from "@/utils/localStore";
@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 
-/* utils */
+/* ---------- utils ---------- */
 function formatDate(iso) {
     if (!iso) return "-";
     const d = new Date(iso);
@@ -34,37 +34,66 @@ function formatDate(iso) {
     return d.toLocaleDateString("es-CR");
 }
 
+function parseJwt(token) {
+    try {
+        const base64Url = token.split(".")[1];
+        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+        const json = decodeURIComponent(
+            atob(base64)
+                .split("")
+                .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+                .join("")
+        );
+        return JSON.parse(json);
+    } catch {
+        return {};
+    }
+}
+
+const lastSectionBySubjectKey = (sid) =>
+    `ui.notifications.lastSectionBySubject.${sid}`;
+
 export default function NotificationsPage() {
     const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
     const saved = ls.get("ui.notifications.filters", {}) || {};
 
-    /* filtros */
     const [date, setDate] = useState(saved.date ?? today);
     const [sectionId, setSectionId] = useState(saved.sectionId ?? 0);
     const [subjectId, setSubjectId] = useState(saved.subjectId ?? 0);
     const [status, setStatus] = useState(saved.status ?? "");
     const canQuery = sectionId > 0;
 
-    /* catálogos */
     const [sections, setSections] = useState([]);
     const [subjects, setSubjects] = useState([]);
 
-    /* datos */
     const [rows, setRows] = useState([]);
 
-    /* cargas */
-    const [loadingInit, setLoadingInit] = useState(true);    
+    const [loadingInit, setLoadingInit] = useState(true);  
+    const [loadingSections, setLoadingSections] = useState(false);
     const [loadingTable, setLoadingTable] = useState(false); 
     const [resendingId, setResendingId] = useState(null);
 
-   
+    /* guards anti-carreras + caché de secciones */
+    const sectionsReqIdRef = useRef(0);
+    const tableReqIdRef = useRef(0);
+    const sectionCacheRef = useRef(new Map());
+
+    const token = typeof window !== "undefined" ? sessionStorage.getItem("token") : null;
+    const claims = useMemo(() => (token ? parseJwt(token) : {}), [token]);
+
+    const userName = claims["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"]?.toLowerCase();
+    const email = claims["http://schemas.microsoft.com/ws/2008/06/identity/claims/email"]?.toLowerCase();
+    const role = claims["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"]?.toLowerCase();
+
+    const isAdminSpecial = userName === "admin_adoc" || role === "administrativo" || email === "admin.test@administracion.docente.com";
+
     useEffect(() => {
         try {
             ls.set("ui.notifications.filters", { date, sectionId, subjectId, status });
         } catch { }
     }, [date, sectionId, subjectId, status]);
 
-
+   
     useEffect(() => {
         return () => {
             try {
@@ -75,17 +104,22 @@ export default function NotificationsPage() {
         };
     }, []);
 
-    
     useEffect(() => {
         (async () => {
             try {
                 setLoadingInit(true);
-                const [sects, subs] = await Promise.all([
-                    sectionsApi.active(),
-                    notificationsApi.getSubjects(),
-                ]);
-                setSections(Array.isArray(sects) ? sects : []);
-                setSubjects(Array.isArray(subs) ? subs : []);
+                if (isAdminSpecial) {
+                    const [sects, subs] = await Promise.all([
+                        sectionsApi.active(), 
+                        notificationsApi.getSubjects(),
+                    ]);
+                    setSections(Array.isArray(sects) ? sects : []);
+                    setSubjects(Array.isArray(subs) ? subs : []);
+                    setLoadingSections(false);
+                } else {
+                    const subs = await notificationsApi.getSubjects();
+                    setSubjects(Array.isArray(subs) ? subs : []);
+                }
             } catch (e) {
                 console.error(e);
                 toast.error("No se pudieron cargar los catálogos.");
@@ -93,34 +127,86 @@ export default function NotificationsPage() {
                 setLoadingInit(false);
             }
         })();
-    }, []);
+    }, [isAdminSpecial]);
 
-   
+    useEffect(() => {
+        if (isAdminSpecial) return; 
+        (async () => {
+            if (!subjectId) {
+                setSections([]);
+                setSectionId(0);
+                return;
+            }
+
+            const cached = sectionCacheRef.current.get(subjectId);
+            if (cached) {
+                setSections(cached);
+                const last = Number(ls.get(lastSectionBySubjectKey(subjectId), 0)) || 0;
+                if (last && cached.find((s) => s.id === last)) {
+                    setSectionId(last);
+                } else if (cached.length === 1) {
+                    setSectionId(cached[0].id);
+                } else if (sectionId && !cached.find((s) => s.id === sectionId)) {
+                    setSectionId(0);
+                }
+                return;
+            }
+
+            const reqId = ++sectionsReqIdRef.current;
+            try {
+                setLoadingSections(true);
+                const secs = await sectionsApi.meAssigned({ subjectId});
+                if (sectionsReqIdRef.current !== reqId) return;
+                sectionCacheRef.current.set(subjectId, secs);
+                setSections(secs);
+
+                const last = Number(ls.get(lastSectionBySubjectKey(subjectId), 0)) || 0;
+                if (last && secs.find((s) => s.id === last)) {
+                    setSectionId(last);
+                } else if (secs.length === 1) {
+                    setSectionId(secs[0].id);
+                } else if (sectionId && !secs.find((s) => s.id === sectionId)) {
+                    setSectionId(0);
+                }
+            } catch (e) {
+                if (sectionsReqIdRef.current !== reqId) return;
+                console.error("Error cargando secciones asignadas:", e);
+                setSections([]);
+                setSectionId(0);
+                toast.error("No se pudieron cargar las secciones asignadas.");
+            } finally {
+                if (sectionsReqIdRef.current === reqId) setLoadingSections(false);
+            }
+        })();
+    }, [subjectId, isAdminSpecial]);
+
     const load = useCallback(async () => {
         if (!canQuery) {
             setRows([]);
             return;
         }
+        const reqId = ++tableReqIdRef.current;
         setLoadingTable(true);
         try {
             const data = await notificationsApi.list({ date, sectionId, status, subjectId });
+            if (tableReqIdRef.current !== reqId) return;
             setRows(Array.isArray(data) ? data : []);
         } catch (e) {
+            if (tableReqIdRef.current !== reqId) return;
             console.error("Error al cargar notificaciones:", e);
             setRows([]);
             toast.error("No se pudieron cargar las notificaciones.");
         } finally {
-            setLoadingTable(false);
+            if (tableReqIdRef.current === reqId) setLoadingTable(false);
         }
     }, [canQuery, date, sectionId, status, subjectId]);
 
-   
+
     useEffect(() => {
         if (loadingInit) return;
         const t = setTimeout(() => load(), 250);
         return () => clearTimeout(t);
-    
-    }, [sectionId, subjectId, status, date, loadingInit]);
+    }, [sectionId, subjectId, status, date, loadingInit, load]);
 
     const resend = useCallback(
         async (id) => {
@@ -139,7 +225,6 @@ export default function NotificationsPage() {
         [load]
     );
 
-
     const stats = useMemo(() => {
         let sent = 0,
             failed = 0,
@@ -151,7 +236,6 @@ export default function NotificationsPage() {
         }
         return { sent, failed, queued, total: rows.length };
     }, [rows]);
-
 
     const statusTabs = [
         { id: "", label: "Todos" },
@@ -173,19 +257,18 @@ export default function NotificationsPage() {
                             Notificaciones
                         </h1>
                         <p className="text-surface-dark/80 dark:text-surface/80 mt-1">
-                            Consulta, filtra y reintenta el envío de avisos.
+                            Consulta y filtra los avisos enviados a responsables.
                         </p>
                     </div>
                 </div>
-
-            
+             
                 <Card className="relative z-20 sticky top-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 dark:supports-[backdrop-filter]:bg-background-dark/80 overflow-visible">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-base flex items-center gap-2">
                             <Calendar className="w-4 h-4" />
                             Filtros
                         </CardTitle>
-                      
+                        <CardDescription>Fecha, sección, asignatura y estado</CardDescription>
                     </CardHeader>
                     <CardContent className="pt-0">
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
@@ -198,11 +281,27 @@ export default function NotificationsPage() {
 
                             <div className="lg:col-span-3 relative z-10 focus-within:z-50 focus-within:mb-64 lg:focus-within:mb-0">
                                 <FilterSelect
-                                    label="Sección"
+                                    label={`Sección${!isAdminSpecial && loadingSections ? " (cargando…)" : ""}`}
                                     value={sectionId || ""}
-                                    onChange={(val) => setSectionId(Number(val) || 0)}
+                                    onChange={(val) => {
+                                        const id = Number(val) || 0;
+                                        setSectionId(id);
+                                      
+                                        if (!isAdminSpecial && subjectId && id) {
+                                            try {
+                                                ls.set(lastSectionBySubjectKey(subjectId), id);
+                                            } catch { }
+                                        }
+                                    }}
                                     options={sections}
-                                    placeholder="Seleccionar sección"
+                                    placeholder={
+                                        !isAdminSpecial
+                                            ? subjectId
+                                                ? "Seleccionar sección"
+                                                : "Elegí una asignatura primero"
+                                            : "Seleccionar sección"
+                                    }
+                                    disabled={!isAdminSpecial && (!subjectId || loadingSections)}
                                 />
                             </div>
 
@@ -210,13 +309,19 @@ export default function NotificationsPage() {
                                 <FilterSelect
                                     label="Asignatura"
                                     value={subjectId || ""}
-                                    onChange={(val) => setSubjectId(Number(val) || 0)}
+                                    onChange={(val) => {
+                                        setSubjectId(Number(val) || 0);
+                                      
+                                        if (!isAdminSpecial) {
+                                            setSectionId(0);
+                                            setRows([]);
+                                        }
+                                    }}
                                     options={subjects}
                                     placeholder="Seleccionar asignatura"
                                 />
                             </div>
 
-                        
                             <div className="lg:col-span-4">
                                 <label className="text-xs text-surface-dark/70 dark:text-surface/70 mb-1 block">
                                     Estado
@@ -238,7 +343,7 @@ export default function NotificationsPage() {
                     </CardContent>
                 </Card>
 
-          
+    
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <Card>
                         <CardContent className="py-4 flex items-center justify-between">
@@ -277,7 +382,6 @@ export default function NotificationsPage() {
                     </Card>
                 </div>
 
-              
                 <Card>
                     <CardContent>
                         <div className="relative">
