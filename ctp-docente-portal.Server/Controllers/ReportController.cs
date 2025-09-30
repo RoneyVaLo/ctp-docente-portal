@@ -1,10 +1,8 @@
 using ctp_docente_portal.Server.DTOs.Reports;
-using ctp_docente_portal.Server.DTOs.Reports.PDF;
-using ctp_docente_portal.Server.Helpers;
-using ctp_docente_portal.Server.Services.Implementations;
 using ctp_docente_portal.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 
 namespace ctp_docente_portal.Server.Controllers
@@ -24,28 +22,32 @@ namespace ctp_docente_portal.Server.Controllers
         [HttpPost("grades")]
         public async Task<IActionResult> GetGrades([FromBody] ReportFilterDto filter)
         {
-            var result = await _reportsService.GetGradesAsync(filter);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var result = await _reportsService.GetGradesAsync(userId, filter);
             return Ok(result);
         }
 
         [HttpPost("attendance")]
         public async Task<IActionResult> GetAttendance([FromBody] ReportFilterDto filter)
         {
-            var result = await _reportsService.GetAttendanceAsync(filter);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var result = await _reportsService.GetAttendanceAsync(userId, filter);
             return Ok(result);
         }
 
         [HttpPost("group-report")]
         public async Task<IActionResult> GetGroupReport([FromBody] ReportFilterDto filter)
         {
-            var result = await _reportsService.GetGroupReportAsync(filter);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var result = await _reportsService.GetGroupReportAsync(userId, filter);
             return Ok(result);
         }
 
         [HttpPost("general-stats")]
         public async Task<IActionResult> GetGeneralStats([FromBody] ReportFilterDto filter)
         {
-            var result = await _reportsService.GetGeneralStatsAsync(filter);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var result = await _reportsService.GetGeneralStatsAsync(userId, filter);
             return Ok(result);
         }
     }

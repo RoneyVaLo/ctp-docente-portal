@@ -40,11 +40,12 @@ namespace ctp_docente_portal.Server.Controllers
             return Ok(result);
         }
 
-        [HttpGet]
+        [HttpGet("period/{academicPeriodId}/section/{sectionId}")]
         //[Authorize(Policy = "AdministrativoOnly")]
-        public async Task<ActionResult<List<SubjectDto>>> GetAllSubjectsAsync()
+        public async Task<ActionResult<List<SubjectDto>>> GetAllSubjectsAsync(int academicPeriodId, int sectionId)
         {
-            var subjects = await _subjectService.GetAllSubjectsAsync();
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var subjects = await _subjectService.GetAllSubjectsByUserIdAsync(userId, academicPeriodId, sectionId);
             return Ok(subjects);
         }
 

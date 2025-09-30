@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { attendanceApi } from "@/services/attendanceService";
 import { sectionsApi } from "@/services/sectionsService";
 import { ls } from "@/utils/localStore";
@@ -40,7 +40,7 @@ function combineDateTimeLocal(date, time) {
 }
 
 export default function AttendancePage() {
-   
+
     const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
     const initialTime = useMemo(() => nowHHmm(), []);
     const saved = ls.get("ui.attendance.filters", {}) || {};
@@ -54,13 +54,15 @@ export default function AttendancePage() {
     const [subjectId, setSubjectId] = useState(saved.subjectId ?? 0);
     const [rows, setRows] = useState([]);
 
-    const [loadingInit, setLoadingInit] = useState(true);    
-    const [loadingRoster, setLoadingRoster] = useState(false); 
-    const [saving, setSaving] = useState(false);              
+
+    const [loadingInit, setLoadingInit] = useState(true);       
+    const [loadingSections, setLoadingSections] = useState(false); 
+    const [loadingRoster, setLoadingRoster] = useState(false);   
+    const [saving, setSaving] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [pendingPayload, setPendingPayload] = useState(null);
 
-
+  
     const currentKey = useMemo(
         () =>
             JSON.stringify({
@@ -78,26 +80,28 @@ export default function AttendancePage() {
     const [lastSavedKey, setLastSavedKey] = useState("");
 
 
+    const sectionsReqIdRef = useRef(0);        
+    const rosterReqIdRef = useRef(0);         
+    const sectionCacheRef = useRef(new Map()); 
+    const lastSectionBySubjectKey = (sid) => `ui.attendance.lastSectionBySubject.${sid}`;
+
+
     useEffect(() => {
         (async () => {
             try {
                 setLoadingInit(true);
-                const [listSections, listSubjects] = await Promise.all([
-                    sectionsApi.active(),
-                    attendanceApi.getSubjects(),
-                ]);
-                setSections(listSections ?? []);
+                const listSubjects = await attendanceApi.getSubjects();
                 setSubjects(listSubjects ?? []);
             } catch (err) {
-                console.error("Error cargando catálogos:", err);
-                setSections([]);
+                console.error("Error cargando materias:", err);
                 setSubjects([]);
-                toast.error("No se pudieron cargar los catálogos.");
+                toast.error("No se pudieron cargar las materias.");
             } finally {
                 setLoadingInit(false);
             }
         })();
     }, []);
+
 
     useEffect(() => {
         try {
@@ -107,14 +111,71 @@ export default function AttendancePage() {
         }
     }, [date, time, subjectId]);
 
+    useEffect(() => {
+        (async () => {
+          
+            if (!subjectId) {
+                setSections([]);
+                setSectionId(0);
+                return;
+            }
+
+    
+            const cached = sectionCacheRef.current.get(subjectId);
+            if (cached) {
+                setSections(cached);
+
+                const last = Number(ls.get(lastSectionBySubjectKey(subjectId), 0)) || 0;
+                if (last && cached.find((s) => s.id === last)) {
+                    setSectionId(last);
+                } else if (cached.length === 1) {
+                    setSectionId(cached[0].id);
+                } else if (sectionId && !cached.find((s) => s.id === sectionId)) {
+                    setSectionId(0);
+                }
+                return;
+            }
+
+            
+            const reqId = ++sectionsReqIdRef.current;
+            try {
+                setLoadingSections(true);
+                const secs = await sectionsApi.meAssigned({ subjectId });
+                if (sectionsReqIdRef.current !== reqId) return;
+
+                sectionCacheRef.current.set(subjectId, secs);
+                setSections(secs);
+                const last = Number(ls.get(lastSectionBySubjectKey(subjectId), 0)) || 0;
+                if (last && secs.find((s) => s.id === last)) {
+                    setSectionId(last);
+                } else if (secs.length === 1) {
+                    setSectionId(secs[0].id);
+                } else if (sectionId && !secs.find((s) => s.id === sectionId)) {
+                    setSectionId(0);
+                }
+            } catch (err) {
+                if (sectionsReqIdRef.current !== reqId) return;
+                console.error("Error cargando secciones asignadas:", err);
+                setSections([]);
+                setSectionId(0);
+                toast.error("No se pudieron cargar las secciones asignadas.");
+            } finally {
+                if (sectionsReqIdRef.current === reqId) setLoadingSections(false);
+            }
+        })();
+    }, [subjectId]);
+
+
     const loadRoster = useCallback(async () => {
         if (!sectionId) {
             setRows([]);
             return;
         }
+        const reqId = ++rosterReqIdRef.current;
         setLoadingRoster(true);
         try {
             const roster = await attendanceApi.roster({ sectionId, subjectId });
+            if (rosterReqIdRef.current !== reqId) return; 
             setRows(
                 (roster ?? []).map((s) => ({
                     studentId: s.id,
@@ -125,11 +186,12 @@ export default function AttendancePage() {
                 }))
             );
         } catch (err) {
+            if (rosterReqIdRef.current !== reqId) return; 
             console.error("Error cargando estudiantes:", err);
             setRows([]);
             toast.error("No se pudo cargar el listado.");
         } finally {
-            setLoadingRoster(false);
+            if (rosterReqIdRef.current === reqId) setLoadingRoster(false);
         }
     }, [sectionId, subjectId]);
 
@@ -137,7 +199,7 @@ export default function AttendancePage() {
         loadRoster();
     }, [loadRoster]);
 
-
+  
     const updateRow = (id, patch) =>
         setRows((prev) => prev.map((r) => (r.studentId === id ? { ...r, ...patch } : r)));
     const markAll = (present) =>
@@ -191,18 +253,18 @@ export default function AttendancePage() {
         }
     };
 
-
     const total = rows.length;
     const presentCount = rows.filter((r) => r.isPresent).length;
     const absentCount = total - presentCount;
 
+    const canSave = !saving && !loadingRoster && !!subjectId && !!sectionId && rows.length > 0;
 
     if (loadingInit) return <Loader1 />;
 
     return (
         <div className="min-h-screen bg-background dark:bg-background-dark p-6">
             <div className="max-w-7xl mx-auto space-y-6">
-        
+          
                 <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-bold text-surface-dark dark:text-surface inline-flex gap-2">
@@ -214,7 +276,7 @@ export default function AttendancePage() {
                         </p>
                     </div>
                     <div className="flex gap-2">
-                        <Button onClick={saveGroup} disabled={saving || loadingRoster}>
+                        <Button onClick={saveGroup} disabled={!canSave}>
                             {saving ? (
                                 <span className="inline-flex items-center">
                                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -229,6 +291,8 @@ export default function AttendancePage() {
                         </Button>
                     </div>
                 </div>
+
+            
                 <Card className="relative z-20 overflow-visible">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
@@ -251,14 +315,21 @@ export default function AttendancePage() {
                                 <Input type="time" step={60} value={time} onChange={(e) => setTime(e.target.value)} />
                             </div>
 
-                         
+                      
                             <div className="relative z-10 focus-within:z-50 focus-within:mb-64 md:focus-within:mb-0">
                                 <FilterSelect
-                                    label="Sección"
+                                    label={`Sección${loadingSections ? " (cargando…)" : ""}`}
                                     value={sectionId || ""}
-                                    onChange={(val) => setSectionId(Number(val) || 0)}
+                                    onChange={(val) => {
+                                        const id = Number(val) || 0;
+                                        setSectionId(id);   
+                                        if (subjectId && id) {
+                                            try { ls.set(lastSectionBySubjectKey(subjectId), id); } catch { }
+                                        }
+                                    }}
                                     options={sections}
-                                    placeholder="Seleccionar sección"
+                                    placeholder={subjectId ? "Seleccionar sección" : "Elegí una asignatura primero"}
+                                    disabled={!subjectId || loadingSections}
                                 />
                             </div>
 
@@ -266,7 +337,11 @@ export default function AttendancePage() {
                                 <FilterSelect
                                     label="Asignatura"
                                     value={subjectId || ""}
-                                    onChange={(val) => setSubjectId(Number(val) || 0)}
+                                    onChange={(val) => {
+                                        setSubjectId(Number(val) || 0);
+                                        setSectionId(0);
+                                        setRows([]);
+                                    }}
                                     options={subjects}
                                     placeholder="Seleccionar asignatura"
                                 />
@@ -298,6 +373,7 @@ export default function AttendancePage() {
                     </CardContent>
                 </Card>
 
+                
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <Card>
                         <CardContent className="py-4 flex items-center justify-between">
@@ -334,15 +410,13 @@ export default function AttendancePage() {
                     </Card>
                 </div>
 
-             
+               
                 <Card>
                     <CardHeader>
                         <CardTitle>Lista de alumnos</CardTitle>
-                      
                     </CardHeader>
                     <CardContent>
                         <div className="relative">
-                       
                             {loadingRoster && (
                                 <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/60 dark:bg-background-dark/60 backdrop-blur-sm rounded-lg">
                                     <Loader2 className="w-6 h-6 animate-spin mr-2" />
@@ -411,7 +485,7 @@ export default function AttendancePage() {
                         </div>
 
                         <div className="flex justify-end mt-6">
-                            <Button onClick={saveGroup} disabled={saving || loadingRoster}>
+                            <Button onClick={saveGroup} disabled={!canSave}>
                                 {saving ? (
                                     <span className="inline-flex items-center">
                                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -428,14 +502,10 @@ export default function AttendancePage() {
                     </CardContent>
                 </Card>
             </div>
-}
+
             {confirmOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center">
-                    <div
-                        className="absolute inset-0 bg-black/60"
-                        onClick={() => setConfirmOpen(false)}
-                        aria-hidden
-                    />
+                    <div className="absolute inset-0 bg-black/60" onClick={() => setConfirmOpen(false)} aria-hidden />
                     <Card className="relative z-10 w-[95%] max-w-md overflow-visible">
                         <CardHeader>
                             <CardTitle>Asistencia ya registrada</CardTitle>

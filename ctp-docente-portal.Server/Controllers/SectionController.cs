@@ -21,11 +21,11 @@ namespace ctp_docente_portal.Server.Controllers
             _sectionService = sectionService;
         }
 
-        [HttpGet]
-        //[Authorize(Policy = "AdministrativoOnly")]
-        public async Task<IActionResult> GetAll()
+        [HttpGet("period/{academicPeriodId}")]
+        public async Task<IActionResult> GetAll(int academicPeriodId)
         {
-            var result = await _sectionService.GetAllAsync();
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var result = await _sectionService.GetAllAsync(userId, academicPeriodId);
             return Ok(result);
         }
 
@@ -58,6 +58,27 @@ namespace ctp_docente_portal.Server.Controllers
         {
             var data = await _sectionService.GetOptionsAsync(year, enrollmentId, isActive, gradeId, ct);
             return Ok(data);
+        }
+        [HttpGet("user/{userId:int}/sections")]
+        public async Task<ActionResult<List<SectionDto>>> GetSectionsByUser(
+            [FromRoute] int userId,
+            [FromQuery] int? academicPeriodId,
+            [FromQuery] int? subjectId,
+            CancellationToken ct)
+        {
+            var sections = await _sectionService.GetSectionsByUserAsync(userId, academicPeriodId, subjectId, ct);
+            return Ok(sections);
+        }
+        [HttpGet("me/sections")]
+        [Authorize(Policy = "DocenteOnly")]
+        public async Task<ActionResult<List<SectionDto>>> GetMySections(
+            [FromQuery] int? academicPeriodId,
+            [FromQuery] int? subjectId,
+            CancellationToken ct)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var sections = await _sectionService.GetSectionsByUserAsync(userId, academicPeriodId, subjectId, ct);
+            return Ok(sections);
         }
     }
 }

@@ -11,10 +11,8 @@ namespace ctp_docente_portal.Server.Models
         public string? Description { get; set; }
         public int Year { get; set; }
         public int Status { get; set; }
-
         [Column("isActive")]
         public bool IsActive { get; set; }
-
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public int CreatedBy { get; set; }

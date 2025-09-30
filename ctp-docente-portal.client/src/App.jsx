@@ -113,13 +113,8 @@ function App() {
               element: <Notificaciones />,
             },
             {
-              element: <RoleRoute listRoles={["Administrativo"]} />,
-              children: [
-                {
-                  path: "estudiantes",
-                  element: <Estudiantes />,
-                },
-              ],
+              path: "estudiantes",
+              element: <Estudiantes />,
             },
             {
               path: "estudiantes/:id",
