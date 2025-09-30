@@ -50,7 +50,7 @@ namespace ctp_docente_portal.Server.Controllers
         [HttpPost("rendimiento-estudiante/{studentId}")]
         public async Task<IActionResult> RendimientoEstudiante(int studentId, [FromBody] ReportFilterDto filter)
         {
-            var pdf = await _service.GetRendimientoEstudianteAsync(studentId, filter);
+            var pdf = await _service.GetStudentPerformanceAsync(studentId, filter);
             return File(pdf, "application/pdf", "RendimientoEstudiante.pdf");
         }
     }

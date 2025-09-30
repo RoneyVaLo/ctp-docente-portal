@@ -9,6 +9,6 @@ namespace ctp_docente_portal.Server.Services.Interfaces
         Task<byte[]> GetAttendancePerMonthAsync(ReportFilterDto filter);
         Task<byte[]> GetStudentsBySubjectAsync(ReportFilterDto filter);
         //byte[] GenerarRendimientoEstudiante(RendimientoEstudianteDto estudiante);
-        Task<byte[]> GetRendimientoEstudianteAsync(int studentId, ReportFilterDto filter);
+        Task<byte[]> GetStudentPerformanceAsync(int studentId, ReportFilterDto filter);
     }
 }

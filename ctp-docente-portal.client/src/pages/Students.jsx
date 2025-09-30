@@ -25,10 +25,12 @@ import toast from "react-hot-toast";
 import { useDownloadPdf } from "../hooks/useDownloadPdf";
 import DropdownMenu from "../components/ui/DropdownMenu";
 import { useDownloadCsv } from "../hooks/useDownloadCsv";
+import { useAuth } from "../context/AuthContext";
 
 const Students = () => {
   const { downloadPdf } = useDownloadPdf();
   const { downloadCsv } = useDownloadCsv();
+  const { roles } = useAuth();
 
   const [periods, setPeriods] = useState([]);
   const [selectedPeriod, setSelectedPeriod] = useState(
@@ -360,13 +362,16 @@ const Students = () => {
                     Exportar PDF
                   </DropdownMenu.Item>
                   <DropdownMenu.Separator />
-                  <DropdownMenu.Item
-                    onClick={studentsCsvReport}
-                    className="font-bold"
-                  >
-                    <Sheet className="mr-2 h-4 w-4" />
-                    Exportar CSV
-                  </DropdownMenu.Item>
+
+                  {roles.includes("Docente") && (
+                    <DropdownMenu.Item
+                      onClick={studentsCsvReport}
+                      className="font-bold"
+                    >
+                      <Sheet className="mr-2 h-4 w-4" />
+                      Exportar CSV
+                    </DropdownMenu.Item>
+                  )}
                 </DropdownMenu.Content>
               </DropdownMenu>
             </div>

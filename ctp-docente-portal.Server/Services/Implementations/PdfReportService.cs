@@ -7,7 +7,6 @@ using Microsoft.EntityFrameworkCore;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace ctp_docente_portal.Server.Services.Implementations
 {
@@ -71,11 +70,11 @@ namespace ctp_docente_portal.Server.Services.Implementations
                             subjectsIds.Contains(a.SubjectId))
                 .ToListAsync();
 
-            var data = new List<RendimientoGeneralDto>();
+            var data = new List<GeneralPerformanceDto>();
 
             foreach (var subject in subjects)
             {
-                var assignmentId = assignments.FirstOrDefault(a => a.SubjectId == subject.Id).Id;
+                var assignmentId = assignments.FirstOrDefault(a => a.SubjectId == subject.Id)?.Id;
                 var subjectItem = evaluationItems.Where(ei => ei.SectionAssignmentId == assignmentId).ToList();
 
                 var studentScores = new List<decimal>();
@@ -141,22 +140,22 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 // --- Estudiantes en riesgo (<60) ---
                 int estudiantesRiesgo = studentScores.Count(n => n < 60);
 
-                data.Add(new RendimientoGeneralDto
+                data.Add(new GeneralPerformanceDto
                 {
-                    Seccion = section.Name,
-                    Materia = subject.Name,
-                    Promedio = promedio,
-                    AsistenciaPromedio = asistenciaPromedio,
-                    EstudiantesRiesgo = estudiantesRiesgo
+                    Section = section.Name,
+                    Subject = subject.Name,
+                    Average = promedio,
+                    AverageAttendance = asistenciaPromedio,
+                    StudentsAtRisk = estudiantesRiesgo
                 });
             }
 
             return GenerateGeneralPerformance(data);
         }
 
-        private static byte[] GenerateGeneralPerformance(List<RendimientoGeneralDto> data)
+        private static byte[] GenerateGeneralPerformance(List<GeneralPerformanceDto> data)
         {
-            var columns = new List<string> { "MATERIA", "PROMEDIO", "ASISTENCIA", "EN RIESGO" };
+            var columns = new List<string> { "Materia", "Promedio", "Asistencia", "En Riesgo" };
             var rows = new List<List<string>>();
 
             if (data != null && data.Any())
@@ -164,15 +163,15 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 rows = data
                     .Select(d => new List<string>
                     {
-                d.Materia,
-                d.Promedio.ToString(),
-                d.AsistenciaPromedio,
-                d.EstudiantesRiesgo.ToString()
+                d.Subject,
+                d.Average.ToString(),
+                d.AverageAttendance,
+                d.StudentsAtRisk.ToString()
                     }).ToList();
             }
 
-            var section = (data != null && data.Any() && !string.IsNullOrEmpty(data.First().Seccion))
-                ? $"{data.First().Seccion}"
+            var section = (data != null && data.Any() && !string.IsNullOrEmpty(data.First().Section))
+                ? $"{data.First().Section}"
                 : "";
 
             return PdfExportHelper.CreateReport(
@@ -214,7 +213,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 .OrderBy(m => m)
                 .ToList();
 
-            var data = new List<AsistenciaPorMesDto>();
+            var data = new List<AttendancePerMonthDto>();
 
             foreach (var subject in subjects)
             {
@@ -241,26 +240,26 @@ namespace ctp_docente_portal.Server.Services.Implementations
                     ? $"{(int)months.Average(m => int.Parse(m.Trim('%')))}%"
                     : "0%";
 
-                data.Add(new AsistenciaPorMesDto
+                data.Add(new AttendancePerMonthDto
                 {
-                    Seccion = section,
-                    Materia = subject.SubjectName,
-                    Meses = months,
-                    Promedio = average
+                    Section = section ?? "",
+                    Subject = subject.SubjectName,
+                    Months = months,
+                    Average = average
                 });
             }
 
             return GetAttendancePerMonth(data);
         }
 
-        private static byte[] GetAttendancePerMonth(List<AsistenciaPorMesDto> data)
+        private static byte[] GetAttendancePerMonth(List<AttendancePerMonthDto> data)
         {
-            var columns = new List<string> { "MATERIA" };
+            var columns = new List<string> { "Materia" };
             int maxMonths = 0;
             foreach (var d in data)
-                if (d.Meses.Count > maxMonths) maxMonths = d.Meses.Count;
-            for (int i = 1; i <= maxMonths; i++) columns.Add($"MES {i}");
-            columns.Add("PROMEDIO");
+                if (d.Months.Count > maxMonths) maxMonths = d.Months.Count;
+            for (int i = 1; i <= maxMonths; i++) columns.Add($"Mes {i}");
+            columns.Add("Promedio");
 
             var rows = new List<List<string>>();
 
@@ -270,16 +269,16 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
                 foreach (var d in data)
                 {
-                    var row = new List<string> { d.Materia };
-                    row.AddRange(d.Meses);
+                    var row = new List<string> { d.Subject };
+                    row.AddRange(d.Months);
                     while (row.Count < columns.Count - 1) row.Add("N/A");
-                    row.Add(d.Promedio);
+                    row.Add(d.Average);
                     rows.Add(row);
                 }
             }
 
-            var section = (data != null && data.Any() && !string.IsNullOrEmpty(data.First().Seccion))
-                ? $"{data.First().Seccion}"
+            var section = (data != null && data.Any() && !string.IsNullOrEmpty(data.First().Section))
+                ? $"{data.First().Section}"
                 : "";
 
             return PdfExportHelper.CreateReport(
@@ -391,28 +390,28 @@ namespace ctp_docente_portal.Server.Services.Implementations
                     strAttendance = $"{(int)(100.0 * presents / total)}%";
                 }
 
-                return new EstudiantesPorMateriaDto
+                return new StudentsBySubjectDto
                 {
                     Id = est.IdentificationNumber ?? "",
-                    NombreCompleto = $"{est.Name} {est.MiddleName} {est.LastName} {est.NdLastName}".Trim(),
-                    Promedio = (int)average,
-                    Asistencia = strAttendance,
-                    Estado = average >= 60 ? "APROBADO" : "REPROBADO"
+                    FullName = $"{est.Name} {est.MiddleName} {est.LastName} {est.NdLastName}".Trim(),
+                    Average = (int)average,
+                    Attendance = strAttendance,
+                    Status = average >= 60 ? "APROBADO" : "REPROBADO"
                 };
             }).ToList();
             // Traer nombres de materia y sección
             var subject = await _context.Subjects.Where(s => s.Id == subjectId).Select(s => s.Name).FirstOrDefaultAsync();
             var section = await _context.Sections.Where(s => s.Id == sectionId).Select(s => s.Name).FirstOrDefaultAsync();
 
-            return GetStudentsBySubject(data, subject, section);
+            return GetStudentsBySubject(data, subject ?? "", section ?? "");
         }
 
-        private static byte[] GetStudentsBySubject(List<EstudiantesPorMateriaDto> data, string subject, string section)
+        private static byte[] GetStudentsBySubject(List<StudentsBySubjectDto> data, string subject, string section)
         {
-            var columns = new List<string> { "ID", "NOMBRE COMPLETO", "PROMEDIO", "ASISTENCIA", "ESTADO" };
+            var columns = new List<string> { "Identificación", "Nombre Completo", "Promedio", "Asistencia", "Estado" };
             var rows = new List<List<string>>();
             foreach (var d in data)
-                rows.Add(new List<string> { d.Id, d.NombreCompleto, d.Promedio.ToString(), d.Asistencia, d.Estado });
+                rows.Add(new List<string> { d.Id, d.FullName, d.Average.ToString(), d.Attendance, d.Status });
 
             return PdfExportHelper.CreateReport(
                 "Reporte Académico – Estudiantes por Materia",
@@ -427,30 +426,30 @@ namespace ctp_docente_portal.Server.Services.Implementations
         // ======================
         // 4. Rendimiento Estudiante
         // ======================
-        public async Task<byte[]> GetRendimientoEstudianteAsync(int studentId, ReportFilterDto filter)
+        public async Task<byte[]> GetStudentPerformanceAsync(int studentId, ReportFilterDto filter)
         {
             // 1. Estudiante
-            var estudiante = await _context.Students
+            var student = await _context.Students
                 .Where(s => s.Id == studentId)
                 .Select(s => new
                 {
-                    Nombre = (s.Name + " " + s.MiddleName + " " + s.NdLastName + " " + s.LastName).Trim(),
-                    Identificacion = s.IdentificationNumber
+                    Name = (s.Name + " " + s.MiddleName + " " + s.NdLastName + " " + s.LastName).Trim(),
+                    Identification = s.IdentificationNumber
                 })
                 .FirstOrDefaultAsync();
 
-            if (estudiante == null)
+            if (student == null)
                 throw new KeyNotFoundException("Estudiante no encontrado");
 
             // 2. Período académico
-            var periodo = await _context.AcademicPeriods
+            var period = await _context.AcademicPeriods
                 .Where(p => p.Id == filter.AcademicPeriodId)
                 .FirstOrDefaultAsync();
 
-            if (periodo == null)
+            if (period == null)
                 throw new KeyNotFoundException("Período académico no encontrado");
 
-            var seccionNombre = await _context.Sections
+            var sectionName = await _context.Sections
                 .Where(s => s.Id == filter.SectionId)
                 .Select(s => s.Name)
                 .FirstOrDefaultAsync() ?? "N/A";
@@ -522,17 +521,17 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 .ToList();
 
             // --- Promedios por materia ---
-            var materiasDto = allGrades
+            var subjectsDto = allGrades
                 .GroupBy(x => x.Subject)
                 .Select(g =>
                 {
                     var promedio = g.Sum(y => y.Score * (y.Percentage / 100m));
-                    return new MateriaDto
+                    return new SubjectReportDto
                     {
-                        Asignatura = g.Key,
-                        Seccion = seccionNombre,
-                        Promedio = (int)Math.Round(promedio),
-                        Condicion = promedio >= 70 ? "Aprobado" : "Reprobado"
+                        Subject = g.Key,
+                        Section = sectionName,
+                        Average = (int)Math.Round(promedio),
+                        Condition = promedio >= 70 ? "Aprobado" : "Reprobado"
                     };
                 }).ToList();
 
@@ -546,31 +545,31 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 select a
             ).ToListAsync();
 
-            int ausenciasJustificadas = attendanceRecords.Count(a => a.StatusTypeId == 3);
-            int ausenciasInjustificadas = attendanceRecords.Count(a => a.StatusTypeId == 2);
-            int llegadasTardias = attendanceRecords.Count(a => a.MinutesLate > 0);
+            int justifiedAbsences = attendanceRecords.Count(a => a.StatusTypeId == 3);
+            int unjustifiedAbsences = attendanceRecords.Count(a => a.StatusTypeId == 2);
+            int lateArrivals = attendanceRecords.Count(a => a.MinutesLate > 0);
 
             // 🔹 Armamos el DTO final
-            var dto = new RendimientoEstudianteDto
+            var dto = new StudentPerformanceDto
             {
-                Semestre = periodo.Name,
-                Nombre = estudiante.Nombre,
-                Identificacion = estudiante.Identificacion,
-                Seccion = seccionNombre,
-                Materias = materiasDto,
-                AusenciasJustificadas = ausenciasJustificadas,
-                AusenciasInjustificadas = ausenciasInjustificadas,
-                LlegadasTardias = llegadasTardias
+                Semester = period.Name,
+                Name = student.Name,
+                Identification = student.Identification ?? "",
+                Section = sectionName,
+                Subjects = subjectsDto,
+                JustifiedAbsences = justifiedAbsences,
+                UnjustifiedAbsences = unjustifiedAbsences,
+                LateArrivals = lateArrivals
             };
 
-            return GenerarRendimientoEstudiante(dto);
+            return GenerateStudentPerformance(dto);
         }
 
-        private byte[] GenerarRendimientoEstudiante(RendimientoEstudianteDto datos)
+        private byte[] GenerateStudentPerformance(StudentPerformanceDto datos)
         {
             var columns = new List<string> { "Asignatura", "Sección", "Promedio", "Condición" };
             var rows = new List<List<string>>();
-            var encabezados = new List<string> { "Ausencias justificadas", "Ausencias injustificadas", "Llegadas tardías" };
+            var headers = new List<string> { "Ausencias justificadas", "Ausencias injustificadas", "Llegadas tardías" };
 
             var pdf = Document.Create(container =>
             {
@@ -583,7 +582,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
                     // Encabezado
                     page.Header().Row(row =>
                     {
-                        row.RelativeItem().AlignLeft().Text(datos.Semestre)
+                        row.RelativeItem().AlignLeft().Text(datos.Semester)
                             .FontSize(11).FontFamily("Arial").FontColor(Color.FromHex("#474747"));
 
                         row.RelativeItem().AlignRight().Text($"Fecha: {DateTime.Now:dd/MM/yyyy}")
@@ -601,11 +600,11 @@ namespace ctp_docente_portal.Server.Services.Implementations
                             .FontSize(14).Bold().FontFamily("Arial").AlignCenter();
 
                         // Datos generales
-                        col.Item().PaddingBottom(5).Text($"Estudiante: {datos.Nombre}").Bold()
+                        col.Item().PaddingBottom(5).Text($"Estudiante: {datos.Name}").Bold()
                             .FontSize(12).FontFamily("Arial");
-                        col.Item().PaddingBottom(5).Text($"Identificación: {datos.Identificacion}").Bold()
+                        col.Item().PaddingBottom(5).Text($"Identificación: {datos.Identification}").Bold()
                             .FontSize(12).FontFamily("Arial");
-                        col.Item().PaddingBottom(15).Text($"Sección: {datos.Seccion}").Bold()
+                        col.Item().PaddingBottom(15).Text($"Sección: {datos.Section}").Bold()
                             .FontSize(12).FontFamily("Arial");
 
                         // Tabla de materias
@@ -628,27 +627,30 @@ namespace ctp_docente_portal.Server.Services.Implementations
                             }
 
                             // Filas dinámicas
-                            foreach (var materia in datos.Materias)
+                            foreach (var subject in datos.Subjects)
                             {
                                 table.Cell().Element(CellStyle).AlignMiddle().Padding(4)
-                                    .Text(materia.Asignatura).FontSize(12).FontFamily("Arial");
+                                    .Text(subject.Subject).FontSize(12).FontFamily("Arial");
 
                                 table.Cell().Element(CellStyle).AlignMiddle().Padding(4)
-                                    .Text(materia.Seccion).FontSize(12).FontFamily("Arial").AlignCenter();
+                                    .Text(subject.Section).FontSize(12).FontFamily("Arial").AlignCenter();
 
                                 table.Cell().Element(CellStyle).AlignMiddle().Padding(4)
-                                    .Text(materia.Promedio.ToString()).FontSize(12).FontFamily("Arial").AlignCenter();
+                                    .Text(subject.Average.ToString()).FontSize(12).FontFamily("Arial").AlignCenter();
 
                                 table.Cell().Element(CellStyle).AlignMiddle().Padding(4)
-                                    .Text(materia.Condicion).FontSize(12).FontFamily("Arial").AlignCenter();
+                                    .Text(subject.Condition).FontSize(12).FontFamily("Arial").AlignCenter();
                             }
 
                             static IContainer CellStyle(IContainer container) =>
                                 container.Border(1).BorderColor("#CCC");
                         });
 
+                        col.Item().PaddingTop(20).PaddingBottom(10).Text("Asistencia").AlignCenter().Bold()
+                            .FontSize(12).FontFamily("Arial");
+
                         // Tabla asistencia
-                        col.Item().PaddingTop(20).Table(table =>
+                        col.Item().Table(table =>
                         {
                             table.ColumnsDefinition(c =>
                             {
@@ -657,20 +659,20 @@ namespace ctp_docente_portal.Server.Services.Implementations
                                 c.RelativeColumn();
                             });
 
-                            foreach (var h in encabezados)
+                            foreach (var h in headers)
                             {
                                 table.Cell().Element(CellStyle).AlignMiddle().PaddingVertical(10)
                                     .Text(h).FontSize(12).Bold().FontFamily("Arial").AlignCenter();
                             }
 
                             table.Cell().Element(CellStyle).AlignMiddle().Padding(6)
-                                .Text(datos.AusenciasJustificadas.ToString()).FontSize(12).FontFamily("Arial").AlignCenter();
+                                .Text(datos.JustifiedAbsences.ToString()).FontSize(12).FontFamily("Arial").AlignCenter();
 
                             table.Cell().Element(CellStyle).AlignMiddle().Padding(6)
-                                .Text(datos.AusenciasInjustificadas.ToString()).FontSize(12).FontFamily("Arial").AlignCenter();
+                                .Text(datos.UnjustifiedAbsences.ToString()).FontSize(12).FontFamily("Arial").AlignCenter();
 
                             table.Cell().Element(CellStyle).AlignMiddle().Padding(6)
-                                .Text(datos.LlegadasTardias.ToString()).FontSize(12).FontFamily("Arial").AlignCenter();
+                                .Text(datos.LateArrivals.ToString()).FontSize(12).FontFamily("Arial").AlignCenter();
 
                             static IContainer CellStyle(IContainer container) =>
                                 container.Border(1).BorderColor("#CCC");
