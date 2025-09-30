@@ -88,6 +88,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
         {
             try
             {
+                string testNumber = NormalizePhone("50687169595");
                 var url = BuildMessagesUrl();
                 using var req = new HttpRequestMessage(HttpMethod.Post, url);
                 AddAuth(req);
@@ -101,7 +102,8 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 var payload = new
                 {
                     messaging_product = "whatsapp",
-                    to = phoneE164,
+                    to = testNumber,
+                    //to = phoneE164,
                     type = "template",
                     template = new
                     {

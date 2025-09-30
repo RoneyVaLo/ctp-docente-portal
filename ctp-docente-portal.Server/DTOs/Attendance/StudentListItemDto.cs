@@ -8,5 +8,6 @@
         public int? Subsection { get; set; }    
         public DateTime? BirthDate { get; set; }
         public int? GenderId { get; set; }
+        public string? GuardianPhone { get; set; }
     }
 }
