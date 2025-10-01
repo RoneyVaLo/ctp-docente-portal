@@ -267,7 +267,7 @@ const AcademicPeriods = () => {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 md:flex-row text-center md:text-start items-center justify-between">
           <div>
             <CardTitle>Períodos Académicos</CardTitle>
             <CardDescription>
@@ -431,101 +431,105 @@ const AcademicPeriods = () => {
       </CardHeader>
 
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="text-center">Nombre</TableHead>
-              <TableHead className="text-center">Fecha de Inicio</TableHead>
-              <TableHead className="text-center">Fecha de Fin</TableHead>
-              <TableHead className="text-center">Estado</TableHead>
-              <TableHead className="text-center">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {academicPeriods.length > 0 ? (
-              academicPeriods.map((period) => (
-                <TableRow key={period.id}>
-                  <TableCell className="font-medium text-center">
-                    {period.name}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {formatDate(period.startDate)}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {formatDate(period.endDate)}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant={period.isActive ? "default" : "secondary"}>
-                      {period.isActive ? "Activo" : "Inactivo"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setPeriodForm(period);
-                          setIsEditing(true);
-                          setIsDialogOpen(true);
-                        }}
+        <div className="overflow-x-auto w-56 lg:w-full mx-auto lg:mx-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-center">Nombre</TableHead>
+                <TableHead className="text-center">Fecha de Inicio</TableHead>
+                <TableHead className="text-center">Fecha de Fin</TableHead>
+                <TableHead className="text-center">Estado</TableHead>
+                <TableHead className="text-center">Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {academicPeriods.length > 0 ? (
+                academicPeriods.map((period) => (
+                  <TableRow key={period.id}>
+                    <TableCell className="font-medium text-center">
+                      {period.name}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {formatDate(period.startDate)}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {formatDate(period.endDate)}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge
+                        variant={period.isActive ? "default" : "secondary"}
                       >
-                        <Edit className="h-4 w-4" />
-                      </Button>
+                        {period.isActive ? "Activo" : "Inactivo"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setPeriodForm(period);
+                            setIsEditing(true);
+                            setIsDialogOpen(true);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
 
-                      <Dialog
-                        open={askDelete}
-                        onOpenChange={() => {
-                          setAskDelete(true);
-                          setPeriodId(period.id);
-                        }}
-                      >
-                        <DialogTrigger asChild>
-                          <Button size="sm" variant="outline">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>
-                              ¿Desea eliminar este Periodo?
-                            </DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                onClick={() => {
-                                  setAskDelete(false);
-                                }}
-                              >
-                                Cancelar
-                              </Button>
-                              <Button
-                                variant="outline"
-                                onClick={() => {
-                                  setAskDelete(false);
-                                  deletePeriod();
-                                }}
-                              >
-                                Continuar
-                              </Button>
+                        <Dialog
+                          open={askDelete}
+                          onOpenChange={() => {
+                            setAskDelete(true);
+                            setPeriodId(period.id);
+                          }}
+                        >
+                          <DialogTrigger asChild>
+                            <Button size="sm" variant="outline">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>
+                                ¿Desea eliminar este Periodo?
+                              </DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  onClick={() => {
+                                    setAskDelete(false);
+                                  }}
+                                >
+                                  Cancelar
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => {
+                                    setAskDelete(false);
+                                    deletePeriod();
+                                  }}
+                                >
+                                  Continuar
+                                </Button>
+                              </div>
                             </div>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell className="font-medium text-center">
+                    <Loader1 />
                   </TableCell>
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell className="font-medium text-center">
-                  <Loader1 />
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
 
       <CardFooter className="flex justify-between items-center">

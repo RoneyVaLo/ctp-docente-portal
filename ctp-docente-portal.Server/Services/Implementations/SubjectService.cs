@@ -97,7 +97,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
             return _mapper.Map<SubjectDto>(subject);
         }
 
-        public async Task<List<SubjectDto>> GetAllSubjectsByUserIdAsync(int userId, int academicPeriodId, int sectionId)
+        public async Task<List<SubjectDto>> GetAllSubjectsByUserIdAsync(int userId, int academicPeriodId, int? sectionId)
         {
             // Obtener StaffId asociado al usuario
             var staffId = await _context.StaffUserLinks
