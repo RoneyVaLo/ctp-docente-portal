@@ -106,12 +106,10 @@ export const attendanceApi = {
         return await res.json();
     },
 
-    /** Roster de estudiantes por sección (nuevo endpoint con fallback al viejo) */
     async roster({ sectionId, subjectId }) {
         let url = buildUrl("/attendance/studentsList", { sectionId, subjectId });
         let res = await fetch(url);
 
-        // Fallback al viejo si 404
         if (res.status === 404) {
             url = buildUrl("/attendance/students", { sectionId });
             res = await fetch(url);
@@ -128,8 +126,10 @@ export const attendanceApi = {
             subsection: s.subsection ?? null,
             birthDate: s.birthDate ?? null,
             genderId: s.genderId ?? null,
+            guardianPhone: s.guardianPhone ?? "",
         }));
     },
+
 
     async getSubjects() {
         const token = sessionStorage.getItem("token");

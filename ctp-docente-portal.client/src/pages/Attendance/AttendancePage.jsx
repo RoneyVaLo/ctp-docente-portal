@@ -27,7 +27,6 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 
-
 function nowHHmm() {
     const d = new Date();
     const hh = String(d.getHours()).padStart(2, "0");
@@ -40,7 +39,6 @@ function combineDateTimeLocal(date, time) {
 }
 
 export default function AttendancePage() {
-
     const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
     const initialTime = useMemo(() => nowHHmm(), []);
     const saved = ls.get("ui.attendance.filters", {}) || {};
@@ -54,15 +52,13 @@ export default function AttendancePage() {
     const [subjectId, setSubjectId] = useState(saved.subjectId ?? 0);
     const [rows, setRows] = useState([]);
 
-
-    const [loadingInit, setLoadingInit] = useState(true);       
-    const [loadingSections, setLoadingSections] = useState(false); 
-    const [loadingRoster, setLoadingRoster] = useState(false);   
+    const [loadingInit, setLoadingInit] = useState(true);
+    const [loadingSections, setLoadingSections] = useState(false);
+    const [loadingRoster, setLoadingRoster] = useState(false);
     const [saving, setSaving] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [pendingPayload, setPendingPayload] = useState(null);
 
-  
     const currentKey = useMemo(
         () =>
             JSON.stringify({
@@ -79,12 +75,10 @@ export default function AttendancePage() {
     );
     const [lastSavedKey, setLastSavedKey] = useState("");
 
-
-    const sectionsReqIdRef = useRef(0);        
-    const rosterReqIdRef = useRef(0);         
-    const sectionCacheRef = useRef(new Map()); 
+    const sectionsReqIdRef = useRef(0);
+    const rosterReqIdRef = useRef(0);
+    const sectionCacheRef = useRef(new Map());
     const lastSectionBySubjectKey = (sid) => `ui.attendance.lastSectionBySubject.${sid}`;
-
 
     useEffect(() => {
         (async () => {
@@ -102,7 +96,6 @@ export default function AttendancePage() {
         })();
     }, []);
 
-
     useEffect(() => {
         try {
             ls.set("ui.attendance.filters", { date, time, subjectId });
@@ -113,14 +106,12 @@ export default function AttendancePage() {
 
     useEffect(() => {
         (async () => {
-          
             if (!subjectId) {
                 setSections([]);
                 setSectionId(0);
                 return;
             }
 
-    
             const cached = sectionCacheRef.current.get(subjectId);
             if (cached) {
                 setSections(cached);
@@ -136,7 +127,6 @@ export default function AttendancePage() {
                 return;
             }
 
-            
             const reqId = ++sectionsReqIdRef.current;
             try {
                 setLoadingSections(true);
@@ -165,7 +155,6 @@ export default function AttendancePage() {
         })();
     }, [subjectId]);
 
-
     const loadRoster = useCallback(async () => {
         if (!sectionId) {
             setRows([]);
@@ -175,18 +164,19 @@ export default function AttendancePage() {
         setLoadingRoster(true);
         try {
             const roster = await attendanceApi.roster({ sectionId, subjectId });
-            if (rosterReqIdRef.current !== reqId) return; 
+            if (rosterReqIdRef.current !== reqId) return;
             setRows(
                 (roster ?? []).map((s) => ({
                     studentId: s.id,
                     fullName: (s.fullName ?? s.name ?? "").trim().replace(/\s+/g, " "),
                     idNumber: s.identificationNumber ?? s.idNumber ?? "",
+                    guardianPhone: s.guardianPhone ?? "",
                     isPresent: true,
                     notes: "",
                 }))
             );
         } catch (err) {
-            if (rosterReqIdRef.current !== reqId) return; 
+            if (rosterReqIdRef.current !== reqId) return;
             console.error("Error cargando estudiantes:", err);
             setRows([]);
             toast.error("No se pudo cargar el listado.");
@@ -199,12 +189,10 @@ export default function AttendancePage() {
         loadRoster();
     }, [loadRoster]);
 
-  
     const updateRow = (id, patch) =>
         setRows((prev) => prev.map((r) => (r.studentId === id ? { ...r, ...patch } : r)));
     const markAll = (present) =>
         setRows((prev) => prev.map((r) => ({ ...r, isPresent: present })));
-
 
     async function doSave(payload) {
         await attendanceApi.createGroup(payload);
@@ -264,7 +252,6 @@ export default function AttendancePage() {
     return (
         <div className="min-h-screen bg-background dark:bg-background-dark p-6">
             <div className="max-w-7xl mx-auto space-y-6">
-          
                 <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-bold text-surface-dark dark:text-surface inline-flex gap-2">
@@ -292,7 +279,6 @@ export default function AttendancePage() {
                     </div>
                 </div>
 
-            
                 <Card className="relative z-20 overflow-visible">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
@@ -315,14 +301,13 @@ export default function AttendancePage() {
                                 <Input type="time" step={60} value={time} onChange={(e) => setTime(e.target.value)} />
                             </div>
 
-                      
                             <div className="relative z-10 focus-within:z-50 focus-within:mb-64 md:focus-within:mb-0">
                                 <FilterSelect
                                     label={`Sección${loadingSections ? " (cargando…)" : ""}`}
                                     value={sectionId || ""}
                                     onChange={(val) => {
                                         const id = Number(val) || 0;
-                                        setSectionId(id);   
+                                        setSectionId(id);
                                         if (subjectId && id) {
                                             try { ls.set(lastSectionBySubjectKey(subjectId), id); } catch { }
                                         }
@@ -373,7 +358,6 @@ export default function AttendancePage() {
                     </CardContent>
                 </Card>
 
-                
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <Card>
                         <CardContent className="py-4 flex items-center justify-between">
@@ -410,7 +394,6 @@ export default function AttendancePage() {
                     </Card>
                 </div>
 
-               
                 <Card>
                     <CardHeader>
                         <CardTitle>Lista de alumnos</CardTitle>
@@ -430,6 +413,7 @@ export default function AttendancePage() {
                                         <tr className="border-b">
                                             <th className="text-left p-3 font-medium">Nombre</th>
                                             <th className="text-left p-3 font-medium">Cédula</th>
+                                            <th className="text-left p-3 font-medium">Teléfono del encargado</th>
                                             <th className="text-left p-3 font-medium">Notas</th>
                                             <th className="text-center p-3 font-medium">Asistencia</th>
                                         </tr>
@@ -441,6 +425,19 @@ export default function AttendancePage() {
                                                 <tr key={r.studentId} className="border-b hover:bg-muted/40">
                                                     <td className="p-3 font-medium">{r.fullName}</td>
                                                     <td className="p-3">{r.idNumber || "-"}</td>
+                                                    
+                                                    <td className="p-3">
+                                                        {r.guardianPhone
+                                                            ? (
+                                                                <a
+                                                                    href={`tel:${String(r.guardianPhone).split(/[\/|]/)[0].trim()}`}
+                                                                    className="underline"
+                                                                >
+                                                                    {r.guardianPhone}
+                                                                </a>
+                                                            )
+                                                            : "-"}
+                                                    </td>
                                                     <td className="p-3">
                                                         <Input
                                                             placeholder="Observaciones"
@@ -474,7 +471,7 @@ export default function AttendancePage() {
                                         })}
                                         {sectionId > 0 && rows.length === 0 && !loadingRoster && (
                                             <tr>
-                                                <td className="p-4 text-center text-surface-dark dark:text-surface" colSpan={4}>
+                                                <td className="p-4 text-center text-surface-dark dark:text-surface" colSpan={5}>
                                                     No hay estudiantes para esta sección.
                                                 </td>
                                             </tr>

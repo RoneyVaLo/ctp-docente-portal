@@ -86,22 +86,32 @@ namespace ctp_docente_portal.Server.Controllers
         {
             if (sectionId <= 0) return Ok(new List<StudentListItemDto>());
 
-            var list = await (from ss in _context.SectionStudents.AsNoTracking()
-                              join s in _context.Students.AsNoTracking() on ss.StudentId equals s.Id
-                              where ss.isActive && s.IsActive && ss.SectionId == sectionId
-                              select new StudentListItemDto
-                              {
-                                  Id = s.Id,
-                                  FullName = ((s.Name ?? "") + " " + (s.MiddleName ?? "") + " " + (s.LastName ?? "") + " " + (s.NdLastName ?? "")).Trim(),
-                                  IdentificationNumber = s.IdentificationNumber ?? "",
-                                  Subsection = ss.Subsection,
-                                  BirthDate = s.BirthDate,
-                                  GenderId = s.GenderId
-                              })
-                             .OrderBy(x => x.FullName)
-                             .ToListAsync(ct);
+            var list = await (
+                from ss in _context.SectionStudents.AsNoTracking()
+                join s in _context.Students.AsNoTracking() on ss.StudentId equals s.Id
+                where ss.isActive && s.IsActive && ss.SectionId == sectionId
+                select new StudentListItemDto
+                {
+                    Id = s.Id,
+                    FullName = ((s.Name ?? "") + " " + (s.MiddleName ?? "") + " " + (s.LastName ?? "") + " " + (s.NdLastName ?? "")).Trim(),
+                    IdentificationNumber = s.IdentificationNumber ?? "",
+                    Subsection = ss.Subsection,
+                    BirthDate = s.BirthDate,
+                    GenderId = s.GenderId,
+
+                    // NUEVO: subconsulta al representante activo más reciente
+                    GuardianPhone = _context.StudentRepresentatives
+                        .Where(r => r.StudentId == s.Id && r.isActive)
+                        // Usá una condición en vez de ??, o simplemente UpdatedAt
+                        .OrderByDescending(r => r.UpdatedAt > r.CreatedAt ? r.UpdatedAt : r.CreatedAt)
+                        .Select(r => r.PhoneNumber)   // tu modelo solo tiene PhoneNumber
+                        .FirstOrDefault()
+
+                })
+                .OrderBy(x => x.FullName)
+                .ToListAsync(ct);
 
             return Ok(list);
-        }
-    }
+        }
+    }
 }

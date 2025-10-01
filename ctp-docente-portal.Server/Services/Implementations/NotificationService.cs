@@ -27,7 +27,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
         private async Task<string> GetGuardianPhoneAsync(int studentId, CancellationToken ct)
         {
-            // primer encargado ACTIVO con teléfono (prioriza por RelationshipTypeId si querés)
+       
             var phone = await _db.StudentRepresentatives
                 .AsNoTracking()
                 .Where(r => r.StudentId == studentId
@@ -47,7 +47,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
             StudentName = n.StudentName,
             Phone = n.Phone,
             Message = n.Message,
-            Status = n.Status, // SENT | FAILED | QUEUED (aquí usamos SENT/FAILED)
+            Status = n.Status,
             ProviderMessageId = n.ProviderMessageId,
             CreatedAt = n.CreatedAt,
             SentAt = n.SentAt,
@@ -60,18 +60,18 @@ namespace ctp_docente_portal.Server.Services.Implementations
         {
             var resp = new SendAbsencesResponse();
 
-            var day = request.Date; // DateOnly
+            var day = request.Date; 
 
             var absents = await _db.Attendances
                 .AsNoTracking()
                 .Where(a => a.SectionId == request.SectionId
-                         && a.StatusTypeId == 2     // Ausente
-                         && a.Date == day)          // <- DateOnly == DateOnly
+                         && a.StatusTypeId == 2     
+                         && a.Date == day)          
                 .Select(a => new { a.StudentId, a.SectionId })
                 .Distinct()
                 .ToListAsync(ct);
 
-            // Evita error de “grupo de métodos”
+        
             if (!absents.Any()) return resp;
 
             var studentIds = absents.Select(a => a.StudentId).Distinct().ToArray();
@@ -83,7 +83,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
             foreach (var a in absents)
             {
-                // n.Date debe ser DateOnly en tu modelo Notifications
+      
                 bool already = await _db.Notifications.AsNoTracking().AnyAsync(n =>
                     n.StudentId == a.StudentId &&
                     n.SectionId == request.SectionId &&
@@ -99,7 +99,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
                     studentId: a.StudentId,
                     studentName: name,
                     phoneE164: phone,
-                    date: day,                      // DateOnly
+                    date: day,                   
                     sectionId: request.SectionId,
                     ct: ct);
 
@@ -115,7 +115,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
         public async Task<IReadOnlyList<NotificationDto>> ListAsync(DateOnly? date, int? sectionId, int? subjectId, string? status, CancellationToken ct = default)
         {
-            // Empieza la consulta de notifications
+     
             var q = _db.Notifications.AsNoTracking().AsQueryable();
 
             // Aplicar filtros
@@ -129,30 +129,30 @@ namespace ctp_docente_portal.Server.Services.Implementations
             }
 
             // Hacer join con las secciones para traer el nombre
-            var result = await (from n in q
-                                join s in _db.Sections.AsNoTracking()
-                                    on n.SectionId equals s.Id
-                                select new NotificationDto
-                                {
-                                    Id = n.Id,
-                                    StudentId = n.StudentId,
-                                    StudentName = n.StudentName,
-                                    SectionId = n.SectionId,
-                                    SubjectId = n.SubjectId,
-                                    Phone = n.Phone,
-                                    Message = n.Message,
-                                    Status = n.Status,
-                                    ProviderMessageId = n.ProviderMessageId,
-                                    Date = n.Date,
-                                    CreatedAt = n.CreatedAt,
-                                    SentAt = n.SentAt,
-                                    Error = n.Error,
-                                    // Nuevo campo para mostrar nombre de la sección
-                                    SectionName = s.Name
-                                })
-                                .OrderByDescending(n => n.CreatedAt)
-                                .Take(500)
-                                .ToListAsync(ct);
+            var result = await (
+                        from n in q
+                        join s in _db.Sections.AsNoTracking() on n.SectionId equals s.Id
+                        select new NotificationDto
+                        {
+                            Id = n.Id,
+                            StudentId = n.StudentId,
+                            StudentName = n.StudentName,
+                            SectionId = n.SectionId,
+                            SubjectId = n.SubjectId,
+                            Phone = n.Phone == null ? "" : n.Phone,
+                            Message = n.Message,
+                            Status = n.Status,
+                            ProviderMessageId = n.ProviderMessageId,
+                            Date = n.Date,
+                            CreatedAt = n.CreatedAt,
+                            SentAt = n.SentAt,                 
+                            Error = n.Error,                
+                            SectionName = s.Name
+                        })
+                        .OrderByDescending(n => n.CreatedAt)
+                        .Take(500)
+                        .ToListAsync(ct);
+
 
             return result;
         }
