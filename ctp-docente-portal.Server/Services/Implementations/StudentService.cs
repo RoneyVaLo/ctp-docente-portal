@@ -4,6 +4,7 @@ using ctp_docente_portal.Server.DTOs.Common;
 using ctp_docente_portal.Server.DTOs.Reports;
 using ctp_docente_portal.Server.DTOs.Students;
 using ctp_docente_portal.Server.DTOs.Students.Detail;
+using ctp_docente_portal.Server.Helpers;
 using ctp_docente_portal.Server.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,11 +14,13 @@ namespace ctp_docente_portal.Server.Services.Implementations
     {
         private readonly AppDbContext _context;
         private readonly IMapper _mapper;
+        private readonly IReportService _reportService;
 
-        public StudentService(AppDbContext context, IMapper mapper)
+        public StudentService(AppDbContext context, IMapper mapper, IReportService reportService)
         {
             _context = context;
             _mapper = mapper;
+            _reportService = reportService;
         }
 
         public async Task<List<StudentDto>> GetStudentsBySectionAsync(int sectionId, int userId)
@@ -62,146 +65,26 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
         public async Task<List<StudentReportDto>> GetStudentReportsAsync(ReportFilterDto filter)
         {
-            // Traemos estudiantes con su sección
-            var estudiantes = await (
-                from s in _context.Students
-                join ss in _context.SectionStudents on s.Id equals ss.StudentId
-                join sec in _context.Sections on ss.SectionId equals sec.Id
-                join e in _context.Enrollments on sec.EnrollmentId equals e.Id
-                join ap in _context.AcademicPeriods on e.Id equals ap.EnrollmentId
-                join es in _context.EnrollmentStudent on s.Id equals es.StudentId
-                where s.IsActive
-                      && sec.Id == filter.SectionId
-                      && ap.Id == filter.AcademicPeriodId
-                      && es.EnrollmentId == e.Id
-                select new
-                {
-                    StudentId = s.Id,
-                    Nombre = $"{s.Name} {s.MiddleName} {s.LastName} {s.NdLastName}".Trim(),
-                    Identificacion = s.IdentificationNumber,
-                    GrupoId = sec.Id,
-                    GrupoName = sec.Name
-                }
-            ).ToListAsync();
+            var performance = await _reportService.GetStudentPerformanceAsync(filter);
 
-            if (!estudiantes.Any()) return new List<StudentReportDto>();
-
-            var studentIds = estudiantes.Select(e => e.StudentId).ToList();
-
-            // Relación de ítems válidos según periodo y materia
-            var validItemIds = await (
-                from item in _context.EvaluationItems
-                join sa in _context.SectionAssignments on item.SectionAssignmentId equals sa.Id
-                where sa.SectionId == filter.SectionId
-                      && sa.AcademicPeriodId == filter.AcademicPeriodId
-                      && (!filter.SubjectId.HasValue || sa.SubjectId == filter.SubjectId.Value)
-                select item.Id
-            ).ToListAsync();
-
-            if (!validItemIds.Any())
+            return performance.Select(p => new StudentReportDto
             {
-                // No hay ítems → devolvemos estudiantes sin notas ni asistencias
-                return estudiantes.Select(e => new StudentReportDto
-                {
-                    Id = e.StudentId,
-                    Name = e.Nombre,
-                    Identification = e.Identificacion,
-                    Group = new SimpleDto { Id = e.GrupoId, Name = e.GrupoName },
-                    Average = 0,
-                    Attendance = 0
-                }).ToList();
-            }
-
-            // --- Promedios ---
-            // Items simples (sin criterios)
-            var simpleScores = await (
-                from score in _context.StudentEvaluationScores
-                join item in _context.EvaluationItems on score.EvaluationItemId equals item.Id
-                where studentIds.Contains(score.StudentId)
-                      && !item.HasCriteria
-                      && validItemIds.Contains(item.Id)
-                group new { score, item } by score.StudentId into g
-                select new
-                {
-                    StudentId = g.Key,
-                    Total = g.Sum(x => (double)x.score.Score * (double)x.item.Percentage / 100.0)
-                }
-            ).ToListAsync();
-
-            // Items con criterios (rúbricas)
-            var criteriaScores = await (
-                from sc in _context.StudentCriteriaScores
-                join criteria in _context.EvaluationCriteria on sc.CriteriaId equals criteria.Id
-                join item in _context.EvaluationItems on sc.EvaluationItemId equals item.Id
-                where studentIds.Contains(sc.StudentId)
-                      && item.HasCriteria
-                      && validItemIds.Contains(item.Id)
-                group new { sc, criteria, item } by new { sc.StudentId, sc.EvaluationItemId, item.Percentage } into g
-                select new
-                {
-                    g.Key.StudentId,
-                    // Nota del ítem = (suma ponderada de rúbricas) * porcentaje del ítem
-                    Total = g.Sum(x => (double)x.sc.Score * (double)x.criteria.Weight / 100.0) * ((double)g.Key.Percentage / 100.0)
-                }
-            ).ToListAsync();
-
-            var criteriaGrouped = criteriaScores
-                .GroupBy(x => x.StudentId)
-                .Select(g => new { StudentId = g.Key, Total = g.Sum(x => x.Total) })
-                .ToList();
-
-            // Diccionario final de promedios
-            var promedios = simpleScores
-                .Concat(criteriaGrouped)
-                .GroupBy(x => x.StudentId)
-                .ToDictionary(g => g.Key, g => Math.Round(g.Sum(x => x.Total), 2));
-
-            // --- Asistencias ---
-            var asistencia = await (
-                from a in _context.Attendances
-                join sa in _context.SectionAssignments
-                    on new { a.SectionId, a.SubjectId } equals new { sa.SectionId, sa.SubjectId }
-                where studentIds.Contains(a.StudentId)
-                      && sa.AcademicPeriodId == filter.AcademicPeriodId
-                      && sa.SectionId == filter.SectionId
-                      && (!filter.SubjectId.HasValue || sa.SubjectId == filter.SubjectId.Value)
-                group a by a.StudentId into g
-                select new
-                {
-                    StudentId = g.Key,
-                    Total = g.Count(),
-                    Presentes = g.Count(x => x.StatusTypeId == 1) // 1 = presente
-                }
-            ).ToListAsync();
-
-            var asistenciaDict = asistencia.ToDictionary(
-                x => x.StudentId,
-                x => x.Total == 0 ? 0 : Math.Round((decimal)x.Presentes * 100 / x.Total, 2)
-            );
-
-            // --- Resultado final ---
-            var result = estudiantes.Select(e => new StudentReportDto
-            {
-                Id = e.StudentId,
-                Name = e.Nombre,
-                Identification = e.Identificacion,
-                Group = new SimpleDto { Id = e.GrupoId, Name = e.GrupoName },
-                Average = promedios.ContainsKey(e.StudentId) ? (decimal)promedios[e.StudentId] : 0,
-                Attendance = asistenciaDict.ContainsKey(e.StudentId) ? asistenciaDict[e.StudentId] : 0,
+                Id = p.StudentId,
+                Name = p.FullName,
+                Identification = p.Identification,
+                Group = new SimpleDto { Id = p.GroupId, Name = p.GroupName },
+                Average = (int)p.Average,
+                Attendance = p.AttendancePercentage,
                 Status = new SimpleDto
                 {
-                    Name = promedios.ContainsKey(e.StudentId)
-                    ? (promedios[e.StudentId] >= 90 ? "Excelente" :
-                    promedios[e.StudentId] >= 80 ? "Bueno" :
-                    promedios[e.StudentId] >= 70 ? "Regular" : "Deficiente")
-                    : "Sin datos"
+                    Name = p.Average >= 90 ? "Excelente" :
+                           p.Average >= 80 ? "Bueno" :
+                           p.Average >= 70 ? "Regular" : "Deficiente"
                 }
             }).ToList();
-
-            return result;
         }
 
-        public async Task<StudentDetailDto?> GetStudentDetailAsync(int studentId, ReportFilterDto filter)
+        public async Task<StudentDetailDto?> GetStudentDetailAsync(int userId, int studentId, ReportFilterDto filter)
         {
             var student = await _context.Students
             .Where(s => s.Id == studentId)
@@ -209,18 +92,18 @@ namespace ctp_docente_portal.Server.Services.Implementations
             {
                 Id = s.Id,
                 FullName = $"{s.Name} {(s.MiddleName ?? "")} {s.LastName} {(s.NdLastName ?? "")}".Trim(),
-                Identification = s.IdentificationNumber,
+                Identification = s.IdentificationNumber ?? "",
                 BirthDate = s.BirthDate.HasValue ? s.BirthDate.Value.ToString("dd/MM/yyyy") : "",
                 Age = s.BirthDate.HasValue ? DateTime.Now.Year - s.BirthDate.Value.Year : 0,
                 Gender = _context.Genders
                     .Where(g => g.Id == s.GenderId)
                     .Select(g => g.Name)
-                    .FirstOrDefault() ?? "Undefined",
+                    .FirstOrDefault() ?? "No Indica",
 
                 Group = (from ss in _context.SectionStudents
                          join sec in _context.Sections on ss.SectionId equals sec.Id
                          where ss.StudentId == s.Id
-                         select sec.Name).FirstOrDefault(),
+                         select sec.Name).FirstOrDefault() ?? "",
 
                 Parents = _context.StudentRepresentatives
                     .Where(r => r.StudentId == s.Id)
@@ -238,35 +121,66 @@ namespace ctp_docente_portal.Server.Services.Implementations
             if (student == null)
                 throw new ArgumentException("El estudiante especificado no existe.");
 
+            var staffId = await StaffHelper.GetStaffIdAsync(_context, userId);
+            //if (staffId == 0) return new List<GradeDto>();
+
+            bool isAdmin = await StaffHelper.IsAdminAsync(_context, staffId);
+
+            var assignments = _context.SectionAssignments
+                .Where(sa => sa.AcademicPeriodId == filter.AcademicPeriodId &&
+                             sa.SectionId == filter.SectionId);
+
+            if (!isAdmin)
+            {
+                assignments = assignments.Where(sa => sa.StaffId == staffId);
+            }
+
+            var subjectIds = await assignments
+                .Select(sa => sa.SubjectId)
+                .Distinct()
+                .ToListAsync();
+
             // --- Calificaciones de ítems simples ---
             var simpleGrades = await (
-                from ei in _context.EvaluationItems
-                join sa in _context.SectionAssignments on ei.SectionAssignmentId equals sa.Id
-                join subj in _context.Subjects on sa.SubjectId equals subj.Id
+                from ss in _context.SectionStudents
+                join sa in _context.SectionAssignments
+                    on ss.SectionId equals sa.SectionId
+                join subj in _context.Subjects
+                    on sa.SubjectId equals subj.Id
+                join ei in _context.EvaluationItems.Where(e => !e.HasCriteria)
+                    on sa.Id equals ei.SectionAssignmentId into evaluationItems
+                from ei in evaluationItems.DefaultIfEmpty()
                 join se in _context.StudentEvaluationScores
                     .Where(s => s.StudentId == studentId)
                     on ei.Id equals se.EvaluationItemId into scores
                 from se in scores.DefaultIfEmpty()
-                where !ei.HasCriteria
-                      && sa.SectionId == filter.SectionId
+                where ss.StudentId == studentId
                       && sa.AcademicPeriodId == filter.AcademicPeriodId
-                select new
+                      && ss.SectionId == filter.SectionId
+                      && subjectIds.Contains(sa.SubjectId)
+
+            select new
                 {
                     Subject = subj.Name.ToLower().Replace(" ", "_"),
-                    Evaluation = ei.Name,
-                    Score = se != null ? se.Score : 0,   // si no hay nota => 0
-                    ei.Percentage,
+                    Evaluation = ei != null ? ei.Name : null,
+                    Score = se != null ? se.Score : 0,
+                    Percentage = ei != null ? ei.Percentage : 0,
                     Date = se != null
                         ? se.CreatedAt.ToString("dd/MM/yyyy")
                         : null
                 }
             ).ToListAsync();
 
+
             // --- Calificaciones de ítems con criterios (rúbricas) ---
             var criteriaGrades = await (
-                from ei in _context.EvaluationItems
-                join sa in _context.SectionAssignments on ei.SectionAssignmentId equals sa.Id
-                join subj in _context.Subjects on sa.SubjectId equals subj.Id
+                from ss in _context.SectionStudents
+                join sa in _context.SectionAssignments
+                    on ss.SectionId equals sa.SectionId
+                join subj in _context.Subjects
+                    on sa.SubjectId equals subj.Id
+                join ei in _context.EvaluationItems.Where(e => e.HasCriteria)
+                    on sa.Id equals ei.SectionAssignmentId
                 join sc in _context.StudentCriteriaScores
                     .Where(s => s.StudentId == studentId)
                     on ei.Id equals sc.EvaluationItemId into criteriaScores
@@ -274,9 +188,10 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 join ec in _context.EvaluationCriteria
                     on sc.CriteriaId equals ec.Id into criteria
                 from ec in criteria.DefaultIfEmpty()
-                where ei.HasCriteria
-                      && sa.SectionId == filter.SectionId
+                where ss.StudentId == studentId
                       && sa.AcademicPeriodId == filter.AcademicPeriodId
+                      && ss.SectionId == filter.SectionId
+                      && subjectIds.Contains(sa.SubjectId)
                 group new { sc, ec, ei, subj } by new
                 {
                     SubjectName = subj.Name,
@@ -290,7 +205,9 @@ namespace ctp_docente_portal.Server.Services.Implementations
                     Subject = g.Key.SubjectName.ToLower().Replace(" ", "_"),
                     Evaluation = g.Key.EvaluationName,
                     Score = g.Any(x => x.sc != null)
-                        ? g.Sum(x => (double)x.sc.Score * (double)x.ec.Weight / 100.0)
+                        ? g.Sum(x =>
+                            (double)(x.sc != null ? x.sc.Score : 0) *
+                            (double)(x.ec != null ? x.ec.Weight : 0) / 100.0)
                         : 0,
                     g.Key.Percentage,
                     Date = g.Any(x => x.sc != null)
@@ -314,7 +231,6 @@ namespace ctp_docente_portal.Server.Services.Implementations
                     Evaluation = x.Evaluation,
                     Score = x.Score,
                     Date = x.Date,
-                    //Average = g.Sum(y => y.Score * y.Percentage) / g.Sum(y => y.Percentage)
                     Average = g.Sum(y => y.Score * (y.Percentage / 100m))
                 }).ToList()
             );
@@ -333,8 +249,9 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 where a.StudentId == studentId
                       && sa.AcademicPeriodId == filter.AcademicPeriodId
                       && a.SectionId == filter.SectionId
+                      && subjectIds.Contains(a.SubjectId)
                 join s in _context.Subjects on a.SubjectId equals s.Id
-                orderby a.Date descending
+                orderby a.Date
                 select new
                 {
                     a.Date,
@@ -349,19 +266,21 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 Present = attendanceRecords.Count(a => a.StatusTypeId == 1),
                 Absent = attendanceRecords.Count(a => a.StatusTypeId == 2),
                 Justified = attendanceRecords.Count(a => a.StatusTypeId == 3),
+                Late = attendanceRecords.Count(a => a.StatusTypeId == 4),
                 Details = attendanceRecords
-                    .Take(5)
                     .Select(a => new AttendanceDetailDto
                     {
                         Date = a.Date.ToString("dd/MM/yyyy"),
                         Status = a.StatusTypeId == 1 ? "Presente" :
-                                 a.StatusTypeId == 2 ? "Ausente" : "Justificado",
+                                 a.StatusTypeId == 2 ? "Ausente" :
+                                 a.StatusTypeId == 3 ? "Justificado" : "Tardía",
                         Observations = a.Observations ?? "",
                         Subject = a.SubjectName
-                    }).ToList()
+                    })
+                    .ToList()
             };
 
-            int total = attendanceDto.Present + attendanceDto.Absent + attendanceDto.Justified;
+            int total = attendanceDto.Present + attendanceDto.Absent + attendanceDto.Justified + attendanceDto.Late;
             attendanceDto.Percentage = total > 0 ? Math.Round((decimal)attendanceDto.Present / total * 100, 2) : 0;
 
             student.Attendance = attendanceDto;

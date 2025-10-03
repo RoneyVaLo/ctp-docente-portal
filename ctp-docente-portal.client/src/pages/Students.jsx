@@ -190,6 +190,7 @@ const Students = () => {
             sessionStorage.setItem("groupStudents", selectedSection);
             sessionStorage.setItem("subjectStudents", selectedSubject);
 
+            // console.log(response.data);
             setFilteredStudents(response.data);
           } else {
             toast.error("Debe seleccionar una Materia.");

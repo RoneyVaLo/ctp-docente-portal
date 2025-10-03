@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Runtime.ConstrainedExecution;
+using System.Security.Claims;
 
 namespace ctp_docente_portal.Server.Controllers
 {
@@ -23,7 +24,8 @@ namespace ctp_docente_portal.Server.Controllers
         [HttpPost("rendimiento-general")]
         public async Task<IActionResult> GeneralPerformance([FromBody] ReportFilterDto filter)
         {
-            var pdfBytes = await _service.GenerateGeneralPerformanceAsync(filter);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var pdfBytes = await _service.GenerateGeneralPerformanceAsync(userId, filter);
 
             var fileName = $"RendimientoGeneral_Seccion{filter.SectionId}.pdf";
 
@@ -50,7 +52,8 @@ namespace ctp_docente_portal.Server.Controllers
         [HttpPost("rendimiento-estudiante/{studentId}")]
         public async Task<IActionResult> RendimientoEstudiante(int studentId, [FromBody] ReportFilterDto filter)
         {
-            var pdf = await _service.GetStudentPerformanceAsync(studentId, filter);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var pdf = await _service.GetStudentPerformanceAsync(userId, studentId, filter);
             return File(pdf, "application/pdf", "RendimientoEstudiante.pdf");
         }
     }
