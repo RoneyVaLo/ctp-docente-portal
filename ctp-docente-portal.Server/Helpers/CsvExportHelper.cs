@@ -22,7 +22,7 @@ namespace ctp_docente_portal.Server.Helpers
                 var row = new List<string>
                 {
                     student.Id,
-                    $"\"{student.Nombre}\""
+                    $"\"{student.Name}\""
                 };
 
                 foreach (var key in allItemKeys)

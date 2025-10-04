@@ -5,10 +5,9 @@ namespace ctp_docente_portal.Server.Services.Interfaces
 {
     public interface IPdfReportService
     {
-        Task<byte[]> GenerateGeneralPerformanceAsync(ReportFilterDto filter);
-        Task<byte[]> GetAttendancePerMonthAsync(ReportFilterDto filter);
+        Task<byte[]> GenerateGeneralPerformanceAsync(int userId, ReportFilterDto filter);
+        Task<byte[]> GetAttendancePerMonthAsync(int userId, ReportFilterDto filter);
         Task<byte[]> GetStudentsBySubjectAsync(ReportFilterDto filter);
-        //byte[] GenerarRendimientoEstudiante(RendimientoEstudianteDto estudiante);
-        Task<byte[]> GetRendimientoEstudianteAsync(int studentId, ReportFilterDto filter);
+        Task<byte[]> GetStudentPerformanceAsync(int userId, int studentId, ReportFilterDto filter);
     }
 }

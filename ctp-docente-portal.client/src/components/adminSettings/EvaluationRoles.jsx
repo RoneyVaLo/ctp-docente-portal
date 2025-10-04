@@ -319,8 +319,8 @@ const EvaluationRoles = () => {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex flex-col gap-2 md:flex-row text-center md:text-start items-center justify-between">
+          <div className="mb-2 md:mb-0">
             <CardTitle>Asignación de Roles al Personal</CardTitle>
             <CardDescription>
               Asigna roles a los miembros del staff
@@ -556,90 +556,92 @@ const EvaluationRoles = () => {
       </CardHeader>
 
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nombre</TableHead>
-              <TableHead className="text-center">Rol</TableHead>
-              <TableHead>Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {!loading ? (
-              staffRoles.map((member) => (
-                <TableRow key={member.id}>
-                  <TableCell className="font-medium">
-                    {member.staff.name}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant="outline">{member.role.name}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setIsEditing(true);
-                          setStaffRoleForm(member);
-                          setIsDialogOpen(true);
-                        }}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Dialog
-                        open={askDelete}
-                        onOpenChange={() => {
-                          setAskDelete(true);
-                          setStaffRoleId(member.id);
-                        }}
-                      >
-                        <DialogTrigger asChild>
-                          <Button size="sm" variant="outline">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>
-                              ¿Desea eliminar esta Asignación?
-                            </DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                onClick={() => {
-                                  setAskDelete(false);
-                                }}
-                              >
-                                Cancelar
-                              </Button>
-                              <Button
-                                variant="outline"
-                                onClick={() => {
-                                  setAskDelete(false);
-                                  deleteAssignment();
-                                }}
-                              >
-                                Continuar
-                              </Button>
+        <div className="overflow-x-auto w-56 lg:w-full mx-auto lg:mx-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nombre</TableHead>
+                <TableHead className="text-center">Rol</TableHead>
+                <TableHead>Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {!loading ? (
+                staffRoles.map((member) => (
+                  <TableRow key={member.id}>
+                    <TableCell className="font-medium">
+                      {member.staff.name}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant="outline">{member.role.name}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setIsEditing(true);
+                            setStaffRoleForm(member);
+                            setIsDialogOpen(true);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Dialog
+                          open={askDelete}
+                          onOpenChange={() => {
+                            setAskDelete(true);
+                            setStaffRoleId(member.id);
+                          }}
+                        >
+                          <DialogTrigger asChild>
+                            <Button size="sm" variant="outline">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>
+                                ¿Desea eliminar esta Asignación?
+                              </DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  onClick={() => {
+                                    setAskDelete(false);
+                                  }}
+                                >
+                                  Cancelar
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => {
+                                    setAskDelete(false);
+                                    deleteAssignment();
+                                  }}
+                                >
+                                  Continuar
+                                </Button>
+                              </div>
                             </div>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell className="font-medium">
+                    <Loader1 />
                   </TableCell>
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell className="font-medium">
-                  <Loader1 />
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
 
       <CardFooter className="flex justify-between items-center">

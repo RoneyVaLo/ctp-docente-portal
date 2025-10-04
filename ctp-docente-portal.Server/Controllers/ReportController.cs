@@ -39,7 +39,7 @@ namespace ctp_docente_portal.Server.Controllers
         public async Task<IActionResult> GetGroupReport([FromBody] ReportFilterDto filter)
         {
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-            var result = await _reportsService.GetGroupReportAsync(userId, filter);
+            var result = await _reportsService.GetPerformanceDataAsync(userId, filter);
             return Ok(result);
         }
 

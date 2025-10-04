@@ -25,10 +25,12 @@ import toast from "react-hot-toast";
 import { useDownloadPdf } from "../hooks/useDownloadPdf";
 import DropdownMenu from "../components/ui/DropdownMenu";
 import { useDownloadCsv } from "../hooks/useDownloadCsv";
+import { useAuth } from "../context/AuthContext";
 
 const Students = () => {
   const { downloadPdf } = useDownloadPdf();
   const { downloadCsv } = useDownloadCsv();
+  const { roles } = useAuth();
 
   const [periods, setPeriods] = useState([]);
   const [selectedPeriod, setSelectedPeriod] = useState(
@@ -188,6 +190,7 @@ const Students = () => {
             sessionStorage.setItem("groupStudents", selectedSection);
             sessionStorage.setItem("subjectStudents", selectedSubject);
 
+            // console.log(response.data);
             setFilteredStudents(response.data);
           } else {
             toast.error("Debe seleccionar una Materia.");
@@ -216,13 +219,17 @@ const Students = () => {
     filteredStudents.reduce((sum, est) => sum + est.average, 0) /
       filteredStudents.length || 0;
 
+  // const excellentStudents =
+  //   filteredStudents.filter((est) => est.status?.name === "Excelente").length ||
+  //   0;
   const excellentStudents =
-    filteredStudents.filter((est) => est.status?.name === "Excelente").length ||
-    0;
+    filteredStudents.filter((est) => parseInt(est.average) >= 90).length || 0;
 
+  // const studentsNeedSupport =
+  //   filteredStudents.filter((est) => est.status?.name === "Necesita apoyo")
+  //     .length || 0;
   const studentsNeedSupport =
-    filteredStudents.filter((est) => est.status?.name === "Necesita apoyo")
-      .length || 0;
+    filteredStudents.filter((est) => parseInt(est.average) < 60).length || 0;
 
   const studentsBySubjectReport = async () => {
     try {
@@ -360,13 +367,16 @@ const Students = () => {
                     Exportar PDF
                   </DropdownMenu.Item>
                   <DropdownMenu.Separator />
-                  <DropdownMenu.Item
-                    onClick={studentsCsvReport}
-                    className="font-bold"
-                  >
-                    <Sheet className="mr-2 h-4 w-4" />
-                    Exportar CSV
-                  </DropdownMenu.Item>
+
+                  {roles.includes("Docente") && (
+                    <DropdownMenu.Item
+                      onClick={studentsCsvReport}
+                      className="font-bold"
+                    >
+                      <Sheet className="mr-2 h-4 w-4" />
+                      Exportar CSV
+                    </DropdownMenu.Item>
+                  )}
                 </DropdownMenu.Content>
               </DropdownMenu>
             </div>

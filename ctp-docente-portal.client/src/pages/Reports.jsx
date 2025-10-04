@@ -577,13 +577,13 @@ const Reports = () => {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left p-3 font-medium">Sección</th>
-                    <th className="text-center p-3 font-medium">Asignatura</th>
-                    <th className="text-left p-3 font-medium">Promedio</th>
+                    <th className="text-center p-3 font-medium">Sección</th>
+                    <th className="text-center p-3 font-medium">Materia</th>
+                    <th className="text-center p-3 font-medium">Promedio</th>
                     <th className="text-center p-3 font-medium">
                       Asistencia Promedio
                     </th>
-                    <th className="text-left p-3 font-medium">
+                    <th className="text-center p-3 font-medium">
                       Estudiantes en Riesgo
                     </th>
                   </tr>
@@ -592,21 +592,26 @@ const Reports = () => {
                   {groupReportData.length > 0 ? (
                     groupReportData.map((row, index) => (
                       <tr key={index} className="border-b hover:bg-muted/50">
-                        <td className="p-3 text-center">{row.group}</td>
+                        <td className="p-3 text-center">{row.section}</td>
                         <td className="p-3 text-center">{row.subject}</td>
                         <td className="p-3 font-medium text-center">
                           {Math.round(row.average)}
                         </td>
                         <td className="p-3 text-center">
-                          {Number(row.attendance).toFixed(2)}%
+                          {Number.isInteger(row.attendancePercentage)
+                            ? Math.round(row.attendancePercentage)
+                            : Number(row.attendancePercentage).toFixed(2)}
+                          %
                         </td>
                         <td className="p-3 text-center">
                           <Badge
                             variant={
-                              row.atRisk > 2 ? "destructive" : "secondary"
+                              row.studentsAtRisk > 2
+                                ? "destructive"
+                                : "secondary"
                             }
                           >
-                            {row.atRisk}
+                            {row.studentsAtRisk}
                           </Badge>
                         </td>
                       </tr>

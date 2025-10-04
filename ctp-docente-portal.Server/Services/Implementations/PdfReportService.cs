@@ -7,156 +7,43 @@ using Microsoft.EntityFrameworkCore;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Globalization;
 
 namespace ctp_docente_portal.Server.Services.Implementations
 {
     public class PdfReportService : IPdfReportService
     {
         private readonly AppDbContext _context;
+        private readonly IReportService _reportService;
+        private readonly IStudentService _studentService;
 
-        public PdfReportService(AppDbContext context)
+        public PdfReportService(AppDbContext context, IReportService reportService, IStudentService studentService)
         {
             _context = context;
+            _reportService = reportService;
+            _studentService = studentService;
         }
 
         // ======================
         // 1. Rendimiento General
         // ======================
-        public async Task<byte[]> GenerateGeneralPerformanceAsync(ReportFilterDto filter)
+        public async Task<byte[]> GenerateGeneralPerformanceAsync(int userId, ReportFilterDto filter)
         {
-            // Obtener sección
-            var section = await _context.Sections
-                .FirstOrDefaultAsync(s => s.Id == filter.SectionId);
-
-            if (section == null)
-                throw new ArgumentException("La sección especificada no existe.", nameof(filter.SectionId));
-
-            // Obtener asignaciones de materias en la sección para el período
-            var assignments = await _context.SectionAssignments
-                .Where(sa => sa.SectionId == filter.SectionId && sa.AcademicPeriodId == filter.AcademicPeriodId)
-                .ToListAsync();
-
-            var subjectsIds = assignments.Select(a => a.SubjectId).ToList();
-            var subjects = await _context.Subjects
-                .Where(m => subjectsIds.Contains(m.Id))
-                .ToListAsync();
-
-            // Estudiantes de la sección
-            var studentsIds = await _context.SectionStudents
-                .Where(ss => ss.SectionId == filter.SectionId)
-                .Select(ss => ss.StudentId)
-                .ToListAsync();
-
-            var evaluationItems = await _context.EvaluationItems
-                .Where(ei => assignments.Select(a => a.Id).Contains(ei.SectionAssignmentId))
-                .ToListAsync();
-
-            var evaluationCriteria = await _context.EvaluationCriteria
-                .Where(c => evaluationItems.Select(ei => ei.Id).Contains(c.EvaluationItemId))
-                .ToListAsync();
-
-            var studentEvaluationScores = await _context.StudentEvaluationScores
-                .Where(s => studentsIds.Contains(s.StudentId) &&
-                            evaluationItems.Select(ei => ei.Id).Contains(s.EvaluationItemId))
-                .ToListAsync();
-
-            var studentCriteriaScores = await _context.StudentCriteriaScores
-                .Where(s => studentsIds.Contains(s.StudentId) &&
-                            evaluationItems.Select(ei => ei.Id).Contains(s.EvaluationItemId))
-                .ToListAsync();
-
-            var attendances = await _context.Attendances
-                .Where(a => studentsIds.Contains(a.StudentId) &&
-                            subjectsIds.Contains(a.SubjectId))
-                .ToListAsync();
-
-            var data = new List<RendimientoGeneralDto>();
-
-            foreach (var subject in subjects)
+            var data = await _reportService.GetPerformanceDataAsync(userId, filter);
+            var performanceData = data.Select(d => new GeneralPerformanceDto
             {
-                var assignmentId = assignments.FirstOrDefault(a => a.SubjectId == subject.Id).Id;
-                var subjectItem = evaluationItems.Where(ei => ei.SectionAssignmentId == assignmentId).ToList();
-
-                var studentScores = new List<decimal>();
-
-                foreach (var studentId in studentsIds)
-                {
-                    decimal studentFinalScore = 0;
-
-                    foreach (var item in subjectItem)
-                    {
-                        if (item.HasCriteria)
-                        {
-                            var itemCriteria = evaluationCriteria
-                                .Where(c => c.EvaluationItemId == item.Id)
-                                .ToList();
-
-                            var scoresCriteria = studentCriteriaScores
-                                .Where(s => s.StudentId == studentId && s.EvaluationItemId == item.Id)
-                                .ToList();
-
-                            if (scoresCriteria.Any())
-                            {
-                                decimal criteriaScore = 0;
-
-                                foreach (var criterio in itemCriteria)
-                                {
-                                    var score = scoresCriteria.FirstOrDefault(p => p.CriteriaId == criterio.Id)?.Score ?? 0;
-                                    criteriaScore += (score / 100m) * criterio.Weight;
-                                }
-
-                                studentFinalScore += (criteriaScore / 100m) * item.Percentage;
-                            }
-                        }
-                        else
-                        {
-                            var score = studentEvaluationScores
-                                .FirstOrDefault(s => s.StudentId == studentId && s.EvaluationItemId == item.Id)?.Score ?? 0;
-
-                            studentFinalScore += (score / 100m) * item.Percentage;
-                        }
-                    }
-
-                    studentScores.Add(studentFinalScore);
-                }
-
-                int promedio = studentScores.Any()
-                    ? (int)Math.Round(studentScores.Average())
-                    : 0;
-
-                // --- Asistencia ---
-                var asistenciasMateria = attendances
-                    .Where(a => a.SubjectId == subject.Id)
-                    .ToList();
-
-                string asistenciaPromedio = "0%";
-                if (asistenciasMateria.Any())
-                {
-                    var total = asistenciasMateria.Count;
-                    var presentes = asistenciasMateria.Count(a => a.StatusTypeId == 1);
-                    asistenciaPromedio = $"{(presentes * 100 / total)}%";
-                }
-
-                // --- Estudiantes en riesgo (<60) ---
-                int estudiantesRiesgo = studentScores.Count(n => n < 60);
-
-                data.Add(new RendimientoGeneralDto
-                {
-                    Seccion = section.Name,
-                    Materia = subject.Name,
-                    Promedio = promedio,
-                    AsistenciaPromedio = asistenciaPromedio,
-                    EstudiantesRiesgo = estudiantesRiesgo
-                });
-            }
-
-            return GenerateGeneralPerformance(data);
+                Section = d.Section,
+                Subject = d.Subject,
+                Average = (int)d.Average,
+                AverageAttendance = $"{Math.Round(d.AttendancePercentage)}%" ?? "0%",
+                StudentsAtRisk = d.StudentsAtRisk
+            }).ToList();
+            return GenerateGeneralPerformance(performanceData);
         }
 
-        private static byte[] GenerateGeneralPerformance(List<RendimientoGeneralDto> data)
+        private static byte[] GenerateGeneralPerformance(List<GeneralPerformanceDto> data)
         {
-            var columns = new List<string> { "MATERIA", "PROMEDIO", "ASISTENCIA", "EN RIESGO" };
+            var columns = new List<string> { "Materia", "Promedio", "Asistencia", "En Riesgo" };
             var rows = new List<List<string>>();
 
             if (data != null && data.Any())
@@ -164,15 +51,15 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 rows = data
                     .Select(d => new List<string>
                     {
-                d.Materia,
-                d.Promedio.ToString(),
-                d.AsistenciaPromedio,
-                d.EstudiantesRiesgo.ToString()
+                d.Subject,
+                d.Average.ToString(),
+                d.AverageAttendance,
+                d.StudentsAtRisk.ToString()
                     }).ToList();
             }
 
-            var section = (data != null && data.Any() && !string.IsNullOrEmpty(data.First().Seccion))
-                ? $"{data.First().Seccion}"
+            var section = (data != null && data.Any() && !string.IsNullOrEmpty(data.First().Section))
+                ? $"{data.First().Section}"
                 : "";
 
             return PdfExportHelper.CreateReport(
@@ -187,34 +74,43 @@ namespace ctp_docente_portal.Server.Services.Implementations
         // ======================
         // 2. Asistencia por Mes
         // ======================
-        public async Task<byte[]> GetAttendancePerMonthAsync(ReportFilterDto filter)
+        public async Task<byte[]> GetAttendancePerMonthAsync(int userId, ReportFilterDto filter)
         {
+            // Obtener StaffId del usuario
+            var staffId = await StaffHelper.GetStaffIdAsync(_context, userId);
+            if (staffId == 0) return Array.Empty<byte>();
+
+            bool isAdmin = await StaffHelper.IsAdminAsync(_context, staffId);
+
+
             var section = await _context.Sections
                 .Where(s => s.Id == filter.SectionId)
                 .Select(s => s.Name)
                 .FirstOrDefaultAsync();
+
+            if (section == null)
+                throw new ArgumentException("La sección especificada no existe.");
 
             var subjects = await (
                 from sa in _context.SectionAssignments
                 join sub in _context.Subjects on sa.SubjectId equals sub.Id
                 where sa.AcademicPeriodId == filter.AcademicPeriodId
                    && sa.SectionId == filter.SectionId
+                   && (isAdmin || sa.StaffId == staffId)
                 select new { sa.SubjectId, SubjectName = sub.Name }
             ).ToListAsync();
 
-            // Obtener todas las asistencias de la sección
             var allAttendances = await _context.Attendances
                 .Where(a => a.SectionId == filter.SectionId)
                 .ToListAsync();
 
-            // Obtener todos los meses donde al menos una asistencia exista
             var allMonths = allAttendances
                 .Select(a => a.Date.Month)
                 .Distinct()
                 .OrderBy(m => m)
                 .ToList();
 
-            var data = new List<AsistenciaPorMesDto>();
+            var data = new List<AttendancePerMonthDto>();
 
             foreach (var subject in subjects)
             {
@@ -237,30 +133,29 @@ namespace ctp_docente_portal.Server.Services.Implementations
                     })
                     .ToList();
 
-                var average = months.Any()
-                    ? $"{(int)months.Average(m => int.Parse(m.Trim('%')))}%"
+                var average = subjectAttendances.Any()
+                    ? $"{(int)(100.0 * subjectAttendances.Count(a => a.StatusTypeId == 1) / (double)subjectAttendances.Count)}%"
                     : "0%";
 
-                data.Add(new AsistenciaPorMesDto
+                data.Add(new AttendancePerMonthDto
                 {
-                    Seccion = section,
-                    Materia = subject.SubjectName,
-                    Meses = months,
-                    Promedio = average
+                    Section = section ?? "",
+                    Subject = subject.SubjectName,
+                    Months = months,
+                    Average = average
                 });
             }
 
-            return GetAttendancePerMonth(data);
+            return GetAttendancePerMonth(data, allMonths);
         }
 
-        private static byte[] GetAttendancePerMonth(List<AsistenciaPorMesDto> data)
+        private static byte[] GetAttendancePerMonth(List<AttendancePerMonthDto> data, List<int> allMonths)
         {
-            var columns = new List<string> { "MATERIA" };
-            int maxMonths = 0;
-            foreach (var d in data)
-                if (d.Meses.Count > maxMonths) maxMonths = d.Meses.Count;
-            for (int i = 1; i <= maxMonths; i++) columns.Add($"MES {i}");
-            columns.Add("PROMEDIO");
+            var columns = new List<string> { "Materia" };
+
+            columns.AddRange(allMonths.Select(m => $"Mes {m.ToString()}"));
+
+            columns.Add("Promedio");
 
             var rows = new List<List<string>>();
 
@@ -270,16 +165,16 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
                 foreach (var d in data)
                 {
-                    var row = new List<string> { d.Materia };
-                    row.AddRange(d.Meses);
+                    var row = new List<string> { d.Subject };
+                    row.AddRange(d.Months);
                     while (row.Count < columns.Count - 1) row.Add("N/A");
-                    row.Add(d.Promedio);
+                    row.Add(d.Average);
                     rows.Add(row);
                 }
             }
 
-            var section = (data != null && data.Any() && !string.IsNullOrEmpty(data.First().Seccion))
-                ? $"{data.First().Seccion}"
+            var section = (data != null && data.Any() && !string.IsNullOrEmpty(data.First().Section))
+                ? $"{data.First().Section}"
                 : "";
 
             return PdfExportHelper.CreateReport(
@@ -296,123 +191,36 @@ namespace ctp_docente_portal.Server.Services.Implementations
         // ======================
         public async Task<byte[]> GetStudentsBySubjectAsync(ReportFilterDto filter)
         {
-            int subjectId = filter.SubjectId ?? 0;
-            int sectionId = filter.SectionId;
+            var performance = await _reportService.GetStudentPerformanceAsync(filter);
 
-            // 1. Traer estudiantes
-            var students = await (
-                from ss in _context.SectionStudents
-                join st in _context.Students on ss.StudentId equals st.Id
-                where ss.SectionId == sectionId
-                select new { st.Id, st.IdentificationNumber, st.Name, st.MiddleName, st.LastName, st.NdLastName }
-            ).ToListAsync();
-
-            var studentIds = students.Select(e => e.Id).ToList();
-
-            // 2. Traer ítems de evaluación y criterios
-            var items = await (
-                from e in _context.EvaluationItems
-                join sa in _context.SectionAssignments on e.SectionAssignmentId equals sa.Id
-                where sa.SubjectId == subjectId
-                      && sa.SectionId == sectionId
-                      && sa.AcademicPeriodId == filter.AcademicPeriodId
-                select new
-                {
-                    e.Id,
-                    e.HasCriteria,
-                    e.Percentage
-                }
-            ).ToListAsync();
-
-            var itemIds = items.Select(i => i.Id).ToList();
-
-            var criteria = await _context.EvaluationCriteria
-                .Where(c => itemIds.Contains(c.EvaluationItemId))
-                .ToListAsync();
-
-            // 3. Traer notas de students (criterios y directas)
-            var studentCriteriaScores = await _context.StudentCriteriaScores
-                .Where(s => studentIds.Contains(s.StudentId) && itemIds.Contains(s.EvaluationItemId))
-                .ToListAsync();
-
-            var studentScores = await _context.StudentEvaluationScores
-                .Where(s => studentIds.Contains(s.StudentId) && itemIds.Contains(s.EvaluationItemId))
-                .ToListAsync();
-
-            // 4. Traer asistencias
-            var attendance = await _context.Attendances
-                .Where(a => studentIds.Contains(a.StudentId)
-                            && a.SectionId == sectionId
-                            && a.SubjectId == subjectId)
-                .ToListAsync();
-
-            // 5. Calcular promedios y asistencias usando LINQ
-            var data = students.Select(est =>
+            var data = performance.Select(p => new StudentsBySubjectDto
             {
-                decimal average = 0;
-
-                foreach (var item in items)
-                {
-                    decimal itemScore = 0;
-
-                    if (item.HasCriteria)
-                    {
-                        var itemCriteria = criteria.Where(c => c.EvaluationItemId == item.Id).ToList();
-                        if (itemCriteria.Any())
-                        {
-                            decimal totalWeight = itemCriteria.Sum(c => c.Weight);
-                            if (totalWeight == 0) totalWeight = 1;
-
-                            itemScore = itemCriteria.Sum(c =>
-                            {
-                                var score = studentCriteriaScores
-                                    .FirstOrDefault(s => s.StudentId == est.Id
-                                                      && s.EvaluationItemId == item.Id
-                                                      && s.CriteriaId == c.Id)?.Score ?? 0;
-                                return score * (c.Weight / totalWeight);
-                            });
-                        }
-                    }
-                    else
-                    {
-                        itemScore = studentScores
-                            .FirstOrDefault(s => s.StudentId == est.Id && s.EvaluationItemId == item.Id)?.Score ?? 0;
-                    }
-
-                    average += (itemScore * item.Percentage) / 100m;
-                }
-
-                var studentAttendance = attendance.Where(a => a.StudentId == est.Id).ToList();
-                string strAttendance = "0%";
-                if (studentAttendance.Any())
-                {
-                    int total = studentAttendance.Count;
-                    int presents = studentAttendance.Count(a => a.StatusTypeId == 1);
-                    strAttendance = $"{(int)(100.0 * presents / total)}%";
-                }
-
-                return new EstudiantesPorMateriaDto
-                {
-                    Id = est.IdentificationNumber ?? "",
-                    NombreCompleto = $"{est.Name} {est.MiddleName} {est.LastName} {est.NdLastName}".Trim(),
-                    Promedio = (int)average,
-                    Asistencia = strAttendance,
-                    Estado = average >= 60 ? "APROBADO" : "REPROBADO"
-                };
+                Id = p.Identification,
+                FullName = p.FullName,
+                Average = (int)p.Average,
+                Attendance = $"{(int)p.AttendancePercentage}%" ?? "0%",
+                Status = p.Average >= 60 ? "APROBADO" : "REPROBADO"
             }).ToList();
-            // Traer nombres de materia y sección
-            var subject = await _context.Subjects.Where(s => s.Id == subjectId).Select(s => s.Name).FirstOrDefaultAsync();
-            var section = await _context.Sections.Where(s => s.Id == sectionId).Select(s => s.Name).FirstOrDefaultAsync();
 
-            return GetStudentsBySubject(data, subject, section);
+            var subject = await _context.Subjects
+                .Where(s => s.Id == filter.SubjectId)
+                .Select(s => s.Name)
+                .FirstOrDefaultAsync();
+
+            var section = await _context.Sections
+                .Where(s => s.Id == filter.SectionId)
+                .Select(s => s.Name)
+                .FirstOrDefaultAsync();
+
+            return GetStudentsBySubject(data, subject ?? "", section ?? "");
         }
 
-        private static byte[] GetStudentsBySubject(List<EstudiantesPorMateriaDto> data, string subject, string section)
+        private static byte[] GetStudentsBySubject(List<StudentsBySubjectDto> data, string subject, string section)
         {
-            var columns = new List<string> { "ID", "NOMBRE COMPLETO", "PROMEDIO", "ASISTENCIA", "ESTADO" };
+            var columns = new List<string> { "Identificación", "Nombre Completo", "Promedio", "Asistencia", "Estado" };
             var rows = new List<List<string>>();
             foreach (var d in data)
-                rows.Add(new List<string> { d.Id, d.NombreCompleto, d.Promedio.ToString(), d.Asistencia, d.Estado });
+                rows.Add(new List<string> { d.Id, d.FullName, d.Average.ToString(), d.Attendance, d.Status });
 
             return PdfExportHelper.CreateReport(
                 "Reporte Académico – Estudiantes por Materia",
@@ -427,150 +235,55 @@ namespace ctp_docente_portal.Server.Services.Implementations
         // ======================
         // 4. Rendimiento Estudiante
         // ======================
-        public async Task<byte[]> GetRendimientoEstudianteAsync(int studentId, ReportFilterDto filter)
+        public async Task<byte[]> GetStudentPerformanceAsync(int userId, int studentId, ReportFilterDto filter)
         {
-            // 1. Estudiante
-            var estudiante = await _context.Students
-                .Where(s => s.Id == studentId)
-                .Select(s => new
-                {
-                    Nombre = (s.Name + " " + s.MiddleName + " " + s.NdLastName + " " + s.LastName).Trim(),
-                    Identificacion = s.IdentificationNumber
-                })
-                .FirstOrDefaultAsync();
+            var studentDetail = await _studentService.GetStudentDetailAsync(userId, studentId, filter);
 
-            if (estudiante == null)
-                throw new KeyNotFoundException("Estudiante no encontrado");
-
-            // 2. Período académico
-            var periodo = await _context.AcademicPeriods
+            var period = await _context.AcademicPeriods
                 .Where(p => p.Id == filter.AcademicPeriodId)
+                .Select(p => p.Name)
                 .FirstOrDefaultAsync();
 
-            if (periodo == null)
+            if (period == null)
                 throw new KeyNotFoundException("Período académico no encontrado");
 
-            var seccionNombre = await _context.Sections
-                .Where(s => s.Id == filter.SectionId)
-                .Select(s => s.Name)
-                .FirstOrDefaultAsync() ?? "N/A";
-
-            // --- Ítems simples ---
-            var simpleGrades = await (
-                from ei in _context.EvaluationItems
-                join sa in _context.SectionAssignments on ei.SectionAssignmentId equals sa.Id
-                join subj in _context.Subjects on sa.SubjectId equals subj.Id
-                join se in _context.StudentEvaluationScores
-                    .Where(s => s.StudentId == studentId)
-                    on ei.Id equals se.EvaluationItemId into scores
-                from se in scores.DefaultIfEmpty()
-                where !ei.HasCriteria
-                      && sa.SectionId == filter.SectionId
-                      && sa.AcademicPeriodId == filter.AcademicPeriodId
-                select new
-                {
-                    Subject = subj.Name,
-                    Evaluation = ei.Name,
-                    Score = se != null ? se.Score : 0,
-                    ei.Percentage
-                }
-            ).ToListAsync();
-
-            // --- Ítems con rúbricas ---
-            var criteriaGrades = await (
-                from ei in _context.EvaluationItems
-                join sa in _context.SectionAssignments on ei.SectionAssignmentId equals sa.Id
-                join subj in _context.Subjects on sa.SubjectId equals subj.Id
-                join sc in _context.StudentCriteriaScores
-                    .Where(s => s.StudentId == studentId)
-                    on ei.Id equals sc.EvaluationItemId into criteriaScores
-                from sc in criteriaScores.DefaultIfEmpty()
-                join ec in _context.EvaluationCriteria
-                    on sc.CriteriaId equals ec.Id into criteria
-                from ec in criteria.DefaultIfEmpty()
-                where ei.HasCriteria
-                      && sa.SectionId == filter.SectionId
-                      && sa.AcademicPeriodId == filter.AcademicPeriodId
-                group new { sc, ec, ei, subj } by new
-                {
-                    subj.Name,
-                    EvaluationId = ei.Id,
-                    EvaluationName = ei.Name,
-                    ei.Percentage
-                }
-                into g
-                select new
-                {
-                    Subject = g.Key.Name,
-                    Evaluation = g.Key.EvaluationName,
-                    Score = g.Any(x => x.sc != null)
-                        ? g.Sum(x => (double)x.sc.Score * (double)x.ec.Weight / 100.0)
-                        : 0,
-                    g.Key.Percentage
-                }
-            ).ToListAsync();
-
-            // --- Merge ---
-            var allGrades = simpleGrades
-                .Concat(criteriaGrades.Select(x => new
-                {
-                    x.Subject,
-                    x.Evaluation,
-                    Score = (decimal)x.Score,
-                    x.Percentage
-                }))
-                .ToList();
-
-            // --- Promedios por materia ---
-            var materiasDto = allGrades
-                .GroupBy(x => x.Subject)
+            var subjectsDto = studentDetail.Grades
                 .Select(g =>
                 {
-                    var promedio = g.Sum(y => y.Score * (y.Percentage / 100m));
-                    return new MateriaDto
+                    var promedio = g.Value.First().Average ?? 0;
+
+                    return new SubjectReportDto
                     {
-                        Asignatura = g.Key,
-                        Seccion = seccionNombre,
-                        Promedio = (int)Math.Round(promedio),
-                        Condicion = promedio >= 70 ? "Aprobado" : "Reprobado"
+                        Subject = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(g.Key.Replace("_", " ")),
+                        Section = studentDetail.Group,
+                        Average = (int)Math.Round(promedio),
+                        Condition = promedio >= 70 ? "Aprobado" : "Reprobado"
                     };
-                }).ToList();
+                })
+                .ToList();
 
-            // 🔹 Usamos tu misma lógica para asistencias
-            var attendanceRecords = await (
-                from a in _context.Attendances
-                join sa in _context.SectionAssignments on a.SectionId equals sa.SectionId
-                where a.StudentId == studentId
-                      && sa.AcademicPeriodId == filter.AcademicPeriodId
-                      && a.SectionId == filter.SectionId
-                select a
-            ).ToListAsync();
+            var attendance = studentDetail.Attendance;
 
-            int ausenciasJustificadas = attendanceRecords.Count(a => a.StatusTypeId == 3);
-            int ausenciasInjustificadas = attendanceRecords.Count(a => a.StatusTypeId == 2);
-            int llegadasTardias = attendanceRecords.Count(a => a.MinutesLate > 0);
-
-            // 🔹 Armamos el DTO final
-            var dto = new RendimientoEstudianteDto
+            var dto = new DTOs.Reports.PDF.StudentPerformanceDto
             {
-                Semestre = periodo.Name,
-                Nombre = estudiante.Nombre,
-                Identificacion = estudiante.Identificacion,
-                Seccion = seccionNombre,
-                Materias = materiasDto,
-                AusenciasJustificadas = ausenciasJustificadas,
-                AusenciasInjustificadas = ausenciasInjustificadas,
-                LlegadasTardias = llegadasTardias
+                Semester = period,
+                Name = studentDetail.FullName,
+                Identification = studentDetail.Identification,
+                Section = studentDetail.Group,
+                Subjects = subjectsDto,
+                JustifiedAbsences = attendance.Justified,
+                UnjustifiedAbsences = attendance.Absent,
+                LateArrivals = attendance.Late
             };
 
-            return GenerarRendimientoEstudiante(dto);
+            return GenerateStudentPerformance(dto);
         }
 
-        private byte[] GenerarRendimientoEstudiante(RendimientoEstudianteDto datos)
+        private byte[] GenerateStudentPerformance(DTOs.Reports.PDF.StudentPerformanceDto datos)
         {
             var columns = new List<string> { "Asignatura", "Sección", "Promedio", "Condición" };
             var rows = new List<List<string>>();
-            var encabezados = new List<string> { "Ausencias justificadas", "Ausencias injustificadas", "Llegadas tardías" };
+            var headers = new List<string> { "Ausencias justificadas", "Ausencias injustificadas", "Llegadas tardías" };
 
             var pdf = Document.Create(container =>
             {
@@ -583,7 +296,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
                     // Encabezado
                     page.Header().Row(row =>
                     {
-                        row.RelativeItem().AlignLeft().Text(datos.Semestre)
+                        row.RelativeItem().AlignLeft().Text(datos.Semester)
                             .FontSize(11).FontFamily("Arial").FontColor(Color.FromHex("#474747"));
 
                         row.RelativeItem().AlignRight().Text($"Fecha: {DateTime.Now:dd/MM/yyyy}")
@@ -601,11 +314,11 @@ namespace ctp_docente_portal.Server.Services.Implementations
                             .FontSize(14).Bold().FontFamily("Arial").AlignCenter();
 
                         // Datos generales
-                        col.Item().PaddingBottom(5).Text($"Estudiante: {datos.Nombre}").Bold()
+                        col.Item().PaddingBottom(5).Text($"Estudiante: {datos.Name}").Bold()
                             .FontSize(12).FontFamily("Arial");
-                        col.Item().PaddingBottom(5).Text($"Identificación: {datos.Identificacion}").Bold()
+                        col.Item().PaddingBottom(5).Text($"Identificación: {datos.Identification}").Bold()
                             .FontSize(12).FontFamily("Arial");
-                        col.Item().PaddingBottom(15).Text($"Sección: {datos.Seccion}").Bold()
+                        col.Item().PaddingBottom(15).Text($"Sección: {datos.Section}").Bold()
                             .FontSize(12).FontFamily("Arial");
 
                         // Tabla de materias
@@ -628,27 +341,30 @@ namespace ctp_docente_portal.Server.Services.Implementations
                             }
 
                             // Filas dinámicas
-                            foreach (var materia in datos.Materias)
+                            foreach (var subject in datos.Subjects)
                             {
                                 table.Cell().Element(CellStyle).AlignMiddle().Padding(4)
-                                    .Text(materia.Asignatura).FontSize(12).FontFamily("Arial");
+                                    .Text(subject.Subject).FontSize(12).FontFamily("Arial");
 
                                 table.Cell().Element(CellStyle).AlignMiddle().Padding(4)
-                                    .Text(materia.Seccion).FontSize(12).FontFamily("Arial").AlignCenter();
+                                    .Text(subject.Section).FontSize(12).FontFamily("Arial").AlignCenter();
 
                                 table.Cell().Element(CellStyle).AlignMiddle().Padding(4)
-                                    .Text(materia.Promedio.ToString()).FontSize(12).FontFamily("Arial").AlignCenter();
+                                    .Text(subject.Average.ToString()).FontSize(12).FontFamily("Arial").AlignCenter();
 
                                 table.Cell().Element(CellStyle).AlignMiddle().Padding(4)
-                                    .Text(materia.Condicion).FontSize(12).FontFamily("Arial").AlignCenter();
+                                    .Text(subject.Condition).FontSize(12).FontFamily("Arial").AlignCenter();
                             }
 
                             static IContainer CellStyle(IContainer container) =>
                                 container.Border(1).BorderColor("#CCC");
                         });
 
+                        col.Item().PaddingTop(20).PaddingBottom(10).Text("Asistencia").AlignCenter().Bold()
+                            .FontSize(12).FontFamily("Arial");
+
                         // Tabla asistencia
-                        col.Item().PaddingTop(20).Table(table =>
+                        col.Item().Table(table =>
                         {
                             table.ColumnsDefinition(c =>
                             {
@@ -657,20 +373,20 @@ namespace ctp_docente_portal.Server.Services.Implementations
                                 c.RelativeColumn();
                             });
 
-                            foreach (var h in encabezados)
+                            foreach (var h in headers)
                             {
                                 table.Cell().Element(CellStyle).AlignMiddle().PaddingVertical(10)
                                     .Text(h).FontSize(12).Bold().FontFamily("Arial").AlignCenter();
                             }
 
                             table.Cell().Element(CellStyle).AlignMiddle().Padding(6)
-                                .Text(datos.AusenciasJustificadas.ToString()).FontSize(12).FontFamily("Arial").AlignCenter();
+                                .Text(datos.JustifiedAbsences.ToString()).FontSize(12).FontFamily("Arial").AlignCenter();
 
                             table.Cell().Element(CellStyle).AlignMiddle().Padding(6)
-                                .Text(datos.AusenciasInjustificadas.ToString()).FontSize(12).FontFamily("Arial").AlignCenter();
+                                .Text(datos.UnjustifiedAbsences.ToString()).FontSize(12).FontFamily("Arial").AlignCenter();
 
                             table.Cell().Element(CellStyle).AlignMiddle().Padding(6)
-                                .Text(datos.LlegadasTardias.ToString()).FontSize(12).FontFamily("Arial").AlignCenter();
+                                .Text(datos.LateArrivals.ToString()).FontSize(12).FontFamily("Arial").AlignCenter();
 
                             static IContainer CellStyle(IContainer container) =>
                                 container.Border(1).BorderColor("#CCC");

@@ -2,9 +2,10 @@
 {
     public class GradeDto
     {
-        public string Evaluation { get; set; }
+        public string Evaluation { get; set; } = "";
         public decimal Score { get; set; }
-        public string Date { get; set; }
+        public string Date { get; set; } = "";
         public decimal? Average { get; set; }
+        public List<CriteriaDto>? Criteria { get; set; }
     }
 }

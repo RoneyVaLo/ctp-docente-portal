@@ -83,25 +83,26 @@ const SectionAssignments = () => {
       try {
         setLoading(true);
         const token = sessionStorage.getItem("token");
-        const [subjects, staff, academicPeriods, sections] = await Promise.all([
-          axios.get("api/subject", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          axios.get("api/staff", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          axios.get("api/academicperiods", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          axios.get("api/section", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ]);
+        const [/* subjects, */ staff, academicPeriods /* sections */] =
+          await Promise.all([
+            // axios.get("api/subject", {
+            //   headers: { Authorization: `Bearer ${token}` },
+            // }),
+            axios.get("api/staff", {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+            axios.get("api/academicperiods", {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+            // axios.get("api/section", {
+            //   headers: { Authorization: `Bearer ${token}` },
+            // }),
+          ]);
 
-        setSubjects(subjects.data);
+        // setSubjects(subjects.data);
         setStaff(staff.data);
         setAcademicPeriods(academicPeriods.data);
-        setSections(sections.data);
+        // setSections(sections.data);
       } catch (error) {
         console.log(error);
         toast.error(error?.response?.data?.Message);
@@ -112,6 +113,36 @@ const SectionAssignments = () => {
 
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const fetchSections = async () => {
+      if (assignmentForm.period.id !== 0) {
+        try {
+          setLoading(true);
+          const token = sessionStorage.getItem("token");
+          const [subjects, sections] = await Promise.all([
+            axios.get(
+              `api/subject/period/${assignmentForm.period.id}/section/${0}`,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              }
+            ),
+            axios.get(`api/section/period/${assignmentForm.period.id}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+          ]);
+          setSections(sections.data);
+          setSubjects(subjects.data);
+        } catch (error) {
+          console.error(error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchSections();
+  }, [assignmentForm.period]);
 
   useEffect(() => {
     const fetchAssignments = async () => {
@@ -307,7 +338,7 @@ const SectionAssignments = () => {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 md:flex-row text-center md:text-start items-center justify-between">
           <div>
             <CardTitle>Asignaciones de Grupos a Docentes</CardTitle>
             <CardDescription>
@@ -336,152 +367,11 @@ const SectionAssignments = () => {
                   Asigna un docente a una materia y sección específica
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="teacher-select">Docente</Label>
-                  <Select
-                    value={assignmentForm.teacher.name}
-                    onValueChange={(value) => {
-                      const teacherSelected = getElementSelected(staff, value);
-                      setAssignmentForm({
-                        ...assignmentForm,
-                        teacher: teacherSelected,
-                      });
-                      setErrors((prev) => ({
-                        ...prev,
-                        teacher: "",
-                      }));
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar docente" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[...staff]
-                        .filter((st) => st.roles.includes("Docente"))
-                        .map((teacher) => (
-                          <SelectItem key={teacher.id} value={teacher.name}>
-                            {teacher.name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.teacher && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.teacher}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="subject-select">Materia</Label>
-                  <Select
-                    value={assignmentForm.subject.name}
-                    onValueChange={(value) => {
-                      const subjectSelected = getElementSelected(
-                        subjects,
-                        value
-                      );
-                      setAssignmentForm({
-                        ...assignmentForm,
-                        subject: subjectSelected,
-                      });
-                      setErrors((prev) => ({
-                        ...prev,
-                        subject: "",
-                      }));
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar materia" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {subjects.map((subject) => (
-                        <SelectItem key={subject.id} value={subject.name}>
-                          {subject.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.subject && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.subject}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="section-select">Sección</Label>
-                  <Select
-                    value={assignmentForm.section.name}
-                    onValueChange={(value) => {
-                      const sectionSelected = getElementSelected(
-                        sections,
-                        value
-                      );
-                      setAssignmentForm({
-                        ...assignmentForm,
-                        section: sectionSelected,
-                      });
-                      setErrors((prev) => ({
-                        ...prev,
-                        section: "",
-                      }));
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar sección" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sections.map((section) => (
-                        <SelectItem key={section.id} value={section.name}>
-                          {section.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.section && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.section}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <Label htmlFor="subsection-select">Sub Sección</Label>
-                  <Select
-                    value={assignmentForm.subSection.name}
-                    onValueChange={(value) => {
-                      const subSectionSelected = getElementSelected(
-                        subSections,
-                        value
-                      );
-                      setAssignmentForm({
-                        ...assignmentForm,
-                        subSection: subSectionSelected,
-                      });
-                      setErrors((prev) => ({
-                        ...prev,
-                        subSection: "",
-                      }));
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar subsección" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {subSections.map((subSection) => (
-                        <SelectItem key={subSection.id} value={subSection.name}>
-                          {subSection.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.subSection && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.subSection}
-                    </p>
-                  )}
-                </div>
-
+              <div
+                className={`space-y-4 ${
+                  assignmentForm.period.id === 0 && "min-h-52"
+                }`}
+              >
                 <div>
                   <Label htmlFor="period-select">Período</Label>
                   <Select
@@ -518,119 +408,279 @@ const SectionAssignments = () => {
                     <p className="text-red-500 text-sm mt-1">{errors.period}</p>
                   )}
                 </div>
-                <div className="flex justify-end gap-2">
-                  <Button
-                    onClick={() => {
-                      setIsDialogOpen(false);
-                      resetForm();
-                    }}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button onClick={handleSave} variant="outline">
-                    {isEditing ? "Actualizar" : "Crear"}
-                  </Button>
-                </div>
+                {assignmentForm.period.id !== 0 ? (
+                  <>
+                    <div>
+                      <Label htmlFor="teacher-select">Docente</Label>
+                      <Select
+                        value={assignmentForm.teacher.name}
+                        onValueChange={(value) => {
+                          const teacherSelected = getElementSelected(
+                            staff,
+                            value
+                          );
+                          setAssignmentForm({
+                            ...assignmentForm,
+                            teacher: teacherSelected,
+                          });
+                          setErrors((prev) => ({
+                            ...prev,
+                            teacher: "",
+                          }));
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar docente" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[...staff]
+                            .filter((st) => st.roles.includes("Docente"))
+                            .map((teacher) => (
+                              <SelectItem key={teacher.id} value={teacher.name}>
+                                {teacher.name}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.teacher && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.teacher}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="subject-select">Materia</Label>
+                      <Select
+                        value={assignmentForm.subject.name}
+                        onValueChange={(value) => {
+                          const subjectSelected = getElementSelected(
+                            subjects,
+                            value
+                          );
+                          setAssignmentForm({
+                            ...assignmentForm,
+                            subject: subjectSelected,
+                          });
+                          setErrors((prev) => ({
+                            ...prev,
+                            subject: "",
+                          }));
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar materia" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {subjects.map((subject) => (
+                            <SelectItem key={subject.id} value={subject.name}>
+                              {subject.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.subject && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.subject}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="section-select">Sección</Label>
+                      <Select
+                        value={assignmentForm.section.name}
+                        onValueChange={(value) => {
+                          const sectionSelected = getElementSelected(
+                            sections,
+                            value
+                          );
+                          setAssignmentForm({
+                            ...assignmentForm,
+                            section: sectionSelected,
+                          });
+                          setErrors((prev) => ({
+                            ...prev,
+                            section: "",
+                          }));
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar sección" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {sections.map((section) => (
+                            <SelectItem key={section.id} value={section.name}>
+                              {section.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.section && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.section}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="subsection-select">Sub Sección</Label>
+                      <Select
+                        value={assignmentForm.subSection.name}
+                        onValueChange={(value) => {
+                          const subSectionSelected = getElementSelected(
+                            subSections,
+                            value
+                          );
+                          setAssignmentForm({
+                            ...assignmentForm,
+                            subSection: subSectionSelected,
+                          });
+                          setErrors((prev) => ({
+                            ...prev,
+                            subSection: "",
+                          }));
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar subsección" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {subSections.map((subSection) => (
+                            <SelectItem
+                              key={subSection.id}
+                              value={subSection.name}
+                            >
+                              {subSection.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.subSection && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.subSection}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        onClick={() => {
+                          setIsDialogOpen(false);
+                          resetForm();
+                        }}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button onClick={handleSave} variant="outline">
+                        {isEditing ? "Actualizar" : "Crear"}
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="w-full flex items-center justify-center text-lg pt-8 text-center font-bold">
+                    Seleccione un Periodo Académico para Continuar
+                  </div>
+                )}
               </div>
             </DialogContent>
           </Dialog>
         </div>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="text-center">Docente</TableHead>
-              <TableHead className="text-center">Materia</TableHead>
-              <TableHead className="text-center">Sección</TableHead>
-              <TableHead className="text-center hidden md:table-cell">
-                SubSección
-              </TableHead>
-              <TableHead className="text-center">Período</TableHead>
-              <TableHead className="text-center">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {!loading ? (
-              sectionAssignments.map((assignment) => (
-                <TableRow key={assignment.id}>
-                  <TableCell className="font-medium">
-                    {assignment.teacher.name}
-                  </TableCell>
-                  <TableCell>{assignment.subject.name}</TableCell>
-                  <TableCell className="text-center">
-                    {assignment.section.name}
-                  </TableCell>
-                  <TableCell className="text-center hidden md:table-cell">
-                    {assignment.subSection.name}
-                  </TableCell>
-                  <TableCell>{assignment.period.name}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-col md:flex-row gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setIsEditing(true);
-                          setAssignmentForm(assignment);
-                          setIsDialogOpen(true);
-                        }}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Dialog
-                        open={askDelete}
-                        onOpenChange={() => {
-                          setAskDelete(true);
-                          setAssignmentId(assignment.id);
-                        }}
-                      >
-                        <DialogTrigger asChild>
-                          <Button size="sm" variant="outline">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>
-                              ¿Desea eliminar esta Asignación?
-                            </DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                onClick={() => {
-                                  setAskDelete(false);
-                                }}
-                              >
-                                Cancelar
-                              </Button>
-                              <Button
-                                variant="outline"
-                                onClick={() => {
-                                  setAskDelete(false);
-                                  deleteAssignment();
-                                }}
-                              >
-                                Continuar
-                              </Button>
+        <div className="overflow-x-auto w-52 sm:w-56 lg:w-full mx-auto lg:mx-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-center">Docente</TableHead>
+                <TableHead className="text-center">Materia</TableHead>
+                <TableHead className="text-center">Sección</TableHead>
+                <TableHead className="text-center hidden md:table-cell">
+                  SubSección
+                </TableHead>
+                <TableHead className="text-center">Período</TableHead>
+                <TableHead className="text-center">Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {!loading ? (
+                sectionAssignments.map((assignment) => (
+                  <TableRow key={assignment.id}>
+                    <TableCell className="font-medium">
+                      {assignment.teacher.name}
+                    </TableCell>
+                    <TableCell>{assignment.subject.name}</TableCell>
+                    <TableCell className="text-center">
+                      {assignment.section.name}
+                    </TableCell>
+                    <TableCell className="text-center hidden md:table-cell">
+                      {assignment.subSection.name}
+                    </TableCell>
+                    <TableCell>{assignment.period.name}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setIsEditing(true);
+                            setAssignmentForm(assignment);
+                            setIsDialogOpen(true);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Dialog
+                          open={askDelete}
+                          onOpenChange={() => {
+                            setAskDelete(true);
+                            setAssignmentId(assignment.id);
+                          }}
+                        >
+                          <DialogTrigger asChild>
+                            <Button size="sm" variant="outline">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>
+                                ¿Desea eliminar esta Asignación?
+                              </DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  onClick={() => {
+                                    setAskDelete(false);
+                                  }}
+                                >
+                                  Cancelar
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => {
+                                    setAskDelete(false);
+                                    deleteAssignment();
+                                  }}
+                                >
+                                  Continuar
+                                </Button>
+                              </div>
                             </div>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell className="font-medium">
+                    <Loader1 />
                   </TableCell>
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell className="font-medium">
-                  <Loader1 />
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
       <CardFooter className="flex justify-between items-center">
         <span>

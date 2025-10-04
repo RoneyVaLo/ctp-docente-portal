@@ -6,7 +6,8 @@ namespace ctp_docente_portal.Server.Services.Interfaces
     {
         Task<List<GradeDto>> GetGradesAsync(int userId, ReportFilterDto filter);
         Task<List<AttendanceDto>> GetAttendanceAsync(int userId, ReportFilterDto filter);
-        Task<List<GroupReportDto>> GetGroupReportAsync(int userId, ReportFilterDto filter);
+        Task<List<PerformanceResultDto>> GetPerformanceDataAsync(int userId, ReportFilterDto filter);
         Task<GeneralStatsDto> GetGeneralStatsAsync(int userId, ReportFilterDto filter);
+        Task<List<StudentPerformanceDto>> GetStudentPerformanceAsync(ReportFilterDto filter);
     }
 }
