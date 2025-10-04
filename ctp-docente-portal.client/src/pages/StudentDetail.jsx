@@ -3,6 +3,7 @@ import Button from "../components/ui/Button";
 import {
   ArrowLeft,
   Calendar,
+  CheckSquare,
   CirclePlus,
   Download,
   Mail,
@@ -42,10 +43,12 @@ import axios from "axios";
 import Loader1 from "../components/loaders/Loader1";
 import { useDownloadPdf } from "../hooks/useDownloadPdf";
 import toast from "react-hot-toast";
+import { useAuth } from "../context/AuthContext";
 
 const StudentDetail = () => {
   const params = useParams();
   const id = params.id;
+  const { roles } = useAuth();
 
   const { downloadPdf } = useDownloadPdf();
 
@@ -67,6 +70,13 @@ const StudentDetail = () => {
           academicPeriodId: parseInt(sessionStorage.getItem("periodStudents")),
           sectionId: parseInt(sessionStorage.getItem("groupStudents")),
         };
+
+        if (roles.includes("Docente")) {
+          reportFilter.subjectId = parseInt(
+            sessionStorage.getItem("subjectStudents")
+          );
+        }
+
         const token = sessionStorage.getItem("token");
         const response = await axios.post(
           `/api/students/student/${id}`,
@@ -76,6 +86,7 @@ const StudentDetail = () => {
           }
         );
 
+        // console.log(response.data);
         setStudent(response.data);
       } catch (error) {
         toast.error(error?.response?.data?.Message);
@@ -360,19 +371,23 @@ const StudentDetail = () => {
             {[
               {
                 value: "calificaciones",
+                icon: CheckSquare,
                 label: "Calificaciones",
               },
               {
                 value: "asistencia",
+                icon: Calendar,
                 label: "Asistencia",
               },
-            ].map(({ value, label }) => (
+              // eslint-disable-next-line no-unused-vars
+            ].map(({ value, icon: Icon, label }) => (
               <TabsTrigger
                 key={value}
                 value={value}
                 isActive={activeTab === value}
                 onClick={handleTabChange}
               >
+                <Icon className="w-4 h-4 sm:mr-1" />
                 <span className="hidden sm:inline">{label}</span>
               </TabsTrigger>
             ))}
@@ -389,7 +404,7 @@ const StudentDetail = () => {
                 <CardDescription>Promedio por asignatura</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="space-y-4 max-h-[23.5rem] overflow-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                   {subjects?.map(([subject, evaluations]) => (
                     <div key={subject} className="space-y-2">
                       {/* Encabezado con nombre de la subject */}
@@ -498,7 +513,7 @@ const StudentDetail = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto w-48 sm:w-56 lg:w-full mx-auto lg:mx-0">
+                <div className="overflow-auto w-56 max-h-[23.5rem] sm:w-60 lg:w-full mx-auto lg:mx-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -525,7 +540,9 @@ const StudentDetail = () => {
                               {item.status}
                             </Badge>
                           </TableCell>
-                          <TableCell>{item.observations || "-"}</TableCell>
+                          <TableCell className="text-balance">
+                            {item.observations || "-"}
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>

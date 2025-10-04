@@ -9,7 +9,7 @@ namespace ctp_docente_portal.Server.Services.Interfaces
         Task<SubjectDto> UpdateSubjectAsync(int id, UpdateSubjectDto updateDto, int userId);
         Task<List<SubjectDto>> GetAllSubjectsAsync();
         Task<SubjectDto> GetByIdAsync(int id);
-        Task<List<SubjectDto>> GetAllSubjectsByUserIdAsync(int userId, int academicPeriodId, int sectionId);
+        Task<List<SubjectDto>> GetAllSubjectsByUserIdAsync(int userId, int academicPeriodId, int? sectionId);
         Task<PagedResult<SubjectDto>> GetAllSubjectsWithPaginationAsync(PaginationParams paginationParams);
         Task<bool> DeleteSubjectAsync(int id);
         Task<List<SubjectDto>> GetSubjectsByPeriodAsync(int academicPeriodId, int userId);

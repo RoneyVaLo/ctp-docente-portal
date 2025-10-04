@@ -40,7 +40,8 @@ namespace ctp_docente_portal.Server.Controllers
         [HttpPost("student/{id}")]
         public async Task<IActionResult> GetStudentDetail(int id, [FromBody] ReportFilterDto filter)
         {
-            var student = await _studentService.GetStudentDetailAsync(id, filter);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var student = await _studentService.GetStudentDetailAsync(userId, id, filter);
             if (student == null)
                 return NotFound();
 

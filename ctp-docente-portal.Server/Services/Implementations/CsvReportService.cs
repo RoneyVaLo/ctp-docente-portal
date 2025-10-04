@@ -54,7 +54,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 var dto = new StudentCsvDto
                 {
                     Id = student.IdentificationNumber ?? student.Id.ToString(),
-                    Nombre = student.FullName,
+                    Name = student.FullName,
                 };
 
                 foreach (var item in evaluationItems)

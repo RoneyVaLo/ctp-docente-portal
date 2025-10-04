@@ -74,6 +74,7 @@ namespace ctp_docente_portal.Server.Controllers
             var subjects = await _subjectService.GetSubjectsByPeriodAsync(academicPeriodId, userId);
             return Ok(subjects);
         }
+
         [HttpGet("all")]
         public async Task<ActionResult<List<SubjectDto>>> GetSubjects()
         {

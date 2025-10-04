@@ -198,7 +198,7 @@ const Subjects = () => {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 md:flex-row text-center md:text-start items-center justify-between">
           <div>
             <CardTitle>Materias / Asignaturas</CardTitle>
             <CardDescription>
@@ -298,88 +298,92 @@ const Subjects = () => {
       </CardHeader>
 
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Código</TableHead>
-              <TableHead>Nombre</TableHead>
-              <TableHead>Descripción</TableHead>
-              <TableHead>Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {!loading ? (
-              subjects.map((subject) => (
-                <TableRow key={subject.id}>
-                  <TableCell className="font-medium">{subject.code}</TableCell>
-                  <TableCell>{subject.name}</TableCell>
-                  <TableCell>{subject.description}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline">
-                        <Edit
-                          className="h-4 w-4"
-                          onClick={() => {
-                            setSubjectForm(subject);
-                            setIsEditing(true);
-                            setIsDialogOpen(true);
-                          }}
-                        />
-                      </Button>
+        <div className="overflow-x-auto w-52 sm:w-56 lg:w-full mx-auto lg:mx-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Código</TableHead>
+                <TableHead>Nombre</TableHead>
+                <TableHead>Descripción</TableHead>
+                <TableHead>Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {!loading ? (
+                subjects.map((subject) => (
+                  <TableRow key={subject.id}>
+                    <TableCell className="font-medium">
+                      {subject.code}
+                    </TableCell>
+                    <TableCell>{subject.name}</TableCell>
+                    <TableCell>{subject.description}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline">
+                          <Edit
+                            className="h-4 w-4"
+                            onClick={() => {
+                              setSubjectForm(subject);
+                              setIsEditing(true);
+                              setIsDialogOpen(true);
+                            }}
+                          />
+                        </Button>
 
-                      <Dialog
-                        open={askDelete}
-                        onOpenChange={() => {
-                          setAskDelete(true);
-                          setSubjectId(subject.id);
-                        }}
-                      >
-                        <DialogTrigger asChild>
-                          <Button size="sm" variant="outline">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>
-                              ¿Desea eliminar esta Materia?
-                            </DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                onClick={() => {
-                                  setAskDelete(false);
-                                }}
-                              >
-                                Cancelar
-                              </Button>
-                              <Button
-                                variant="outline"
-                                onClick={() => {
-                                  setAskDelete(false);
-                                  deleteSubject();
-                                }}
-                              >
-                                Continuar
-                              </Button>
+                        <Dialog
+                          open={askDelete}
+                          onOpenChange={() => {
+                            setAskDelete(true);
+                            setSubjectId(subject.id);
+                          }}
+                        >
+                          <DialogTrigger asChild>
+                            <Button size="sm" variant="outline">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>
+                                ¿Desea eliminar esta Materia?
+                              </DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  onClick={() => {
+                                    setAskDelete(false);
+                                  }}
+                                >
+                                  Cancelar
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => {
+                                    setAskDelete(false);
+                                    deleteSubject();
+                                  }}
+                                >
+                                  Continuar
+                                </Button>
+                              </div>
                             </div>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell className="font-medium">
+                    <Loader1 />
                   </TableCell>
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell className="font-medium">
-                  <Loader1 />
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
 
       <CardFooter className="flex justify-between items-center">

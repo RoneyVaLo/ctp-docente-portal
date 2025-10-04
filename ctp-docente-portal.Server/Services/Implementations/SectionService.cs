@@ -47,8 +47,8 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 // Administrativos ven todas las secciones
                 query =
                     from s in _context.Sections
-                    join sa in _context.SectionAssignments on s.Id equals sa.SectionId
-                    where sa.AcademicPeriodId == academicPeriodId
+                    join ap in _context.AcademicPeriods on s.EnrollmentId equals ap.EnrollmentId
+                    where ap.Id == academicPeriodId
                     select s;
             }
             else if (roleNames.Contains("Docente"))
