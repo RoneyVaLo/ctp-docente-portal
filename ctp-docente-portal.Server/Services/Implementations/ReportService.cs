@@ -16,143 +16,75 @@ namespace ctp_docente_portal.Server.Services.Implementations
             _context = context;
         }
 
-        public async Task<List<GradeDto>> GetGradesAsync(int userId, ReportFilterDto filter)
+        public async Task<GeneralStatsDto> GetGeneralStatsAsync(int userId, ReportFilterDto filter)
         {
-            var staffId = await StaffHelper.GetStaffIdAsync(_context, userId);
-            if (staffId == 0) return new List<GradeDto>();
+            var (assignments, itemsByAssignment, criteriaByItem, criteriaScoresDict, evaluationScoresDict, studentIds) =
+                await EvaluationReports.PrepareEvaluationDataAsync(_context, userId, filter);
 
-            bool isAdmin = await StaffHelper.IsAdminAsync(_context, staffId);
+            if (!assignments.Any())
+                return new GeneralStatsDto();
 
-            var assignments = from sa in _context.SectionAssignments
-                              join sub in _context.Subjects on sa.SubjectId equals sub.Id
-                              where sa.AcademicPeriodId == filter.AcademicPeriodId
-                                    && sa.SectionId == filter.SectionId
-                                    && (isAdmin || sa.StaffId == staffId)
-                                    && (!filter.SubjectId.HasValue || sa.SubjectId == filter.SubjectId.Value)
-                              select new
-                              {
-                                  sa.Id,
-                                  sa.SubjectId,
-                                  sa.StaffId,
-                                  SubjectName = sub.Name
-                              };
-            if (!isAdmin)
-            {
-                assignments = assignments.Where(sa => sa.StaffId == staffId);
-            }
-
-            var assignmentsList = await assignments.ToListAsync();
-
-            if (!assignmentsList.Any()) return new List<GradeDto>();
-
-            var subjectIds = assignmentsList.Select(sa => sa.SubjectId).Distinct().ToList();
-
-            var validItems = await (
-                from item in _context.EvaluationItems
-                join sa in _context.SectionAssignments on item.SectionAssignmentId equals sa.Id
-                where sa.SectionId == filter.SectionId
-                && sa.AcademicPeriodId == filter.AcademicPeriodId
-                && subjectIds.Contains(sa.SubjectId)
-                select new EvaluationItemDto
-                {
-                    Id = item.Id,
-                    HasCriteria = item.HasCriteria,
-                    Percentage = item.Percentage,
-                    SubjectId = sa.SubjectId,
-                    AssignmentId = sa.Id
-                }
-            ).ToListAsync();
-
-            var itemIds = validItems.Select(i => i.Id).ToList();
-
-            var criteria = await _context.EvaluationCriteria
-                .Where(c => itemIds.Contains(c.EvaluationItemId))
-                .ToListAsync();
-
-            var studentCriteriaScores = await _context.StudentCriteriaScores
-                .Where(s => itemIds.Contains(s.EvaluationItemId))
-                .ToListAsync();
-
-            var studentScores = await _context.StudentEvaluationScores
-                .Where(s => itemIds.Contains(s.EvaluationItemId))
-                .ToListAsync();
-
-            var evaluationItemsByAssignment = validItems
-                .GroupBy(i => i.AssignmentId)
-                .ToDictionary(g => g.Key, g => g.ToList());
-
-            var evaluationCriteria = criteria
-                .GroupBy(c => c.EvaluationItemId)
-                .ToDictionary(g => g.Key, g => g.ToList());
-
-            var studentCriteriaScoresDict = studentCriteriaScores
-                .GroupBy(s => (s.StudentId, s.EvaluationItemId))
-                .ToDictionary(g => g.Key, g => g.ToList());
-
-            var studentEvaluationScoresDict = studentScores
-                .GroupBy(s => (s.StudentId, s.EvaluationItemId))
-                .ToDictionary(g => g.Key, g => g.ToList());
-
-            var studentIds = await _context.SectionStudents
-                .Where(ss => ss.SectionId == filter.SectionId)
-                .Select(ss => ss.StudentId)
-                .ToListAsync();
-
-            var subjectScores = assignmentsList.ToDictionary(a => a.SubjectId, a => new List<double>());
-
-            foreach (var assignment in assignmentsList)
-            {
-                var subjectItems = evaluationItemsByAssignment.ContainsKey(assignment.Id)
-                    ? evaluationItemsByAssignment[assignment.Id]
-                    : new List<EvaluationItemDto>();
-
-                foreach (var studentId in studentIds)
-                {
-                    decimal studentFinalScore = 0;
-
-                    foreach (var item in subjectItems)
-                    {
-                        if (item.HasCriteria)
-                        {
-                            var criteriaList = evaluationCriteria.ContainsKey(item.Id)
-                                ? evaluationCriteria[item.Id]
-                                : new List<EvaluationCriteriaModel>();
-
-                            var criteriaScores = studentCriteriaScoresDict.ContainsKey((studentId, item.Id))
-                                ? studentCriteriaScoresDict[(studentId, item.Id)]
-                                : new List<StudentCriteriaScoresModel>();
-
-                            if (criteriaScores.Any())
-                            {
-                                decimal criteriaScore = 0;
-                                foreach (var criterio in criteriaList)
-                                {
-                                    var score = criteriaScores.FirstOrDefault(s => s.CriteriaId == criterio.Id)?.Score ?? 0;
-                                    criteriaScore += (score / 100m) * criterio.Weight;
-                                }
-                                studentFinalScore += (criteriaScore / 100m) * item.Percentage;
-                            }
-                        }
-                        else
-                        {
-                            var score = studentEvaluationScoresDict.ContainsKey((studentId, item.Id))
-                                ? studentEvaluationScoresDict[(studentId, item.Id)].FirstOrDefault()?.Score ?? 0
-                                : 0;
-
-                            studentFinalScore += (score / 100m) * item.Percentage;
-                        }
-                    }
-
-                    subjectScores[assignment.SubjectId].Add((double)studentFinalScore);
-                }
-            }
+            var subjectScores = EvaluationReports.CalculateStudentScores(
+                assignments,
+                itemsByAssignment,
+                criteriaByItem,
+                criteriaScoresDict,
+                evaluationScoresDict,
+                studentIds
+            );
 
             var subjectAverages = subjectScores.ToDictionary(
                 kv => kv.Key,
                 kv => kv.Value.Any() ? Math.Round(kv.Value.Average(), 2) : 0
             );
 
-            var result = assignmentsList
+            double generalAverage = subjectAverages.Any()
+                ? Math.Round(subjectAverages.Values.Average(), 2)
+                : 0;
+
+            var studentAverages = studentIds
+                .Select(sid => subjectScores.Values.SelectMany(l => l).ToList().Any()
+                    ? subjectScores.Values.SelectMany(l => l).Average()
+                    : 0)
+                .ToList();
+
+            int topStudentsCount = studentAverages.Count(avg => avg >= 90);
+            int atRiskStudentsCount = studentAverages.Count(avg => avg < 60);
+
+            var subjectIds = assignments.Select(a => a.SubjectId).Distinct().ToList();
+            var attendanceData = await _context.Attendances
+                .Where(a => a.SectionId == filter.SectionId &&
+                            subjectIds.Contains(a.SubjectId))
+                .ToListAsync();
+
+            double averageAttendance = attendanceData.Any()
+                ? attendanceData.Count(a => a.StatusTypeId == 1) * 100.0 / attendanceData.Count()
+                : 0;
+
+            return new GeneralStatsDto
+            {
+                GeneralAverage = generalAverage,
+                AverageAttendance = averageAttendance,
+                TopStudentsCount = topStudentsCount,
+                AtRiskStudentsCount = atRiskStudentsCount
+            };
+        }
+
+        public async Task<List<GradeDto>> GetGradesAsync(int userId, ReportFilterDto filter)
+        {
+            var (assignments, itemsByAssignment, criteriaByItem, criteriaScoresDict, evaluationScoresDict, studentIds)
+        = await EvaluationReports.PrepareEvaluationDataAsync(_context, userId, filter);
+
+            if (!assignments.Any()) return new List<GradeDto>();
+
+            var subjectScores = EvaluationReports.CalculateStudentScores(assignments, itemsByAssignment, criteriaByItem, criteriaScoresDict, evaluationScoresDict, studentIds);
+
+            var subjectAverages = subjectScores.ToDictionary(
+                kv => kv.Key,
+                kv => kv.Value.Any() ? Math.Round(kv.Value.Average(), 2) : 0
+            );
+
+            return assignments
                 .GroupBy(a => new { a.SubjectId, a.SubjectName })
                 .Select(g => new GradeDto
                 {
@@ -160,8 +92,6 @@ namespace ctp_docente_portal.Server.Services.Implementations
                     Average = subjectAverages[g.Key.SubjectId]
                 })
                 .ToList();
-
-            return result;
         }
 
         public async Task<List<AttendanceDto>> GetAttendanceAsync(int userId, ReportFilterDto filter)
@@ -264,13 +194,6 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 .ToListAsync())
                 .ToLookup(s => (s.StudentId, s.EvaluationItemId));
 
-            // --- Asistencias ---
-            var attendances = (await _context.Attendances
-                .AsNoTracking()
-                .Where(a => studentIds.Contains(a.StudentId) && subjectIds.Contains(a.SubjectId))
-                .ToListAsync())
-                .ToLookup(a => a.SubjectId);
-
             // --- Calcular resultados ---
             var results = new List<PerformanceResultDto>();
 
@@ -321,6 +244,13 @@ namespace ctp_docente_portal.Server.Services.Implementations
                     ? (double)Math.Round(studentScores.Average(), 2)
                     : 0;
 
+                // --- Asistencias ---
+                var attendances = (await _context.Attendances
+                    .AsNoTracking()
+                    .Where(a => studentIds.Contains(a.StudentId) && subjectIds.Contains(a.SubjectId))
+                    .ToListAsync())
+                    .ToLookup(a => a.SubjectId);
+
                 var asistenciasMateria = attendances[assignment.SubjectId];
                 double asistenciaPromedio = asistenciasMateria.Any()
                     ? asistenciasMateria.Count(a => a.StatusTypeId == 1) * 100.0 / asistenciasMateria.Count()
@@ -339,166 +269,6 @@ namespace ctp_docente_portal.Server.Services.Implementations
             }
 
             return results;
-        }
-
-        public async Task<GeneralStatsDto> GetGeneralStatsAsync(int userId, ReportFilterDto filter)
-        {
-            var staffId = await StaffHelper.GetStaffIdAsync(_context, userId);
-            if (staffId == 0) return new GeneralStatsDto();
-
-            bool isAdmin = await StaffHelper.IsAdminAsync(_context, staffId);
-
-            var assignments = _context.SectionAssignments
-                .Where(sa => sa.AcademicPeriodId == filter.AcademicPeriodId &&
-                             sa.SectionId == filter.SectionId);
-
-            if (!isAdmin)
-            {
-                assignments = assignments.Where(sa => sa.StaffId == staffId);
-            }
-
-            var assignmentsList = await assignments.ToListAsync();
-
-            var subjectIds = assignmentsList
-                .Select(sa => sa.SubjectId)
-                .Distinct()
-                .ToList();
-
-            var validItems = await (
-                from item in _context.EvaluationItems
-                join sa in _context.SectionAssignments on item.SectionAssignmentId equals sa.Id
-                where sa.SectionId == filter.SectionId
-                      && sa.AcademicPeriodId == filter.AcademicPeriodId
-                      && subjectIds.Contains(sa.SubjectId)
-                select new EvaluationItemDto
-                {
-                    Id = item.Id,
-                    HasCriteria = item.HasCriteria,
-                    Percentage = item.Percentage,
-                    SubjectId = sa.SubjectId,
-                    AssignmentId = sa.Id
-                }
-            ).ToListAsync();
-
-            var itemIds = validItems.Select(i => i.Id).ToList();
-
-            var criteria = await _context.EvaluationCriteria
-                .Where(c => itemIds.Contains(c.EvaluationItemId))
-                .ToListAsync();
-
-            var studentCriteriaScores = await _context.StudentCriteriaScores
-                .Where(s => itemIds.Contains(s.EvaluationItemId))
-                .ToListAsync();
-
-            var studentScores = await _context.StudentEvaluationScores
-                .Where(s => itemIds.Contains(s.EvaluationItemId))
-                .ToListAsync();
-
-            var evaluationItemsByAssignment = validItems
-                .GroupBy(i => i.AssignmentId)
-                .ToDictionary(g => g.Key, g => g.ToList());
-
-            var evaluationCriteria = criteria
-                .GroupBy(c => c.EvaluationItemId)
-                .ToDictionary(g => g.Key, g => g.ToList());
-
-            var studentCriteriaScoresDict = studentCriteriaScores
-                .GroupBy(s => (s.StudentId, s.EvaluationItemId))
-                .ToDictionary(g => g.Key, g => g.ToList());
-
-            var studentEvaluationScoresDict = studentScores
-                .GroupBy(s => (s.StudentId, s.EvaluationItemId))
-                .ToDictionary(g => g.Key, g => g.ToList());
-
-            var studentIds = await _context.SectionStudents
-                .Where(ss => ss.SectionId == filter.SectionId)
-                .Select(ss => ss.StudentId)
-                .ToListAsync();
-
-            var subjectScores = assignmentsList.ToDictionary(a => a.SubjectId, a => new List<double>());
-            var studentScoresMap = studentIds.ToDictionary(sid => sid, sid => new List<double>());
-
-            foreach (var assignment in assignmentsList)
-            {
-                var subjectItems = evaluationItemsByAssignment.ContainsKey(assignment.Id)
-                    ? evaluationItemsByAssignment[assignment.Id]
-                    : new List<EvaluationItemDto>();
-
-                foreach (var studentId in studentIds)
-                {
-                    decimal studentFinalScore = 0;
-
-                    foreach (var item in subjectItems)
-                    {
-                        if (item.HasCriteria)
-                        {
-                            var criteriaList = evaluationCriteria.ContainsKey(item.Id)
-                                ? evaluationCriteria[item.Id]
-                                : new List<EvaluationCriteriaModel>();
-
-                            var criteriaScores = studentCriteriaScoresDict.ContainsKey((studentId, item.Id))
-                                ? studentCriteriaScoresDict[(studentId, item.Id)]
-                                : new List<StudentCriteriaScoresModel>();
-
-                            if (criteriaScores.Any())
-                            {
-                                decimal criteriaScore = 0;
-                                foreach (var criterio in criteriaList)
-                                {
-                                    var score = criteriaScores.FirstOrDefault(s => s.CriteriaId == criterio.Id)?.Score ?? 0;
-                                    criteriaScore += (score / 100m) * criterio.Weight;
-                                }
-                                studentFinalScore += (criteriaScore / 100m) * item.Percentage;
-                            }
-                        }
-                        else
-                        {
-                            var score = studentEvaluationScoresDict.ContainsKey((studentId, item.Id))
-                                ? studentEvaluationScoresDict[(studentId, item.Id)].FirstOrDefault()?.Score ?? 0
-                                : 0;
-
-                            studentFinalScore += (score / 100m) * item.Percentage;
-                        }
-                    }
-
-                    subjectScores[assignment.SubjectId].Add((double)studentFinalScore);
-                    studentScoresMap[studentId].Add((double)studentFinalScore);
-                }
-            }
-
-            var subjectAverages = subjectScores.ToDictionary(
-                kv => kv.Key,
-                kv => kv.Value.Any() ? Math.Round(kv.Value.Average(), 2) : 0
-            );
-
-            double generalAverage = subjectAverages.Any()
-                ? Math.Round(subjectAverages.Values.Average(), 2)
-                : 0;
-
-            var studentAverages = studentScoresMap.Values
-                .Select(scores => scores.Any() ? scores.Average() : 0)
-                .ToList();
-
-            int topStudentsCount = studentAverages.Count(avg => avg >= 90);
-            int atRiskStudentsCount = studentAverages.Count(avg => avg < 60);
-
-            var attendanceQuery = _context.Attendances
-                .Where(a => a.SectionId == filter.SectionId &&
-                            subjectIds.Contains(a.SubjectId));
-
-            var attendanceData = await attendanceQuery.ToListAsync();
-
-            double averageAttendance = attendanceData.Any()
-                ? attendanceData.Count(a => a.StatusTypeId == 1) * 100.0 / attendanceData.Count()
-                : 0;
-
-            return new GeneralStatsDto
-            {
-                GeneralAverage = generalAverage,
-                AverageAttendance = averageAttendance,
-                TopStudentsCount = topStudentsCount,
-                AtRiskStudentsCount = atRiskStudentsCount
-            };
         }
 
         public async Task<List<StudentPerformanceDto>> GetStudentPerformanceAsync(ReportFilterDto filter)

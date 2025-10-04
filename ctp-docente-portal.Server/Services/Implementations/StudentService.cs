@@ -79,7 +79,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 {
                     Name = p.Average >= 90 ? "Excelente" :
                            p.Average >= 80 ? "Bueno" :
-                           p.Average >= 70 ? "Regular" : "Deficiente"
+                           p.Average >= 70 ? "Regular" : "Necesita apoyo"
                 }
             }).ToList();
         }

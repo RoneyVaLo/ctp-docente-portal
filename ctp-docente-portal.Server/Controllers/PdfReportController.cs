@@ -35,7 +35,8 @@ namespace ctp_docente_portal.Server.Controllers
         [HttpPost("asistencia-por-mes")]
         public async Task<IActionResult> AttendancePerMonth([FromBody] ReportFilterDto filter)
         {
-            var pdfBytes = await _service.GetAttendancePerMonthAsync(filter);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var pdfBytes = await _service.GetAttendancePerMonthAsync(userId, filter);
 
             var fileName = $"AsistenciaPorMes_{filter.SectionId}.pdf";
 

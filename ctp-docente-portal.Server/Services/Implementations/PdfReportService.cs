@@ -74,27 +74,36 @@ namespace ctp_docente_portal.Server.Services.Implementations
         // ======================
         // 2. Asistencia por Mes
         // ======================
-        public async Task<byte[]> GetAttendancePerMonthAsync(ReportFilterDto filter)
+        public async Task<byte[]> GetAttendancePerMonthAsync(int userId, ReportFilterDto filter)
         {
+            // Obtener StaffId del usuario
+            var staffId = await StaffHelper.GetStaffIdAsync(_context, userId);
+            if (staffId == 0) return Array.Empty<byte>();
+
+            bool isAdmin = await StaffHelper.IsAdminAsync(_context, staffId);
+
+
             var section = await _context.Sections
                 .Where(s => s.Id == filter.SectionId)
                 .Select(s => s.Name)
                 .FirstOrDefaultAsync();
+
+            if (section == null)
+                throw new ArgumentException("La sección especificada no existe.");
 
             var subjects = await (
                 from sa in _context.SectionAssignments
                 join sub in _context.Subjects on sa.SubjectId equals sub.Id
                 where sa.AcademicPeriodId == filter.AcademicPeriodId
                    && sa.SectionId == filter.SectionId
+                   && (isAdmin || sa.StaffId == staffId)
                 select new { sa.SubjectId, SubjectName = sub.Name }
             ).ToListAsync();
 
-            // Obtener todas las asistencias de la sección
             var allAttendances = await _context.Attendances
                 .Where(a => a.SectionId == filter.SectionId)
                 .ToListAsync();
 
-            // Obtener todos los meses donde al menos una asistencia exista
             var allMonths = allAttendances
                 .Select(a => a.Date.Month)
                 .Distinct()
@@ -124,8 +133,8 @@ namespace ctp_docente_portal.Server.Services.Implementations
                     })
                     .ToList();
 
-                var average = months.Any()
-                    ? $"{(int)months.Average(m => int.Parse(m.Trim('%')))}%"
+                var average = subjectAttendances.Any()
+                    ? $"{(int)(100.0 * subjectAttendances.Count(a => a.StatusTypeId == 1) / (double)subjectAttendances.Count)}%"
                     : "0%";
 
                 data.Add(new AttendancePerMonthDto
@@ -137,17 +146,15 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 });
             }
 
-            return GetAttendancePerMonth(data);
+            return GetAttendancePerMonth(data, allMonths);
         }
 
-        private static byte[] GetAttendancePerMonth(List<AttendancePerMonthDto> data)
+        private static byte[] GetAttendancePerMonth(List<AttendancePerMonthDto> data, List<int> allMonths)
         {
             var columns = new List<string> { "Materia" };
-            int maxMonths = 0;
-            // TODO: Corregir que diga el nombre o siglas reales del Mes
-            foreach (var d in data)
-                if (d.Months.Count > maxMonths) maxMonths = d.Months.Count;
-            for (int i = 1; i <= maxMonths; i++) columns.Add($"Mes {i}");
+
+            columns.AddRange(allMonths.Select(m => $"Mes {m.ToString()}"));
+
             columns.Add("Promedio");
 
             var rows = new List<List<string>>();
