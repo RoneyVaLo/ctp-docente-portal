@@ -18,10 +18,6 @@
     "fact": "El pingüino emperador puede aguantar la respiración por más de 20 minutos."
   },
   {
-    "icon": "🦆",
-    "fact": "El sonido que hacen los patos no produce eco, y aún no se sabe por qué."
-  },
-  {
     "icon": "🐌",
     "fact": "Los caracoles pueden dormir durante tres años seguidos."
   },
@@ -38,11 +34,6 @@
     "fact": "Las jirafas duermen solo unos 30 minutos al día en intervalos muy cortos."
   },
   { "icon": "🐬", "fact": "Los delfines se ponen nombres entre sí." },
-  { "icon": "🍌", "fact": "El ADN humano es un 50% similar al de un plátano." },
-  {
-    "icon": "⚡",
-    "fact": "El cerebro humano genera más impulsos eléctricos que todos los teléfonos del mundo."
-  },
   {
     "icon": "☀️",
     "fact": "El sol representa el 99,8% de la masa total del sistema solar."
@@ -86,20 +77,12 @@
     "fact": "El tiburón de Groenlandia puede vivir más de 400 años."
   },
   {
-    "icon": "♟️",
-    "fact": "El ajedrez fue prohibido en Persia en el siglo VI por considerarse un vicio."
-  },
-  {
     "icon": "🐢",
     "fact": "Las tortugas pueden respirar a través de su trasero durante la hibernación."
   },
   {
     "icon": "🧬",
     "fact": "El ser humano comparte un 60% de su ADN con las moscas de la fruta."
-  },
-  {
-    "icon": "⛰️",
-    "fact": "El Monte Everest crece aproximadamente 4 milímetros cada año."
   },
   {
     "icon": "🐘",
@@ -118,10 +101,6 @@
     "fact": "Los mosquitos son atraídos más por algunas personas debido a su tipo de sangre y sudor."
   },
   {
-    "icon": "🥝",
-    "fact": "El kiwi (ave) es ciego en muchos casos, pero se orienta con su olfato."
-  },
-  {
     "icon": "👨‍🚀",
     "fact": "Los astronautas crecen hasta 5 cm en el espacio porque la columna se estira."
   },
@@ -132,10 +111,6 @@
   {
     "icon": "❄️",
     "fact": "El agua caliente se congela más rápido que el agua fría, fenómeno conocido como efecto Mpemba."
-  },
-  {
-    "icon": "🐜",
-    "fact": "Las hormigas no duermen; tienen ciclos de descanso cortos."
   },
   {
     "icon": "⚡",
@@ -150,10 +125,6 @@
   {
     "icon": "🐄",
     "fact": "Las vacas tienen mejores amigas y se estresan cuando se separan."
-  },
-  {
-    "icon": "🌊",
-    "fact": "El 70% del oxígeno del planeta proviene de algas marinas."
   },
   {
     "icon": "🧬",
@@ -194,14 +165,6 @@
     "fact": "Los búhos pueden girar su cabeza hasta 270 grados."
   },
   { "icon": "🐠", "fact": "Los peces payaso pueden cambiar de sexo." },
-  {
-    "icon": "☀️",
-    "fact": "El Sol tardaría un millón de años en quemar todo su hidrógeno disponible."
-  },
-  {
-    "icon": "🦒",
-    "fact": "Las jirafas no tienen cuerdas vocales; producen sonidos con vibraciones internas."
-  },
   { "icon": "🗻", "fact": "El Monte Fuji en Japón es un volcán activo." },
   {
     "icon": "🦎",
@@ -218,15 +181,11 @@
   { "icon": "🪐", "fact": "El planeta Urano gira de lado, casi acostado." },
   {
     "icon": "👶",
-    "fact": "Los bebés no tienen rótulas al nacer; se desarrollan con el tiempo."
+    "fact": "Los bebés tienen rótulas hechas de cartílago blando y no de hueso duro hasta cumplir entre 3 y 5 años."
   },
   {
     "icon": "🦈",
     "fact": "El tiburón ballena tiene más de 3000 dientes pequeños."
-  },
-  {
-    "icon": "🍫",
-    "fact": "El chocolate blanco no es realmente chocolate porque no contiene cacao."
   },
   {
     "icon": "🐸",
@@ -243,14 +202,6 @@
   {
     "icon": "🦇",
     "fact": "El murciélago vampiro puede caminar y correr, algo raro en su especie."
-  },
-  {
-    "icon": "🐻‍❄️",
-    "fact": "La lengua azul del oso polar le ayuda a absorber calor."
-  },
-  {
-    "icon": "🌍",
-    "fact": "La Tierra es el único planeta del sistema solar que no tiene el nombre de un dios romano o griego."
   },
   {
     "icon": "🐌",
@@ -285,7 +236,6 @@
     "fact": "Los ojos de un avestruz son más grandes que su cerebro."
   },
   { "icon": "🐦", "fact": "El colibrí aletea hasta 80 veces por segundo." },
-  { "icon": "🦛", "fact": "La leche de hipopótamo es de color rosado." },
   {
     "icon": "🐟",
     "fact": "Los peces dorados pierden su color si no reciben suficiente luz solar."
@@ -331,15 +281,7 @@
     "icon": "🧊",
     "fact": "El hielo seco no se derrite, pasa directamente de sólido a gas."
   },
-  {
-    "icon": "☀️",
-    "fact": "El Sol cabría 1,3 millones de veces dentro de la Tierra en volumen."
-  },
   { "icon": "🐊", "fact": "Los cocodrilos pueden vivir más de 100 años." },
-  {
-    "icon": "⚡",
-    "fact": "Los rayos ocurren unas 8 millones de veces al día en el mundo."
-  },
   {
     "icon": "🦇",
     "fact": "El murciélago más pequeño del mundo pesa menos que una moneda de un centavo."
