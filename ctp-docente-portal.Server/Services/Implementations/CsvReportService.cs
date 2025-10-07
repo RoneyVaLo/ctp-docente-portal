@@ -29,6 +29,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
             var students = (from ss in _context.SectionStudents
                             join s in _context.Students on ss.StudentId equals s.Id
                             where ss.SectionId == filter.SectionId
+                            orderby s.LastName
                             select new
                             {
                                 s.Id,

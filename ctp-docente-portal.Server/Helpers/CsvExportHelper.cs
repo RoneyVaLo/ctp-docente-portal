@@ -21,6 +21,7 @@ namespace ctp_docente_portal.Server.Helpers
             {
                 var row = new List<string>
                 {
+                    // $"=\"{student.Id}\"",
                     student.Id,
                     $"\"{student.Name}\""
                 };
@@ -33,7 +34,13 @@ namespace ctp_docente_portal.Server.Helpers
                 sb.AppendLine(string.Join(";", row));
             }
 
-            return Encoding.UTF8.GetBytes(sb.ToString());
+            //return Encoding.UTF8.GetBytes(sb.ToString());
+
+            // Agregar BOM para que Excel reconozca UTF-8
+            var utf8WithoutBom = Encoding.UTF8;
+            var bom = new byte[] { 0xEF, 0xBB, 0xBF };
+            var csvBytes = utf8WithoutBom.GetBytes(sb.ToString());
+            return bom.Concat(csvBytes).ToArray();
         }
     }
 }
