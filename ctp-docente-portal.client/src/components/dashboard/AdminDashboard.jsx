@@ -250,7 +250,7 @@ const AdminDashboard = ({ adminStats }) => {
               onClick={() => navigate("estudiantes")}
             >
               <User className="h-6 w-6" />
-              Reporte Individual
+              Reporte Detallado
             </Button>
             <Button
               className="h-20 flex-col gap-2"
@@ -258,7 +258,7 @@ const AdminDashboard = ({ adminStats }) => {
               onClick={() => navigate("notificaciones")}
             >
               <Bell className="h-6 w-6" />
-              Enviar Notificaciones
+              Ver Notificaciones
             </Button>
           </div>
         </CardContent>
