@@ -27,9 +27,9 @@ const GradeTable = ({
       {students.map((student) => (
         <Card key={student.studentId} className="pt-4">
           <CardContent className="p-4">
-            <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-              <div className="lg:w-1/4">
-                <h3 className="font-semibold text-lg text-center md:text-start my-2">
+            <div className="flex flex-col gap-2">
+              <div className="w-full">
+                <h3 className="font-bold text-lg text-center md:text-start my-2">
                   {student.studentName}
                 </h3>
               </div>

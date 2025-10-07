@@ -113,60 +113,62 @@ const EvaluationItems = () => {
 
       {/* Items List */}
       <div className="grid gap-4">
-        {evaluationItems.map((item) => (
-          <Card key={item.id} className="p-4 ">
-            <CardContent className="p-6">
-              <div className="flex flex-col gap-4 sm:flex-row items-center sm:items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex flex-col sm:flex-row items-center gap-3 mb-2">
-                    <h3 className="text-lg font-semibold">{item.name}</h3>
-                    <Badge
-                      className={`text-xs ${getCategoryColor(
-                        item.evaluationCategoryName
-                      )}`}
-                    >
-                      {item.evaluationCategoryName}
-                    </Badge>
-                    <Badge variant="outline" className="text-xs">
-                      {item.percentage}%
-                    </Badge>
-                    {item.hasCriteria && (
-                      <Badge variant="secondary" className="text-xs">
-                        Con Rúbrica
+        {evaluationItems
+          .sort((a, b) => b.percentage - a.percentage)
+          .map((item) => (
+            <Card key={item.id} className="p-4 ">
+              <CardContent className="p-6">
+                <div className="flex flex-col gap-4 sm:flex-row items-center sm:items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex flex-col sm:flex-row items-center gap-3 mb-2">
+                      <h3 className="text-lg font-semibold">{item.name}</h3>
+                      <Badge
+                        className={`text-xs ${getCategoryColor(
+                          item.evaluationCategoryName
+                        )}`}
+                      >
+                        {item.evaluationCategoryName}
                       </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {item.percentage}%
+                      </Badge>
+                      {item.hasCriteria && (
+                        <Badge variant="secondary" className="text-xs">
+                          Con Rúbrica
+                        </Badge>
+                      )}
+                    </div>
+                    <p>{item.description}</p>
+                    <div className="flex items-center gap-4 text-sm">
+                      <span>Creado: {formatDate(item.createdAt)}</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    {item.hasCriteria && (
+                      <NavLink to={`/item/${item.id}/calificar`}>
+                        <Button variant="outline" size="sm">
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                      </NavLink>
                     )}
-                  </div>
-                  <p>{item.description}</p>
-                  <div className="flex items-center gap-4 text-sm">
-                    <span>Creado: {formatDate(item.createdAt)}</span>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  {item.hasCriteria && (
-                    <NavLink to={`/item/${item.id}/calificar`}>
+                    <NavLink to={`/item/${item.id}/editar`}>
                       <Button variant="outline" size="sm">
-                        <Edit className="w-4 h-4" />
+                        <Settings className="w-4 h-4" />
                       </Button>
                     </NavLink>
-                  )}
-                  <NavLink to={`/item/${item.id}/editar`}>
-                    <Button variant="outline" size="sm">
-                      <Settings className="w-4 h-4" />
-                    </Button>
-                  </NavLink>
 
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setItemToDelete(item)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setItemToDelete(item)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          ))}
 
         <Dialog
           open={!!itemToDelete}
@@ -189,7 +191,7 @@ const EvaluationItems = () => {
                     setItemToDelete(null);
                   }}
                 >
-                  <Trash2 className="w-4 h-4" />
+                  Continuar
                 </Button>
               </div>
             </div>

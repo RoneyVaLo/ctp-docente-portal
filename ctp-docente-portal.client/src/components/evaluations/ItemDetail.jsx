@@ -32,7 +32,7 @@ const ItemDetail = ({
 }) => {
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="text-center md:text-start">
         <CardTitle>Información general</CardTitle>
         <CardDescription>
           Ingrese los detalles básicos de la evaluación

@@ -193,6 +193,8 @@ const Reports = () => {
           sessionStorage.setItem("periodReports", selectedPeriod);
           sessionStorage.setItem("groupReports", selectedSection);
 
+          console.log(attendance.data);
+
           setGradesData(grades.data);
           setAttendanceData(attendance.data);
           setGroupReportData(groupReport.data);

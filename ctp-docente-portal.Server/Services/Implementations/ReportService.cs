@@ -52,16 +52,54 @@ namespace ctp_docente_portal.Server.Services.Implementations
             int atRiskStudentsCount = studentAverages.Count(avg => avg < 60);
 
             var subjectIds = assignments.Select(a => a.SubjectId).Distinct().ToList();
+
+            var academicPeriod = await _context.AcademicPeriods
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == filter.AcademicPeriodId);
+
+            if (academicPeriod == null)
+                throw new ArgumentException("El periodo académico no existe.");
+
+
             var attendanceData = await _context.Attendances
-                .Where(a => a.SectionId == filter.SectionId &&
-                            subjectIds.Contains(a.SubjectId))
+                .Where(a =>
+                a.SectionId == filter.SectionId &&
+                subjectIds.Contains(a.SubjectId) &&
+                a.Date >= DateOnly.FromDateTime(academicPeriod.StartDate) &&
+                a.Date <= DateOnly.FromDateTime(academicPeriod.EndDate)
+                )
                 .ToListAsync();
 
-            double averageAttendance = attendanceData.Any()
-                ? attendanceData.Count(a => a.StatusTypeId == 1) * 100.0 / attendanceData.Count()
-                : 0;
+            double averageAttendance = 0;
 
-            return new GeneralStatsDto
+            if (attendanceData.Any())
+            {
+                // Agrupar por materia
+                var groupedBySubject = attendanceData
+                    .GroupBy(a => a.SubjectId)
+                    .ToList();
+
+                // Calcular el promedio individual por materia
+                var subjectAveragesAttendances = groupedBySubject.Select(g =>
+                {
+                    int total = g.Count();
+                    int presents = g.Count(a => a.StatusTypeId == 1);
+                    int justified = g.Count(a => a.StatusTypeId == 3);
+
+                    double weighted = presents + (justified * 0.5);
+                    double percentage = total == 0 ? 0 : Math.Round((weighted * 100) / total, 2);
+
+                    return percentage;
+                }).ToList();
+
+                // Promedio general entre materias
+                averageAttendance = subjectAveragesAttendances.Any()
+                    ? Math.Round(subjectAveragesAttendances.Average())
+                    : 0;
+            }
+
+
+                return new GeneralStatsDto
             {
                 GeneralAverage = generalAverage,
                 AverageAttendance = averageAttendance,
@@ -101,6 +139,15 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
             bool isAdmin = await StaffHelper.IsAdminAsync(_context, staffId);
 
+
+            // Obtener el periodo académico
+            var academicPeriod = await _context.AcademicPeriods
+                .FirstOrDefaultAsync(p => p.Id == filter.AcademicPeriodId);
+
+            if (academicPeriod == null)
+                throw new Exception("El periodo académico no existe.");
+
+
             var assignments = _context.SectionAssignments
                 .Where(sa => sa.AcademicPeriodId == filter.AcademicPeriodId &&
                              sa.SectionId == filter.SectionId);
@@ -116,15 +163,22 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 .ToListAsync();
 
             var query = _context.Attendances
-                .Where(a => a.SectionId == filter.SectionId &&
-                            subjectIds.Contains(a.SubjectId));
+                .Where(a =>
+                    a.SectionId == filter.SectionId &&
+                    subjectIds.Contains(a.SubjectId) &&
+                    a.Date >= DateOnly.FromDateTime(academicPeriod.StartDate) &&
+                    a.Date <= DateOnly.FromDateTime(academicPeriod.EndDate)
+                );
 
             return await query
                 .GroupBy(a => a.Date.Month)
+                .OrderBy(g => g.Key)
                 .Select(g => new AttendanceDto
                 {
-                    Month = new DateTime(2025, g.Key, 1).ToString("MMM"),
-                    Attendance = g.Count(x => x.StatusTypeId == 1) * 100.0 / g.Count()
+                    Month = new DateTime(academicPeriod.StartDate.Year, g.Key, 1).ToString("MMM"),
+                    Attendance = Math.Round(
+                        (g.Count(x => x.StatusTypeId == 1) + (g.Count(x => x.StatusTypeId == 3) * 0.5)) * 100.0 /
+                        g.Count(), 2)
                 })
                 .ToListAsync();
         }
@@ -141,6 +195,14 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
             if (section == null)
                 throw new ArgumentException("La sección especificada no existe.", nameof(filter.SectionId));
+
+            // --- Obtener periodo académico ---
+            var academicPeriod = await _context.AcademicPeriods
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == filter.AcademicPeriodId);
+
+            if (academicPeriod == null)
+                throw new ArgumentException("El periodo académico no existe.");
 
             var assignments = await _context.SectionAssignments
                 .AsNoTracking()
@@ -245,16 +307,29 @@ namespace ctp_docente_portal.Server.Services.Implementations
                     : 0;
 
                 // --- Asistencias ---
-                var attendances = (await _context.Attendances
+                var attendances = await _context.Attendances
                     .AsNoTracking()
-                    .Where(a => studentIds.Contains(a.StudentId) && subjectIds.Contains(a.SubjectId))
-                    .ToListAsync())
-                    .ToLookup(a => a.SubjectId);
+                    .Where(a =>
+                        studentIds.Contains(a.StudentId) &&
+                        a.SectionId == filter.SectionId &&
+                        a.SubjectId == assignment.SubjectId &&
+                        a.Date >= DateOnly.FromDateTime(academicPeriod.StartDate) &&
+                        a.Date <= DateOnly.FromDateTime(academicPeriod.EndDate)
+                    )
+                    .ToListAsync();
 
-                var asistenciasMateria = attendances[assignment.SubjectId];
-                double asistenciaPromedio = asistenciasMateria.Any()
-                    ? asistenciasMateria.Count(a => a.StatusTypeId == 1) * 100.0 / asistenciasMateria.Count()
-                    : 0;
+                double averageAttendance = 0;
+
+                if (attendances.Any())
+                {
+                    int total = attendances.Count;
+                    int presents = attendances.Count(a => a.StatusTypeId == 1);
+                    int justified = attendances.Count(a => a.StatusTypeId == 3);
+
+                    double weighted = presents + (justified * 0.5);
+                    averageAttendance = Math.Round((weighted * 100) / total);
+                }
+
 
                 int estudiantesRiesgo = studentScores.Count(s => s < 60);
 
@@ -263,7 +338,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
                     Section = section.Name,
                     Subject = subject.Name,
                     Average = average,
-                    AttendancePercentage = asistenciaPromedio,
+                    AttendancePercentage = averageAttendance,
                     StudentsAtRisk = estudiantesRiesgo
                 });
             }
@@ -281,6 +356,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 join e in _context.Enrollments on sec.EnrollmentId equals e.Id
                 join ap in _context.AcademicPeriods on e.Id equals ap.EnrollmentId
                 join es in _context.EnrollmentStudent on s.Id equals es.StudentId
+                orderby s.LastName
                 where s.IsActive
                       && sec.Id == filter.SectionId
                       && ap.Id == filter.AcademicPeriodId
@@ -372,14 +448,40 @@ namespace ctp_docente_portal.Server.Services.Implementations
                     average += (itemScore * item.Percentage) / 100m;
                 }
 
-                // Asistencia
-                var studentAttendance = attendance.Where(a => a.StudentId == st.Id).ToList();
+                var academicPeriod = _context.AcademicPeriods
+                .FirstOrDefault(p => p.Id == filter.AcademicPeriodId);
+
+                if (academicPeriod == null)
+                    throw new ArgumentException("El periodo académico no existe.");
+
+                var studentAttendance = attendance
+                .Where(a =>
+                    a.StudentId == st.Id &&
+                    a.Date >= DateOnly.FromDateTime(academicPeriod.StartDate) &&
+                    a.Date <= DateOnly.FromDateTime(academicPeriod.EndDate) &&
+                    a.SectionId == filter.SectionId &&
+                    (!filter.SubjectId.HasValue || a.SubjectId == filter.SubjectId.Value)
+                )
+                //.OrderBy(a => a.Date)
+                .ToList();
+
                 decimal attendancePercentage = 0;
+
                 if (studentAttendance.Any())
                 {
                     int total = studentAttendance.Count;
+
+                    // Presentes
                     int presents = studentAttendance.Count(a => a.StatusTypeId == 1);
-                    attendancePercentage = total == 0 ? 0 : Math.Round((decimal)presents * 100 / total, 2);
+
+                    // Ausencias justificadas (valen medio punto)
+                    int justifiedAbsences = studentAttendance.Count(a => a.StatusTypeId == 3);
+
+                    // Sumar medio punto por cada ausencia justificada
+                    decimal weightedPresents = presents + (justifiedAbsences * 0.5m);
+
+                    // Calcular porcentaje
+                    attendancePercentage = total == 0 ? 0 : Math.Round(weightedPresents * 100 / total, 2);
                 }
 
                 return new StudentPerformanceDto

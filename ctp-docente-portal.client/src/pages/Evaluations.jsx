@@ -64,19 +64,19 @@ const Evaluations = () => {
               />
 
               <FilterSelect
-                label="Asignatura"
+                label="Materia"
                 value={selectedSubject}
                 onChange={setSelectedSubject}
                 options={subjects}
-                placeholder="Seleccione una Asignatura"
+                placeholder="Seleccione una Materia"
               />
 
               <FilterSelect
-                label="Grupo"
+                label="Sección"
                 value={selectedGroup}
                 onChange={setSelectedGroup}
                 options={sections}
-                placeholder="Seleccione un Grupo"
+                placeholder="Seleccione un Sección"
               />
             </div>
           </CardContent>
@@ -94,20 +94,24 @@ const Evaluations = () => {
               )} gap-4`}
             >
               {evaluationItems.length > 0 ? (
-                evaluationItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex flex-col text-center p-2 gap-2 justify-between"
-                  >
-                    <div className="flex-grow">
-                      <div className="h-full flex items-center justify-center">
-                        <div className="font-medium text-sm">{item.name}</div>
+                evaluationItems
+                  .sort((a, b) => b.percentage - a.percentage)
+                  .map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex flex-col text-center p-2 gap-2 justify-between"
+                    >
+                      <div className="flex-grow">
+                        <div className="h-full flex items-center justify-center">
+                          <div className="font-medium text-sm">{item.name}</div>
+                        </div>
                       </div>
+                      <div className="text-2xl font-bold">
+                        {item.percentage}%
+                      </div>
+                      <Progress value={item.percentage} className="h-2" />
                     </div>
-                    <div className="text-2xl font-bold">{item.percentage}%</div>
-                    <Progress value={item.percentage} className="h-2" />
-                  </div>
-                ))
+                  ))
               ) : (
                 <div className="flex flex-col items-center justify-center h-32 text-center col-span-2">
                   <p className="text-gray-800 dark:text-gray-300 font-bold">

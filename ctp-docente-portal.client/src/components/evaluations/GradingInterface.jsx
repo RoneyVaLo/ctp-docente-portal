@@ -8,6 +8,7 @@ import {
   Filter,
   Save,
   Search,
+  X,
 } from "lucide-react";
 import Input from "../ui/Input";
 import Button from "../ui/Button";
@@ -28,6 +29,7 @@ const GradingInterface = () => {
   // <"idle" | "saving" | "saved" | "error">
   // const [saveStatus, setSaveStatus] = useState("idle");
   const [isEditing, setIsEditing] = useState(false);
+  const [studentsBackup, setStudentsBackup] = useState([]);
 
   const {
     evaluationItems,
@@ -49,7 +51,12 @@ const GradingInterface = () => {
   };
 
   const handleEditToggle = () => {
+    // console.log(isEditing);
     setIsEditing((prev) => !prev);
+    if (!isEditing) {
+      // console.log(students);
+      setStudentsBackup([...students]);
+    }
   };
 
   const handleGradeChange = (studentId, item, index, value) => {
@@ -123,12 +130,20 @@ const GradingInterface = () => {
       };
 
       await downloadCsv("/api/csvreport/students", reportFilter, `_.csv`);
+      toast.success("Inició la descarga del archivo");
     } catch (error) {
       console.log(error);
       toast.error("Error descargando el Reporte");
     } finally {
       setLoading(false);
     }
+  };
+
+  const cancelEdition = () => {
+    if (students !== studentsBackup) {
+      setStudents([...studentsBackup]);
+    }
+    setIsEditing(false);
   };
 
   if (loading) return <Loader1 />;
@@ -198,10 +213,19 @@ const GradingInterface = () => {
                   size="sm"
                   variant="outline"
                   disabled={!evaluationItems.length > 0}
-                  onClick={studentsCsvReport}
+                  onClick={isEditing ? cancelEdition : studentsCsvReport}
                 >
-                  <Download className="w-4 h-4 mr-2" />
-                  Descargar Reporte
+                  {isEditing ? (
+                    <>
+                      <X className="w-4 h-4 mr-2" />
+                      Cancelar
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4 mr-2" />
+                      Descargar Reporte
+                    </>
+                  )}
                 </Button>
                 {evaluationItems.length <= 0 && (
                   <Tooltip

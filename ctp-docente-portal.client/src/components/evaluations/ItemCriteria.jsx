@@ -28,7 +28,7 @@ const ItemCriteria = ({
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="text-center md:text-start">
         <CardTitle>Definición de rúbrica</CardTitle>
         <CardDescription>
           Establezca los criterios de evaluación y sus porcentajes
@@ -115,10 +115,12 @@ const ItemCriteria = ({
                 </div>
               ))}
 
-              <Button variant="outline" onClick={addCriterion}>
-                <Plus className="h-4 w-4 mr-2" />
-                Agregar criterio
-              </Button>
+              <div className="w-full flex justify-center md:justify-start pt-4 md:pt-0">
+                <Button variant="outline" onClick={addCriterion}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Agregar criterio
+                </Button>
+              </div>
             </div>
 
             <div className="flex justify-between items-center p-4 bg-muted rounded-md">
@@ -140,7 +142,7 @@ const ItemCriteria = ({
         )}
       </CardContent>
       {item.hasCriteria && (
-        <CardFooter className="flex justify-between items-center">
+        <CardFooter className="flex flex-col md:flex-row gap-4 justify-between items-center">
           <NavLink to="/calificaciones">
             <Button variant="outline">Cancelar</Button>
           </NavLink>
