@@ -2,6 +2,7 @@
 using ctp_docente_portal.Server.Data;
 using ctp_docente_portal.Server.DTOs.DashboardStatistics;
 using ctp_docente_portal.Server.DTOs.EvaluationItems;
+using ctp_docente_portal.Server.Helpers;
 using ctp_docente_portal.Server.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -36,18 +37,24 @@ namespace ctp_docente_portal.Server.Services.Implementations
         /// A <see cref="TeacherSummaryDto"/> containing sections, attendance and pending evaluations information.
         /// </returns>
         /// <exception cref="ArgumentException">Thrown when parameters are invalid (less than or equal to zero).</exception>
-        public async Task<TeacherSummaryDto> GetTeacherSummaryAsync(int staffId, int periodoId)
+        public async Task<TeacherSummaryDto> GetTeacherSummaryAsync(int userId, int periodoId)
         {
+            var staffId = await StaffHelper.GetStaffIdAsync(_context, userId);
             if (staffId <= 0) throw new ArgumentException("El ID del profesor no es válido.");
             if (periodoId <= 0) throw new ArgumentException("El ID del período no es válido.");
 
+            var assignments = await _context.SectionAssignments
+                .AsNoTracking()
+                .Where(sa => sa.AcademicPeriodId == periodoId &&
+                             sa.StaffId == staffId
+                             )
+                .ToListAsync();
+
+            var subjectIds = assignments.Select(a => a.SubjectId).Distinct().ToList();
+
             var today = DateOnly.FromDateTime(DateTime.Now);
 
-            var quantitySections = await _context.SectionAssignments
-                .Where(sa => sa.StaffId == staffId && sa.AcademicPeriodId == periodoId)
-                .Select(sa => sa.SectionId)
-                .Distinct()
-                .CountAsync();
+            var quantitySections = assignments.Select(a => a.SectionId).Distinct().Count();
 
             var assistanceToday = await (
                 from ss in _context.SectionStudents
@@ -55,49 +62,61 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 join at in _context.Attendances
                     on new { ss.StudentId, ss.SectionId }
                     equals new { at.StudentId, at.SectionId }
-                where sa.StaffId == staffId && sa.AcademicPeriodId == periodoId && at.Date == today
+                where sa.StaffId == staffId && sa.AcademicPeriodId == periodoId && at.Date == today && subjectIds.Contains(at.SubjectId)
                 select new { at.StatusTypeId }
             ).ToListAsync();
 
             var presents = assistanceToday.Count(a => a.StatusTypeId == 1); // asumimos 1 = presente
             var total = assistanceToday.Count;
 
-            var pendingEvaluationsQuery = (
+            // Ítems donde al menos un estudiante tiene nota 0 o no tiene nota
+            var pendingEvaluationsQuery =
                 from ei in _context.EvaluationItems
                 join sa in _context.SectionAssignments on ei.SectionAssignmentId equals sa.Id
                 join ss in _context.SectionStudents on sa.SectionId equals ss.SectionId
-                where sa.StaffId == staffId && sa.AcademicPeriodId == periodoId
-                where ei.HasCriteria == true
-                where !_context.StudentEvaluationScores
-                    .Where(s => s.EvaluationItemId == ei.Id)
-                    .Select(s => s.StudentId)
-                    .Contains(ss.StudentId)
-                select ei.Id
-);
+                where sa.StaffId == staffId
+                      && sa.AcademicPeriodId == periodoId
+                      && ei.HasCriteria == true
+                where (
+                    // Estudiante sin registro de nota
+                    !_context.StudentEvaluationScores
+                        .Any(s => s.EvaluationItemId == ei.Id && s.StudentId == ss.StudentId)
+                    ||
+                    // Estudiante con nota 0
+                    _context.StudentEvaluationScores
+                        .Any(s => s.EvaluationItemId == ei.Id && s.StudentId == ss.StudentId && s.Score == 0)
+                )
+                select ei.Id;
 
             var quantityPendingEvaluations = await pendingEvaluationsQuery
                 .Distinct()
                 .CountAsync();
 
-            var detailsEvaluations = await (
-                from ei in _context.EvaluationItems
-                join sa in _context.SectionAssignments on ei.SectionAssignmentId equals sa.Id
-                join sub in _context.Subjects on sa.SubjectId equals sub.Id
-                join sec in _context.Sections on sa.SectionId equals sec.Id
-                join ss in _context.SectionStudents on sec.Id equals ss.SectionId
-                where sa.StaffId == staffId && sa.AcademicPeriodId == periodoId
-                where ei.HasCriteria == true
-                where !_context.StudentEvaluationScores
-                    .Where(s => s.EvaluationItemId == ei.Id)
-                    .Select(s => s.StudentId)
-                    .Contains(ss.StudentId)
-                select new EvaluationPendingDto
-                {
-                    Subject = sub.Name,
-                    Section = sec.Name,
-                    EvaluationItem = _mapper.Map<EvaluationItemDto>(ei)
-                }
-            ).Distinct().ToListAsync();
+            var detailsEvaluations =
+                await (
+                    from ei in _context.EvaluationItems
+                    join sa in _context.SectionAssignments on ei.SectionAssignmentId equals sa.Id
+                    join sub in _context.Subjects on sa.SubjectId equals sub.Id
+                    join sec in _context.Sections on sa.SectionId equals sec.Id
+                    join ss in _context.SectionStudents on sec.Id equals ss.SectionId
+                    where sa.StaffId == staffId
+                          && sa.AcademicPeriodId == periodoId
+                          && ei.HasCriteria == true
+                    where (
+                        !_context.StudentEvaluationScores
+                            .Any(s => s.EvaluationItemId == ei.Id && s.StudentId == ss.StudentId)
+                        ||
+                        _context.StudentEvaluationScores
+                            .Any(s => s.EvaluationItemId == ei.Id && s.StudentId == ss.StudentId && s.Score == 0)
+                    )
+                    select new EvaluationPendingDto
+                    {
+                        Subject = sub.Name,
+                        Section = sec.Name,
+                        EvaluationItem = _mapper.Map<EvaluationItemDto>(ei)
+                    }
+                ).Distinct().ToListAsync();
+
 
             return new TeacherSummaryDto
             {

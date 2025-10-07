@@ -201,6 +201,7 @@ const StudentDetail = () => {
         reportFilter,
         `${filename}.pdf`
       );
+      toast.success("Descarga del archivo iniciada.");
     } catch (error) {
       toast.error(error?.response?.data?.Message);
     } finally {

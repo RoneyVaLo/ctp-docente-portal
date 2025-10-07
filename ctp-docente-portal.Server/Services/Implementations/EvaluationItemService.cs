@@ -24,15 +24,8 @@ namespace ctp_docente_portal.Server.Services.Implementations
             _studentService = studentService;
         }
 
-        public async Task<EvaluationItemDto> CreateAsync(EvaluationItemCreateDto dto)
+        public async Task<EvaluationItemDto> CreateAsync(int userId, EvaluationItemCreateDto dto)
         {
-            //int sectionId = await _context.SectionAssignments
-            //    .Where(x => x.SectionId == dto.SectionAssignmentId)
-            //    .Select(x => x.Id)
-            //    .FirstOrDefaultAsync();
-            
-            //dto.SectionAssignmentId = sectionId;
-
             var sectionExists = await _context.SectionAssignments.AnyAsync(sa => sa.Id == dto.SectionAssignmentId);
             if (!sectionExists)
                 throw new ArgumentException("La Sección no existe.");
@@ -46,6 +39,8 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
             var model = _mapper.Map<EvaluationItemsModel>(dto);
             model.IsDraft = false;
+            model.CreatedBy = userId;
+            model.UpdatedBy = userId;
             model.CreatedAt = DateTime.UtcNow;
             model.UpdatedAt = DateTime.UtcNow;
 
@@ -55,7 +50,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
             return _mapper.Map<EvaluationItemDto>(model);
         }
 
-        public async Task<EvaluationItemDto> UpdateAsync(int id, EvaluationItemUpdateDto dto)
+        public async Task<EvaluationItemDto> UpdateAsync(int userId, int id, EvaluationItemUpdateDto dto)
         {
             // Inicia una transacción
             await using var transaction = await _context.Database.BeginTransactionAsync();
@@ -81,6 +76,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
                 _mapper.Map(dto, model);
                 model.IsDraft = false;
+                model.UpdatedBy = userId;
                 model.UpdatedAt = DateTime.UtcNow;
 
                 await _context.SaveChangesAsync();
@@ -128,6 +124,9 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
             if (hasScores)
                 throw new InvalidOperationException("No se puede eliminar, ya existen notas registradas.");
+
+            if (model.HasCriteria)
+                await _criteriaService.DeleteAllByItemIdAsync(model.Id);
 
             _context.EvaluationItems.Remove(model);
             await _context.SaveChangesAsync();
@@ -180,12 +179,13 @@ namespace ctp_docente_portal.Server.Services.Implementations
             // ✅ Obtener los ítems de evaluación
             var items = await _context.EvaluationItems
                 .AsNoTracking()
-                .Where(sei => _context.SectionAssignments
+                .Where(sei => !sei.IsDraft &&
+                _context.SectionAssignments
                     .Where(sa => sa.SubjectId == subjectId && sa.SectionId == sectionId && sa.StaffId == staffId)
                     .Select(sa => sa.Id)
                     .Contains(sei.SectionAssignmentId)
                 )
-                //.OrderBy(sei => sei.Id)
+                .OrderByDescending(sei => sei.Percentage)
                 .ToListAsync();
 
             var categories = await _context.EvaluationCategories
@@ -267,6 +267,38 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 })
                 .ToList();
 
+            // Total de estudiantes esperados
+            int totalStudents = studentsDto.Count;
+
+            // Estudiantes con al menos una nota registrada
+            int studentsWithScores = allScores
+                .Select(s => s.StudentId)
+                .Distinct()
+                .Count();
+
+            // Estudiantes con alguna nota igual a 0
+            int studentsWithZero = allScores
+                .Where(s => s.Score == 0)
+                .Select(s => s.StudentId)
+                .Distinct()
+                .Count();
+
+            string status;
+
+            if (studentsWithScores == 0)
+            {
+                status = "Pendiente";
+            }
+            else if (studentsWithScores < totalStudents || studentsWithZero > 0)
+            {
+                status = "En Proceso";
+            }
+            else
+            {
+                status = "Completado";
+            }
+
+
 
             // Armar el DTO final
             return new EvaluationItemDetailsDto
@@ -277,9 +309,10 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 Percentage = item.Percentage,
                 CreatedAt = item.CreatedAt,
                 UpdatedAt = item.UpdatedAt,
-                EvaluationCategoryName = categoryName,
                 SubjectName = subjectName,
                 SectionName = sectionName,
+                EvaluationCategoryName = categoryName,
+                Status = status,
                 Criteria = criteria,
                 StudentScores = studentsWithGrades
             };

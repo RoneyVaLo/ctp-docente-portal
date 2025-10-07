@@ -97,6 +97,25 @@ namespace ctp_docente_portal.Server.Services.Implementations
             _context.SectionAssignments.Add(entity);
             await _context.SaveChangesAsync();
 
+            // 🔹 Crear automáticamente el ítem de evaluación "Asistencia"
+            var attendanceItem = new EvaluationItemsModel
+            {
+                SectionAssignmentId = entity.Id,
+                Name = "Asistencia",
+                Description = "Evaluación de asistencia del estudiante.",
+                CategoryId = 1,
+                Percentage = 10,
+                HasCriteria = false,
+                IsDraft = false,
+                CreatedBy = userId,
+                UpdatedBy = userId,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.EvaluationItems.Add(attendanceItem);
+            await _context.SaveChangesAsync();
+
             return entity;
         }
 

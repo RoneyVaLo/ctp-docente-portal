@@ -10,7 +10,6 @@ namespace ctp_docente_portal.Server.DTOs.EvaluationItems
         public int CategoryId { get; set; }
         public decimal Percentage { get; set; }
         public bool HasCriteria { get; set; }
-        public int UpdatedBy { get; set; }
         public List<EvaluationCriteriaDto>? Criteria { get; set; }
     }
 }

@@ -171,7 +171,13 @@ const AcademicPeriods = () => {
   };
 
   const resetForm = () => {
-    setPeriodForm({ name: "", startDate: "", endDate: "", isActive: false });
+    setPeriodForm({
+      name: "",
+      enrollment: { id: 0, name: "" },
+      startDate: "",
+      endDate: "",
+      isActive: false,
+    });
     setErrors({
       name: "",
       enrollment: "",

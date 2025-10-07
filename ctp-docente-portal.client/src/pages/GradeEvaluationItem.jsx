@@ -35,6 +35,7 @@ const GradeEvaluationItem = () => {
   const [successfulSave, setSuccessfulSave] = useState(false);
   const [evaluation, setEvaluation] = useState([]);
   const [grades, setGrades] = useState([]);
+  const [gradesBackup, setGradesBackup] = useState([]);
 
   useEffect(() => {
     const fetchEvaluationData = async () => {
@@ -151,6 +152,18 @@ const GradeEvaluationItem = () => {
     }
   };
 
+  const handleEditToggle = () => {
+    setEditMode((prev) => !prev);
+    if (!editMode) {
+      setGradesBackup(JSON.parse(JSON.stringify(grades)));
+    }
+  };
+
+  const cancelEdition = () => {
+    setGrades(JSON.parse(JSON.stringify(gradesBackup)));
+    setEditMode(false);
+  };
+
   if (loading || evaluation.length === 0) {
     return <Loader1 />;
   }
@@ -179,7 +192,7 @@ const GradeEvaluationItem = () => {
 
       <div className="flex flex-col md:flex-row gap-6">
         <Card className="flex-1">
-          <CardHeader>
+          <CardHeader className="text-center md:text-start">
             <CardTitle>{evaluation.itemName}</CardTitle>
             <CardDescription>
               Información general de la evaluación
@@ -217,16 +230,17 @@ const GradeEvaluationItem = () => {
                 </h3>
                 <p>{evaluation.evaluationCategoryName}</p>
               </div>
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">
+              <div className="flex items-center">
+                {/* <h3 className="text-sm font-medium text-muted-foreground mb-1">
                   Estado
-                </h3>
+                </h3> */}
                 <Badge
                   variant={
-                    evaluation.estado === "Completado" ? "default" : "secondary"
+                    evaluation.estado === "Completado" ? "outline" : "default"
                   }
+                  className="items-center"
                 >
-                  {/* {evaluation.estado} */}
+                  {evaluation.status}
                 </Badge>
               </div>
             </div>
@@ -242,7 +256,7 @@ const GradeEvaluationItem = () => {
 
         {/* Evaluation Item Statistics */}
         <Card className="flex-1">
-          <CardHeader>
+          <CardHeader className="text-center md:text-start">
             <CardTitle>Estadísticas</CardTitle>
             <CardDescription>Resumen de resultados</CardDescription>
           </CardHeader>
@@ -382,11 +396,25 @@ const GradeEvaluationItem = () => {
         </Card>
       </div>
 
-      <div className="flex gap-2">
-        <Button variant="outline" onClick={() => setEditMode(false)}>
+      <div className="flex gap-2 justify-center md:justify-start">
+        <Button variant="outline" onClick={cancelEdition} disabled={!editMode}>
           Cancelar
         </Button>
-        {editMode ? (
+
+        <Button onClick={editMode ? saveChanges : handleEditToggle}>
+          {editMode ? (
+            <>
+              <Save className="mr-2 h-4 w-4" />
+              Guardar cambios
+            </>
+          ) : (
+            <>
+              <Edit className="mr-2 h-4 w-4" />
+              Editar
+            </>
+          )}
+        </Button>
+        {/* {editMode ? (
           <>
             <Button onClick={saveChanges}>
               <Save className="mr-2 h-4 w-4" />
@@ -395,12 +423,12 @@ const GradeEvaluationItem = () => {
           </>
         ) : (
           <>
-            <Button onClick={() => setEditMode(true)}>
+            <Button onClick={handleEditToggle}>
               <Edit className="mr-2 h-4 w-4" />
               Editar
             </Button>
           </>
-        )}
+        )} */}
       </div>
 
       <GradeTable

@@ -16,14 +16,22 @@ import {
   getRubricPerformance,
   getStudentsAtRisk,
 } from "../../utils/evaluationAnalytics";
+import { useEffect } from "react";
 
+// TODO: Por alguna razón no se actualizan los datos, solo cuando se modifica manual, pero si es con items no
 const Analytics = () => {
   const { students, evaluationItems } = useEvaluation();
+  let classStats = getClassStats(students, evaluationItems);
+  let gradeDistribution = getGradeDistribution(students);
+  let rubricPerformance = getRubricPerformance(students, evaluationItems);
+  let studentsAtRisk = getStudentsAtRisk(students, evaluationItems);
 
-  const classStats = getClassStats(students, evaluationItems);
-  const gradeDistribution = getGradeDistribution(students);
-  const rubricPerformance = getRubricPerformance(students, evaluationItems);
-  const studentsAtRisk = getStudentsAtRisk(students, evaluationItems);
+  useEffect(() => {
+    classStats = getClassStats(students, evaluationItems);
+    gradeDistribution = getGradeDistribution(students);
+    rubricPerformance = getRubricPerformance(students, evaluationItems);
+    studentsAtRisk = getStudentsAtRisk(students, evaluationItems);
+  }, [students]);
 
   return (
     <div className="space-y-6">

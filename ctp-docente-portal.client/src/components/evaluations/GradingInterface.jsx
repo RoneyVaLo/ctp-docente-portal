@@ -8,6 +8,7 @@ import {
   Filter,
   Save,
   Search,
+  X,
 } from "lucide-react";
 import Input from "../ui/Input";
 import Button from "../ui/Button";
@@ -28,6 +29,7 @@ const GradingInterface = () => {
   // <"idle" | "saving" | "saved" | "error">
   // const [saveStatus, setSaveStatus] = useState("idle");
   const [isEditing, setIsEditing] = useState(false);
+  const [studentsBackup, setStudentsBackup] = useState([]);
 
   const {
     evaluationItems,
@@ -36,6 +38,7 @@ const GradingInterface = () => {
     loading,
     setLoading,
     selectedGroup,
+    sections,
   } = useEvaluation();
 
   const calculateFinalGrade = (grades) => {
@@ -49,7 +52,12 @@ const GradingInterface = () => {
   };
 
   const handleEditToggle = () => {
+    // console.log(isEditing);
     setIsEditing((prev) => !prev);
+    if (!isEditing) {
+      // console.log(students);
+      setStudentsBackup([...students]);
+    }
   };
 
   const handleGradeChange = (studentId, item, index, value) => {
@@ -98,7 +106,7 @@ const GradingInterface = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      console.log(response.data);
+      // console.log(response.data);
       toast.success("Cambios guardados correctamente.");
       // setSaveStatus("idle");
     } catch (error) {
@@ -122,13 +130,28 @@ const GradingInterface = () => {
         subjectId: parseInt(sessionStorage.getItem("selectedSubject")),
       };
 
-      await downloadCsv("/api/csvreport/students", reportFilter, `_.csv`);
+      const sectionName = sections.filter((sec) => sec.id == selectedGroup)[0]
+        .name;
+
+      await downloadCsv(
+        "/api/csvreport/students",
+        reportFilter,
+        `${sectionName}.csv`
+      );
+      toast.success("Descarga del archivo iniciada.");
     } catch (error) {
-      console.log(error);
+      // console.log(error);
       toast.error("Error descargando el Reporte");
     } finally {
       setLoading(false);
     }
+  };
+
+  const cancelEdition = () => {
+    if (students !== studentsBackup) {
+      setStudents([...studentsBackup]);
+    }
+    setIsEditing(false);
   };
 
   if (loading) return <Loader1 />;
@@ -198,10 +221,19 @@ const GradingInterface = () => {
                   size="sm"
                   variant="outline"
                   disabled={!evaluationItems.length > 0}
-                  onClick={studentsCsvReport}
+                  onClick={isEditing ? cancelEdition : studentsCsvReport}
                 >
-                  <Download className="w-4 h-4 mr-2" />
-                  Descargar Reporte
+                  {isEditing ? (
+                    <>
+                      <X className="w-4 h-4 mr-2" />
+                      Cancelar
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4 mr-2" />
+                      Descargar Reporte
+                    </>
+                  )}
                 </Button>
                 {evaluationItems.length <= 0 && (
                   <Tooltip

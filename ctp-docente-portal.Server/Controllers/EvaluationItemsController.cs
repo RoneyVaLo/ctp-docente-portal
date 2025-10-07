@@ -23,7 +23,8 @@ namespace ctp_docente_portal.Server.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] EvaluationItemCreateDto dto)
         {
-            var result = await _service.CreateAsync(dto);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var result = await _service.CreateAsync(userId, dto);
             return Ok(result);
         }
 
@@ -39,7 +40,8 @@ namespace ctp_docente_portal.Server.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] EvaluationItemUpdateDto dto)
         {
-            var result = await _service.UpdateAsync(id, dto);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var result = await _service.UpdateAsync(userId, id, dto);
             return Ok(result);
         }
 
