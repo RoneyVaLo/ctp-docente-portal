@@ -20,9 +20,9 @@ const Header = ({ onMenuClick }) => {
       <div className="flex items-center gap-2">
         <DarkModeToggle />
 
-        <Button variant="ghost" size="icon">
+        {/* <Button variant="ghost" size="icon">
           <HelpCircle className="h-5 w-5" />
-        </Button>
+        </Button> */}
 
         <UserMenu />
       </div>

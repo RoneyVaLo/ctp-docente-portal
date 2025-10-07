@@ -12,6 +12,7 @@ import { AlertCircle, Plus, Trash } from "lucide-react";
 import Input from "../ui/Input";
 import Button from "../ui/Button";
 import { NavLink } from "react-router-dom";
+import { Switch } from "../ui/Switch";
 
 const ItemCriteria = ({
   item,
@@ -28,7 +29,7 @@ const ItemCriteria = ({
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="text-center md:text-start">
         <CardTitle>Definición de rúbrica</CardTitle>
         <CardDescription>
           Establezca los criterios de evaluación y sus porcentajes
@@ -37,13 +38,17 @@ const ItemCriteria = ({
       <CardContent className="space-y-4">
         <div className="flex items-center space-x-2">
           <input
+            className="peer inline-flex h-4 md:h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-950
+          disabled:cursor-not-allowed disabled:opacity-50"
             type="checkbox"
             id="hasCriteria"
             name="hasCriteria"
             checked={item.hasCriteria}
             onChange={handleChangeItem}
+            disabled={item?.name?.toLowerCase() === "asistencia"}
           />
-          <Label htmlFor="hasCriteria">
+          <Label htmlFor="hasCriteria" className="h-4 md:h-6 flex items-center">
             ¿Deseas evaluar este ítem mediante criterios específicos?
           </Label>
         </div>
@@ -115,10 +120,12 @@ const ItemCriteria = ({
                 </div>
               ))}
 
-              <Button variant="outline" onClick={addCriterion}>
-                <Plus className="h-4 w-4 mr-2" />
-                Agregar criterio
-              </Button>
+              <div className="w-full flex justify-center md:justify-start pt-4 md:pt-0">
+                <Button variant="outline" onClick={addCriterion}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Agregar criterio
+                </Button>
+              </div>
             </div>
 
             <div className="flex justify-between items-center p-4 bg-muted rounded-md">
@@ -140,7 +147,7 @@ const ItemCriteria = ({
         )}
       </CardContent>
       {item.hasCriteria && (
-        <CardFooter className="flex justify-between items-center">
+        <CardFooter className="flex flex-col md:flex-row gap-4 justify-between items-center">
           <NavLink to="/calificaciones">
             <Button variant="outline">Cancelar</Button>
           </NavLink>

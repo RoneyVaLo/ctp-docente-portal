@@ -97,7 +97,62 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 }
             }
 
-            // 3. Construir matriz final
+
+            // --- 3. Calcular asistencia automáticamente ---
+            var attendanceItem = itemDtos.FirstOrDefault(i => i.Name.ToLower().Contains("asistencia"));
+            if (attendanceItem != null)
+            {
+                var attendances = await _context.Attendances
+                    .AsNoTracking()
+                    .Where(a => a.SubjectId == subjectId && a.SectionId == sectionId && studentIds.Contains(a.StudentId))
+                    .ToListAsync();
+
+                var totalSessions = attendances
+                    .Select(a => a.Date)
+                    .Distinct()
+                    .Count();
+
+                Console.WriteLine("#################################");
+                Console.WriteLine();
+                Console.WriteLine("Total de Sesiones:");
+                Console.WriteLine(totalSessions);
+                Console.WriteLine();
+                Console.WriteLine("#################################");
+
+                if (totalSessions > 0)
+                {
+                    // Agrupar y calcular puntaje por estudiante
+                    var attendanceScores = attendances
+                        .GroupBy(a => a.StudentId)
+                        .Select(g =>
+                        {
+                            decimal totalPoints = g.Sum(a =>
+                                a.StatusTypeId == 1 ? 1m :
+                                a.StatusTypeId == 3 ? 0.5m : 0m);
+
+                            decimal finalScore = (totalPoints * 100m) / totalSessions;
+
+                            return new
+                            {
+                                StudentId = g.Key,
+                                Score = Math.Round(finalScore, 1)
+                            };
+                        })
+                        .ToList();
+
+                    // Integrar puntajes al diccionario principal
+                    foreach (var aScore in attendanceScores)
+                    {
+                        if (!scoreDict.ContainsKey(aScore.StudentId))
+                            scoreDict[aScore.StudentId] = new Dictionary<int, decimal>();
+
+                        scoreDict[aScore.StudentId][attendanceItem.Id] = aScore.Score;
+                    }
+                }
+            }
+
+
+            // 4. Construir matriz final
             var result = studentDtos.Select(student => new StudentEvaluationMatrixDto
             {
                 StudentId = student.Id,

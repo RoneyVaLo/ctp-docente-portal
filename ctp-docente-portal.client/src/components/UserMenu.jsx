@@ -35,11 +35,11 @@ export default function UserMenu() {
           <User className="mr-2 h-4 w-4" />
           <span>Mi perfil</span>
         </DropdownMenu.Item> */}
-        <DropdownMenu.Item>
+        {/* <DropdownMenu.Item>
           <Settings className="mr-2 h-4 w-4" />
           <span>Configuración</span>
-        </DropdownMenu.Item>
-        <DropdownMenu.Separator />
+        </DropdownMenu.Item> */}
+        {/* <DropdownMenu.Separator /> */}
         <DropdownMenu.Item onClick={logout}>
           <LogOut className="mr-2 h-4 w-4" />
           <span>Cerrar sesión</span>

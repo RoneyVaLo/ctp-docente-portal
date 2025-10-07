@@ -248,7 +248,7 @@ const EvaluationRoles = () => {
               headers: { Authorization: `Bearer ${token}` },
             }
           );
-          console.log(response);
+          // console.log(response);
 
           if (response.status === 200) {
             setStaffRoles(

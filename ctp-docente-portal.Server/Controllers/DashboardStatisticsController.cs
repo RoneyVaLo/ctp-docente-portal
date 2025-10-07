@@ -3,6 +3,7 @@ using ctp_docente_portal.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace ctp_docente_portal.Server.Controllers
 {
@@ -35,10 +36,10 @@ namespace ctp_docente_portal.Server.Controllers
         /// </returns>
         [HttpGet("teacher")]
         [Authorize(Policy = "DocenteOnly")]
-        public async Task<ActionResult<TeacherSummaryDto>> GetResumen([FromQuery] int staffId, [FromQuery] int periodoId)
+        public async Task<ActionResult<TeacherSummaryDto>> GetResumen([FromQuery] int periodoId)
         {
-            // TODO: Asignar las autorizaciones
-            var resumen = await _dashboardStatisticsService.GetTeacherSummaryAsync(staffId, periodoId);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var resumen = await _dashboardStatisticsService.GetTeacherSummaryAsync(userId, periodoId);
             return Ok(resumen);
         }
 

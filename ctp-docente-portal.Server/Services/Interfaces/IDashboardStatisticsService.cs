@@ -15,7 +15,7 @@ namespace ctp_docente_portal.Server.Services.Interfaces
         /// <returns>
         /// A <see cref="TeacherSummaryDto"/> containing sections, attendance and pending evaluations information.
         /// </returns>
-        Task<TeacherSummaryDto> GetTeacherSummaryAsync(int staffId, int periodoId);
+        Task<TeacherSummaryDto> GetTeacherSummaryAsync(int userId, int periodoId);
 
         /// <summary>
         /// Retrieves an administrative summary with global institution metrics.

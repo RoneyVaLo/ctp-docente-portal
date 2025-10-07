@@ -213,6 +213,7 @@ export const useEvaluationLogic = () => {
     students,
     setStudents,
     evaluationItems,
+    setEvaluationItems,
     updateEvaluationItems,
     updateGradesWithCriteria,
   };

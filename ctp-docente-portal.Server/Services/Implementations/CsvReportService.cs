@@ -29,6 +29,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
             var students = (from ss in _context.SectionStudents
                             join s in _context.Students on ss.StudentId equals s.Id
                             where ss.SectionId == filter.SectionId
+                            orderby s.LastName
                             select new
                             {
                                 s.Id,
@@ -46,6 +47,41 @@ namespace ctp_docente_portal.Server.Services.Implementations
                 .Where(se => evaluationItems.Select(ei => ei.Id).Contains(se.EvaluationItemId))
                 .ToList();
 
+            // 🔹 4.1. Calcular asistencia automáticamente
+            var attendanceItem = evaluationItems.FirstOrDefault(i => i.Name.ToLower().Contains("asistencia"));
+            Dictionary<int, decimal> attendanceScores = new();
+
+            if (attendanceItem != null)
+            {
+                var studentIds = students.Select(s => s.Id).ToList();
+
+                var attendances = _context.Attendances
+                    .Where(a => a.SubjectId == filter.SubjectId && a.SectionId == filter.SectionId && studentIds.Contains(a.StudentId))
+                    .ToList();
+
+                var totalSessions = attendances
+                    .Select(a => a.Date)
+                    .Distinct()
+                    .Count();
+
+                if (totalSessions > 0)
+                {
+                    attendanceScores = attendances
+                        .GroupBy(a => a.StudentId)
+                        .ToDictionary(
+                            g => g.Key,
+                            g =>
+                            {
+                                decimal totalPoints = g.Sum(a =>
+                                    a.StatusTypeId == 1 ? 1m :
+                                    a.StatusTypeId == 3 ? 0.5m : 0m);
+
+                                return (totalPoints * 100m) / totalSessions;
+                            });
+                }
+            }
+
+
             // 5. Mapear a DTO para el CSV
             var studentDtos = new List<StudentCsvDto>();
 
@@ -59,10 +95,23 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
                 foreach (var item in evaluationItems)
                 {
-                    var score = evaluationScores
-                        .FirstOrDefault(s => s.StudentId == student.Id && s.EvaluationItemId == item.Id);
+                    decimal scoreValue = 0;
 
-                    dto.Items[item.Name] = score?.Score != null ? (int)score.Score : 0;
+                    if (item == attendanceItem)
+                    {
+                        // ✅ Usar cálculo automático si es asistencia
+                        if (attendanceScores.TryGetValue(student.Id, out var attendanceScore))
+                            scoreValue = attendanceScore;
+                    }
+                    else
+                    {
+                        var score = evaluationScores
+                            .FirstOrDefault(s => s.StudentId == student.Id && s.EvaluationItemId == item.Id);
+
+                        scoreValue = score?.Score ?? 0;
+                    }
+
+                    dto.Items[item.Name] = (int)Math.Round(scoreValue);
                 }
 
                 studentDtos.Add(dto);

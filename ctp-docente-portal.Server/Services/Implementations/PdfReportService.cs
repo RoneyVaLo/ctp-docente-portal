@@ -91,6 +91,15 @@ namespace ctp_docente_portal.Server.Services.Implementations
             if (section == null)
                 throw new ArgumentException("La sección especificada no existe.");
 
+            // --- Obtener el periodo académico ---
+            var academicPeriod = await _context.AcademicPeriods
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == filter.AcademicPeriodId);
+
+            if (academicPeriod == null)
+                throw new KeyNotFoundException("El periodo académico no existe.");
+
+
             var subjects = await (
                 from sa in _context.SectionAssignments
                 join sub in _context.Subjects on sa.SubjectId equals sub.Id
@@ -101,8 +110,13 @@ namespace ctp_docente_portal.Server.Services.Implementations
             ).ToListAsync();
 
             var allAttendances = await _context.Attendances
-                .Where(a => a.SectionId == filter.SectionId)
+                .Where(a =>
+                       a.SectionId == filter.SectionId &&
+                       a.Date >= DateOnly.FromDateTime(academicPeriod.StartDate) &&
+                       a.Date <= DateOnly.FromDateTime(academicPeriod.EndDate)
+                )
                 .ToListAsync();
+
 
             var allMonths = allAttendances
                 .Select(a => a.Date.Month)
@@ -128,14 +142,31 @@ namespace ctp_docente_portal.Server.Services.Implementations
                         if (!attendancesOfTheMonth.Any())
                             return "0%";
 
-                        var percentage = (int)(100.0 * attendancesOfTheMonth.Count(a => a.StatusTypeId == 1) / (double)attendancesOfTheMonth.Count);
+                        int total = attendancesOfTheMonth.Count;
+                        int presents = attendancesOfTheMonth.Count(a => a.StatusTypeId == 1);
+                        int justified = attendancesOfTheMonth.Count(a => a.StatusTypeId == 3);
+
+                        double weighted = presents + (justified * 0.5);
+                        double percentage = total == 0 ? 0 : Math.Round((weighted * 100) / total);
+
+
                         return $"{percentage}%";
                     })
                     .ToList();
 
-                var average = subjectAttendances.Any()
-                    ? $"{(int)(100.0 * subjectAttendances.Count(a => a.StatusTypeId == 1) / (double)subjectAttendances.Count)}%"
-                    : "0%";
+                string average = "0%";
+                if (subjectAttendances.Any())
+                {
+                    int total = subjectAttendances.Count;
+                    int presents = subjectAttendances.Count(a => a.StatusTypeId == 1);
+                    int justified = subjectAttendances.Count(a => a.StatusTypeId == 3);
+
+                    double weighted = presents + (justified * 0.5);
+                    double avgPercentage = total == 0 ? 0 : Math.Round((weighted * 100) / total);
+
+                    average = $"{avgPercentage}%";
+                }
+
 
                 data.Add(new AttendancePerMonthDto
                 {

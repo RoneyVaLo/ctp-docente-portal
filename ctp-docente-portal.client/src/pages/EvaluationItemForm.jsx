@@ -16,7 +16,7 @@ import toast from "react-hot-toast";
 
 const EvaluationItemForm = () => {
   const { itemId } = useParams(); // `undefined` si es nuevo
-  const { selectedGroup, evaluationItems, updateEvaluationItems } =
+  const { selectedGroup, evaluationItems, setEvaluationItems } =
     useEvaluation();
   const navigate = useNavigate();
 
@@ -84,10 +84,22 @@ const EvaluationItemForm = () => {
     try {
       setLoading(true);
       const itemData = {
-        SectionAssignmentId: parseInt(selectedGroup),
+        // SectionAssignmentId: parseInt(selectedGroup),
         CreatedBy: 1,
       };
       const token = sessionStorage.getItem("token");
+      const selectedSubject = sessionStorage.getItem("selectedSubject");
+      const selectedGroup = sessionStorage.getItem("selectedGroup");
+
+      const idAssingment = await axios.get(
+        `/api/SectionAssignments/getassignmentid?subjectId=${selectedSubject}&sectionId=${selectedGroup}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      itemData.SectionAssignmentId = idAssingment.data;
+
       const response = await axios.post(
         "/api/evaluationitems/draft",
         itemData,
@@ -260,8 +272,6 @@ const EvaluationItemForm = () => {
         EvaluationCategoryName: item.evaluationCategoryName,
         Percentage: parseInt(item.percentage),
         HasCriteria: item.hasCriteria || false,
-        CreatedBy: 1, // Actualizar con el ID real del usuario
-        UpdatedBy: 1, // Actualizar con el ID real del usuario
       };
 
       if (itemData.HasCriteria) {
@@ -292,6 +302,10 @@ const EvaluationItemForm = () => {
           );
 
           itemData.SectionAssignmentId = idAssingment.data;
+
+          const category = categories.find((c) => c.name === itemCategory);
+          itemData.CategoryId = category.id;
+
           const response = await axios.put(
             `/api/evaluationitems/${currentItemId}`,
             itemData,
@@ -299,16 +313,32 @@ const EvaluationItemForm = () => {
               headers: { Authorization: `Bearer ${token}` },
             }
           );
+
           const message = itemId
             ? "Ítem actualizado correctamente."
             : "Ítem creado correctamente.";
-          setItem(false);
+
+          setEvaluationItems((prevItems) => {
+            const exists = prevItems.some(
+              (item) => item.id === response.data.id
+            );
+
+            response.data.evaluationCategoryName = category.name;
+            if (exists) {
+              // Actualizar el objeto existente
+              return prevItems.map((item) =>
+                item.id === response.data.id ? response.data : item
+              );
+            } else {
+              return [...prevItems, response.data];
+            }
+          });
+
           toast.success(message);
-          const updatedEvaluationItems = [...evaluationItems, response.data];
-          updateEvaluationItems(updatedEvaluationItems);
+          // setItem(false);
+
           navigate("/calificaciones");
         } catch (error) {
-          // console.error(error?.response?.data?.Message);
           const { Message } = error.response.data;
           if (
             Message.toLocaleLowerCase().includes(
@@ -350,8 +380,11 @@ const EvaluationItemForm = () => {
           const { data } = response;
           data.evaluationCategoryName = item.evaluationCategoryName;
           const updatedEvaluationItems = [...evaluationItems, data];
+
+          // updateEvaluationItems(updatedEvaluationItems);
+          setEvaluationItems(updatedEvaluationItems);
+
           toast.success("Ítem creado exitosamente.");
-          updateEvaluationItems(updatedEvaluationItems);
           setItem(false);
           navigate("/calificaciones");
         } catch (error) {
