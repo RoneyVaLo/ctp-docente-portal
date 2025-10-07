@@ -49,6 +49,7 @@ const ItemDetail = ({
               placeholder="Ej: Examen parcial I"
               defaultValue={item.name}
               onChange={handleChangeItem}
+              readOnly={item?.name?.toLowerCase() === "asistencia"}
             />
             {errors.name && (
               <p className="text-red-600 dark:text-red-400 text-sm transition-colors">
@@ -129,10 +130,12 @@ const ItemDetail = ({
           <Button variant="outline">Cancelar</Button>
         </NavLink>
 
-        <Button variant="default" onClick={() => handleTabChange("criteria")}>
-          <Plus className="h-4 w-4" />
-          Añadir rúbricas
-        </Button>
+        {item?.name?.toLowerCase() !== "asistencia" && (
+          <Button variant="default" onClick={() => handleTabChange("criteria")}>
+            <Plus className="h-4 w-4" />
+            Añadir rúbricas
+          </Button>
+        )}
 
         <Button onClick={handleSubmit} className="-mt-1">
           Guardar y continuar

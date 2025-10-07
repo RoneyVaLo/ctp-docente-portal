@@ -37,6 +37,7 @@ import toast from "react-hot-toast";
 import Loader1 from "../loaders/Loader1";
 import axios from "axios";
 
+// eslint-disable-next-line no-unused-vars
 const subSections = [
   { id: 0, name: "Ambas" },
   { id: 1, name: "A" },
@@ -66,7 +67,7 @@ const SectionAssignments = () => {
     teacher: { id: 0, name: "" },
     subject: { id: 0, name: "" },
     section: { id: 0, name: "" },
-    subSection: { id: -1, name: "" },
+    subSection: { id: 0, name: "" },
     period: { id: 0, name: "" },
   });
 
@@ -83,28 +84,19 @@ const SectionAssignments = () => {
       try {
         setLoading(true);
         const token = sessionStorage.getItem("token");
-        const [/* subjects, */ staff, academicPeriods /* sections */] =
-          await Promise.all([
-            // axios.get("api/subject", {
-            //   headers: { Authorization: `Bearer ${token}` },
-            // }),
-            axios.get("api/staff", {
-              headers: { Authorization: `Bearer ${token}` },
-            }),
-            axios.get("api/academicperiods", {
-              headers: { Authorization: `Bearer ${token}` },
-            }),
-            // axios.get("api/section", {
-            //   headers: { Authorization: `Bearer ${token}` },
-            // }),
-          ]);
+        const [staff, academicPeriods] = await Promise.all([
+          axios.get("api/staff", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get("api/academicperiods", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
 
-        // setSubjects(subjects.data);
         setStaff(staff.data);
         setAcademicPeriods(academicPeriods.data);
-        // setSections(sections.data);
       } catch (error) {
-        console.log(error);
+        // console.log(error);
         toast.error(error?.response?.data?.Message);
       } finally {
         setLoading(false);
@@ -144,31 +136,32 @@ const SectionAssignments = () => {
     fetchSections();
   }, [assignmentForm.period]);
 
+  const fetchAssignments = async () => {
+    try {
+      setLoading(true);
+      const token = sessionStorage.getItem("token");
+      const { data } = await axios.get(
+        `api/sectionassignments?pageNumber=${pagination.pageNumber}&pageSize=${pagination.pageSize}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setSectionAssignments(data.items);
+      setPagination((prev) => ({
+        ...prev,
+        totalCount: data.totalCount,
+        pageNumber: data.pageNumber,
+        pageSize: data.pageSize,
+      }));
+    } catch (error) {
+      toast.error(error?.response?.data?.Message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchAssignments = async () => {
-      try {
-        setLoading(true);
-        const token = sessionStorage.getItem("token");
-        const { data } = await axios.get(
-          `api/sectionassignments?pageNumber=${pagination.pageNumber}&pageSize=${pagination.pageSize}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        setSectionAssignments(data.items);
-        setPagination((prev) => ({
-          ...prev,
-          totalCount: data.totalCount,
-          pageNumber: data.pageNumber,
-          pageSize: data.pageSize,
-        }));
-      } catch (error) {
-        toast.error(error?.response?.data?.Message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchAssignments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagination.pageNumber, pagination.pageSize]);
 
   const validateForm = () => {
@@ -210,13 +203,13 @@ const SectionAssignments = () => {
     }
 
     // Validar subSection (opcional - depende de tus requisitos)
-    if (
-      assignmentForm.subSection.id === -1 ||
-      !assignmentForm.subSection.name.trim()
-    ) {
-      newErrors.subSection = "Debe seleccionar una subsección válida";
-      isValid = false;
-    }
+    // if (
+    //   assignmentForm.subSection.id === -1 ||
+    //   !assignmentForm.subSection.name.trim()
+    // ) {
+    //   newErrors.subSection = "Debe seleccionar una subsección válida";
+    //   isValid = false;
+    // }
 
     // Validar period
     if (assignmentForm.period.id === 0 || !assignmentForm.period.name.trim()) {
@@ -285,6 +278,8 @@ const SectionAssignments = () => {
   const handleSave = async () => {
     try {
       if (validateForm()) {
+        setLoading(true);
+        assignmentForm.subSection.id = 0;
         const token = sessionStorage.getItem("token");
         if (assignmentForm.id) {
           const response = await axios.put(
@@ -296,16 +291,18 @@ const SectionAssignments = () => {
           );
 
           if (response.status === 200) {
-            setSectionAssignments(
-              sectionAssignments.map((assignment) =>
-                assignment.id === assignmentForm.id
-                  ? { ...assignmentForm }
-                  : assignment
-              )
-            );
+            // setSectionAssignments(
+            //   sectionAssignments.map((assignment) =>
+            //     assignment.id === assignmentForm.id
+            //       ? { ...assignmentForm }
+            //       : assignment
+            //   )
+            // );
             finishSave("Asignación actualizada exitosamente.");
+            fetchAssignments();
           }
         } else {
+          // console.log(assignmentForm);
           const response = await axios.post(
             "api/sectionassignments",
             assignmentForm,
@@ -315,9 +312,10 @@ const SectionAssignments = () => {
           );
 
           if (response.status === 200) {
-            assignmentForm.id = response.data.id;
-            setSectionAssignments([...sectionAssignments, assignmentForm]);
+            // assignmentForm.id = response.data.id;
+            // setSectionAssignments([...sectionAssignments, assignmentForm]);
             finishSave("Asignación creada exitosamente.");
+            fetchAssignments();
           }
         }
       }
@@ -521,7 +519,7 @@ const SectionAssignments = () => {
                       )}
                     </div>
 
-                    <div>
+                    {/* <div>
                       <Label htmlFor="subsection-select">Sub Sección</Label>
                       <Select
                         value={assignmentForm.subSection.name}
@@ -559,7 +557,7 @@ const SectionAssignments = () => {
                           {errors.subSection}
                         </p>
                       )}
-                    </div>
+                    </div> */}
                     <div className="flex justify-end gap-2">
                       <Button
                         onClick={() => {
@@ -592,9 +590,9 @@ const SectionAssignments = () => {
                 <TableHead className="text-center">Docente</TableHead>
                 <TableHead className="text-center">Materia</TableHead>
                 <TableHead className="text-center">Sección</TableHead>
-                <TableHead className="text-center hidden md:table-cell">
+                {/* <TableHead className="text-center hidden md:table-cell">
                   SubSección
-                </TableHead>
+                </TableHead> */}
                 <TableHead className="text-center">Período</TableHead>
                 <TableHead className="text-center">Acciones</TableHead>
               </TableRow>
@@ -610,9 +608,9 @@ const SectionAssignments = () => {
                     <TableCell className="text-center">
                       {assignment.section.name}
                     </TableCell>
-                    <TableCell className="text-center hidden md:table-cell">
+                    {/* <TableCell className="text-center hidden md:table-cell">
                       {assignment.subSection.name}
-                    </TableCell>
+                    </TableCell> */}
                     <TableCell>{assignment.period.name}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">

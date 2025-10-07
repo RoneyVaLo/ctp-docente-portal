@@ -38,6 +38,7 @@ const GradingInterface = () => {
     loading,
     setLoading,
     selectedGroup,
+    sections,
   } = useEvaluation();
 
   const calculateFinalGrade = (grades) => {
@@ -105,7 +106,7 @@ const GradingInterface = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      console.log(response.data);
+      // console.log(response.data);
       toast.success("Cambios guardados correctamente.");
       // setSaveStatus("idle");
     } catch (error) {
@@ -129,10 +130,17 @@ const GradingInterface = () => {
         subjectId: parseInt(sessionStorage.getItem("selectedSubject")),
       };
 
-      await downloadCsv("/api/csvreport/students", reportFilter, `_.csv`);
-      toast.success("Inició la descarga del archivo");
+      const sectionName = sections.filter((sec) => sec.id == selectedGroup)[0]
+        .name;
+
+      await downloadCsv(
+        "/api/csvreport/students",
+        reportFilter,
+        `${sectionName}.csv`
+      );
+      toast.success("Descarga del archivo iniciada.");
     } catch (error) {
-      console.log(error);
+      // console.log(error);
       toast.error("Error descargando el Reporte");
     } finally {
       setLoading(false);

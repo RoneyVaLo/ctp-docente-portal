@@ -12,6 +12,7 @@ import { AlertCircle, Plus, Trash } from "lucide-react";
 import Input from "../ui/Input";
 import Button from "../ui/Button";
 import { NavLink } from "react-router-dom";
+import { Switch } from "../ui/Switch";
 
 const ItemCriteria = ({
   item,
@@ -37,13 +38,17 @@ const ItemCriteria = ({
       <CardContent className="space-y-4">
         <div className="flex items-center space-x-2">
           <input
+            className="peer inline-flex h-4 md:h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-950
+          disabled:cursor-not-allowed disabled:opacity-50"
             type="checkbox"
             id="hasCriteria"
             name="hasCriteria"
             checked={item.hasCriteria}
             onChange={handleChangeItem}
+            disabled={item?.name?.toLowerCase() === "asistencia"}
           />
-          <Label htmlFor="hasCriteria">
+          <Label htmlFor="hasCriteria" className="h-4 md:h-6 flex items-center">
             ¿Deseas evaluar este ítem mediante criterios específicos?
           </Label>
         </div>

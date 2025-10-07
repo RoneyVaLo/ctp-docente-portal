@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Button from "../components/ui/Button";
-import { Download, FileText, Filter, Search, Sheet } from "lucide-react";
+import { Download, FileText, Filter, Search, Sheet, Users } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -287,6 +287,7 @@ const Students = () => {
           reportFilter,
           `${section[0].name}.csv`
         );
+        toast.success("Descarga del archivo iniciada.");
       } else {
         toast.error(
           "Seleccione un Periodo Académico, Sección, Materia y Aplique los filtros."
@@ -303,7 +304,8 @@ const Students = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex gap-2 items-center">
+        <Users />
         <h1 className="text-3xl font-bold tracking-tight">Estudiantes</h1>
       </div>
 

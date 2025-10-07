@@ -117,7 +117,7 @@ namespace ctp_docente_portal.Server.Services.Implementations
             if (entity == null)
                 throw new KeyNotFoundException($"Periodo Académico con ID {id} no encontrado");
 
-            bool isPastPeriod = entity.StartDate < DateTime.UtcNow;
+            bool isPastPeriod = entity.EndDate < DateTime.UtcNow;
 
             if (isPastPeriod)
             {

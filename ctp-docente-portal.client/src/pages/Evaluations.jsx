@@ -12,7 +12,7 @@ import EvaluationTabs from "../components/evaluations/EvaluationTabs";
 import Loader1 from "../components/loaders/Loader1";
 import { useEvaluation } from "../context/EvaluationContext";
 import { getResponsiveGridCols } from "../utils/gradeUtils";
-import { Plus } from "lucide-react";
+import { CheckSquare, Plus } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 const Evaluations = () => {
@@ -43,9 +43,12 @@ const Evaluations = () => {
     <div className="min-h-screen">
       <div className="container mx-auto relative">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-slate-800 dark:text-slate-100 mb-2">
-            Sistema de Calificaciones
-          </h1>
+          <div className="flex gap-2 items-center">
+            <CheckSquare className="w-8 h-8" />
+            <h1 className="text-4xl font-bold text-slate-800 dark:text-slate-100 mb-2">
+              Sistema de Calificaciones
+            </h1>
+          </div>
           <p className="text-slate-600 dark:text-slate-400">
             Gestión integral de evaluaciones y calificaciones estudiantiles
           </p>

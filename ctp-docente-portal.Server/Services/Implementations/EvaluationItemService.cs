@@ -26,13 +26,6 @@ namespace ctp_docente_portal.Server.Services.Implementations
 
         public async Task<EvaluationItemDto> CreateAsync(int userId, EvaluationItemCreateDto dto)
         {
-            //int sectionId = await _context.SectionAssignments
-            //    .Where(x => x.SectionId == dto.SectionAssignmentId)
-            //    .Select(x => x.Id)
-            //    .FirstOrDefaultAsync();
-            
-            //dto.SectionAssignmentId = sectionId;
-
             var sectionExists = await _context.SectionAssignments.AnyAsync(sa => sa.Id == dto.SectionAssignmentId);
             if (!sectionExists)
                 throw new ArgumentException("La Sección no existe.");

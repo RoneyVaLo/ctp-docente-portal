@@ -74,12 +74,14 @@ const EvaluationItems = () => {
         </div>
 
         <div>
-          <NavLink to="/item/nuevo">
-            <Button size="sm" variant="outline">
-              <Plus className="w-4 h-4 mr-2" />
-              Añadir Item
-            </Button>
-          </NavLink>
+          {totalWeight < 100 && (
+            <NavLink to="/item/nuevo">
+              <Button size="sm" variant="outline">
+                <Plus className="w-4 h-4 mr-2" />
+                Añadir Item
+              </Button>
+            </NavLink>
+          )}
         </div>
       </div>
 

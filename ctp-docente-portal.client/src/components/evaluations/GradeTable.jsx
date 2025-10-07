@@ -87,7 +87,9 @@ const GradeTable = ({
                           )}`}
                           placeholder="0-100"
                           readOnly={
-                            !isEditing || readOnlyCondition(item, student)
+                            !isEditing ||
+                            readOnlyCondition(item, student) ||
+                            item.name.toLowerCase() === "asistencia"
                           }
                         />
                         {item.hasCriteria && (

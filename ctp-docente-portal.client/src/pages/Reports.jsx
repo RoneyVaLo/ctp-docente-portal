@@ -193,7 +193,7 @@ const Reports = () => {
           sessionStorage.setItem("periodReports", selectedPeriod);
           sessionStorage.setItem("groupReports", selectedSection);
 
-          console.log(attendance.data);
+          // console.log(attendance.data);
 
           setGradesData(grades.data);
           setAttendanceData(attendance.data);
@@ -232,13 +232,14 @@ const Reports = () => {
           reportFilter,
           `RendimientoGeneral_${section[0].name}.pdf`
         );
+        toast.success("Descarga del archivo iniciada.");
       } else {
         toast.error(
           "Seleccione un Periodo Académico, una Sección y Aplique los Filtros."
         );
       }
     } catch (error) {
-      console.log(error);
+      // console.log(error);
       console.log(error?.response?.data?.Message);
     } finally {
       setLoading(false);
@@ -265,6 +266,7 @@ const Reports = () => {
           reportFilter,
           `ReporteGeneralAsistencia_${section[0].name}.pdf`
         );
+        toast.success("Descarga del archivo iniciada.");
       } else {
         toast.error(
           "Seleccione un Periodo Académico, una Sección y Aplique los Filtros."
